@@ -27,3 +27,11 @@ Mẫu một mục:
 - **Kiểm tra:** chưa có mã nguồn nên chưa có test.
 - **Quyết định:** nội dung 2 tầng khóa học → bài học; ảnh bài học lưu trong MySQL vì Render Free không giữ file trên đĩa; đăng nhập Facebook để sau bản đầu.
 - **Tiếp theo:** viết `docker-compose.yml` cho MySQL, rồi khung Spring Boot trên nhánh `feat/backend-skeleton`.
+- **Đã làm:** 
+ - Tạo nhánh: feat/mysql-docker
+ - Tạo file: docker-compose.yml và .env.example.
+ - Chạy lệnh: 'docker compose ps' hiện healthy. 
+  DBeaver trả 8.4.11, utf8mb4, utf8mb4_0900_ai_ci.  
+
+ 
+ 
