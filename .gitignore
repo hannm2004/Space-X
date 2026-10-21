@@ -1,0 +1,39 @@
+# Bí mật — KHÔNG BAO GIỜ đưa lên Git
+.env
+.env.*
+!.env.example
+
+# Backend (Maven / Java)
+target/
+*.class
+*.log
+*.stackdump
+hs_err_pid*
+
+# Frontend (Node / Vite)
+node_modules/
+dist/
+.vite/
+
+# IDE và hệ điều hành
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Dữ liệu local
+*.sql.bak
+*.dump
+
+# Bản nộp có thông tin cá nhân (MSSV) — chỉ để nộp LMS/OneDrive, không đưa lên Git công khai
+nop-bai/
+
+# Tài liệu chỉ để ở máy: báo cáo, minh chứng, thử nghiệm, kế hoạch, nhật ký quyết định
+docs/reports/
+docs/evidence/
+docs/spikes/
+spikes/
+docs/PLAN.md
+docs/PROJECT_SCOPE.md
+docs/DECISIONS.md
