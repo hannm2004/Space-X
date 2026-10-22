@@ -32,7 +32,7 @@ Người dùng phải hiểu và tự giải thích được mọi phần của 
 - **`main`** luôn chạy được và là nguồn để Render deploy. Không commit thẳng vào `main`, trừ commit khởi tạo.
 - Mỗi việc một nhánh `<loại>/<tên-ngắn>` (chữ thường, tiếng Anh không dấu, nối bằng gạch ngang): `feat/`, `fix/`, `docs/`, `test/`, `refactor/`, `ci/`, `chore/`. Ví dụ: `feat/backend-skeleton`, `feat/auth`, `fix/login-redirect`.
 - Commit nhỏ, tiêu đề kiểu Conventional Commits: `feat: ...`, `fix: ...`, `docs: ...`, `ci: ...`. Commit chỉ mang tên người dùng, không ghi AI làm đồng tác giả.
-- Xong nhánh: mở Pull Request vào `main` → chờ CI xanh → gộp → xóa nhánh.
+- Xong nhánh: mở Pull Request vào `main` → chờ CI xanh → gộp. **Giữ lại nhánh đã gộp** làm bằng chứng tiến trình, nhưng không commit thêm vào nó; việc mới thì `git switch main`, `git pull`, rồi tạo nhánh mới. Lỡ xóa thì khôi phục bằng nút **Restore branch** trên trang Pull Request, hoặc `git branch <tên> <mã commit>` rồi `git push origin <tên>`.
 - Cuối mỗi buổi làm: người dùng tự thêm một mục vào `current-state.md` (ngày, nhánh, đã làm, kiểm tra, lỗi và cách sửa, học được gì) và commit trên nhánh đang làm.
 - **Không dùng tag, không dùng nhánh `release/*`.** Báo cáo tuần ghi **mã commit** trên `main`.
 - **Không force push** (repo công khai).

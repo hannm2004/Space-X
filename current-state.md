@@ -52,7 +52,7 @@ Mẫu một mục:
   - Image là cái khuôn, container là bản đang chạy; volume giữ dữ liệu khi container bị xóa.
   - Trong healthcheck phải viết `$$` để Compose không tự thay biến, mà để container tự đọc.
   - MySQL chỉ đọc các biến `MYSQL_*` ở lần chạy đầu trên volume trống; đổi mật khẩu trong `.env` sau đó không có tác dụng nếu không xóa volume.
-  - Sau khi gộp PR thì xóa nhánh: commit đã nằm trong `main`, nhánh chỉ là cái nhãn.
+  - Sau khi gộp PR, nhánh chỉ là cái nhãn trỏ vào commit: xóa nhánh không mất commit, lỡ xóa thì khôi phục được bằng nút Restore branch. Quyết định giữ lại các nhánh đã gộp làm bằng chứng tiến trình.
 - **Tiếp theo:** khung backend Spring Boot.
 
 ## 2026-10-21 — Làm lại dự án từ đầu, chốt use case và ERD
