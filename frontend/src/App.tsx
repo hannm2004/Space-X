@@ -1,3 +1,4 @@
+import HealthStatus from './HealthStatus'
 import ThemeToggle from './ThemeToggle'
 
 function App() {
@@ -13,6 +14,19 @@ function App() {
         <p className="mt-3 text-slate-600 dark:text-slate-400">
           Bài học Tin học THPT bằng tiếng Việt, kèm chatbot và AI Agent trả lời có trích dẫn nguồn.
         </p>
+
+        <section
+          aria-labelledby="health-title"
+          className="mt-8 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
+        >
+          <h2
+            id="health-title"
+            className="text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400"
+          >
+            Trạng thái hệ thống
+          </h2>
+          <HealthStatus />
+        </section>
       </main>
     </div>
   )
