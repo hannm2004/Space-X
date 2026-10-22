@@ -16,6 +16,24 @@ Mẫu một mục:
 
 ---
 
+## 2026-10-22 — Deploy lần đầu lên Render, cập nhật README và danh mục test
+- **Nhánh:** `docs/week-2-status` (phần deploy là cấu hình trên trang Render, không có thay đổi mã)
+- **Đã làm:**
+  - Tạo Web Service mới trên Render từ repo `hannm2004/Space-X`: gói Free, khu vực Singapore, nhánh `main`, Dockerfile `./Dockerfile`. Sau đó đặt Health Check Path (lần deploy thứ hai có trigger "Health check path updated"). Auto-Deploy: [điền đúng tên tùy chọn đang chọn].
+  - Cập nhật `README.md` (trạng thái, địa chỉ Render, lộ trình, cách chạy ở máy) và `docs/TESTING.md` (4 test backend, 10 test frontend, nhãn `Tested` cho các dòng đã có test).
+- **Kiểm tra:** từ ngoài mạng, địa chỉ `https://space-x-47f1.onrender.com` (2026-10-22):
+  - `GET /api/health`: `200`, `Content-Type: application/json`, nội dung `{"status":"UP"}`.
+  - `GET /`: `200`, trang có chữ `Space-X`, có script chống nháy màu và `lang="vi"`.
+  - `POST /api/health`: `405`, đúng như test.
+  - Trang Deploys của Render: `Deploy succeeded | Live`, 31,2 giây, nguồn là commit `8bd1921` (gộp PR #6). Log: `Started SpacexApplication in 17.697 seconds`, `Tomcat started on port 10000` (Render cấp cổng qua biến `PORT`), `Adding welcome page: ... static/index.html`. Có thông báo gói Free sẽ tự ngủ, request đầu có thể chậm từ 50 giây.
+  - Chưa kiểm: RAM thật trên Render (tab Metrics); thời gian thức dậy khi ứng dụng đã ngủ; giá trị chính xác của Health Check Path (cần xác nhận là `/api/health`).
+- **Lỗi gặp và cách sửa:** service Render cũ gắn với repo đã xóa nên không dùng được; tạo service mới nên địa chỉ khác (`space-x-47f1`). Service cũ chưa xóa.
+- **Học được:**
+  - CD của dự án do Render đảm nhiệm: theo dõi repo và tự build bằng `Dockerfile` từ nhánh `main`; GitHub Actions chỉ lo CI.
+  - Gói Free tự ngủ khi lâu không có truy cập, nên lần mở đầu chậm.
+  - README và danh mục test phải cập nhật cùng lúc với mã, nếu không sẽ ghi sai trạng thái (README từng ghi "chưa có mã nguồn").
+- **Tiếp theo:** xem tab Metrics để ghi RAM thật và thử gọi lại sau khi ứng dụng ngủ để đo thời gian thức dậy; Tuần 3: database và Flyway, kết nối Aiven bằng biến môi trường.
+
 ## 2026-10-22 — CI trên GitHub Actions: build/test, quét bí mật, CodeQL
 - **Nhánh:** `ci/github-actions`
 - **Đã làm:**
@@ -24,7 +42,8 @@ Mẫu một mục:
 - **Kiểm tra:**
   - `actionlint` (chạy bằng Docker ở máy): không báo lỗi cú pháp.
   - `gitleaks` (chạy bằng Docker ở máy): quét 20 commit, không phát hiện bí mật.
-  - Chưa kiểm: các workflow chưa chạy trên GitHub. Chúng chạy lần đầu khi mở Pull Request này, kết quả sẽ ghi bổ sung sau.
+  - Trên GitHub, Pull Request #6 (commit `62fc2f8`): `CI`, `Security` và `CodeQL` đều `success` (đọc từ API công khai của GitHub; chưa xem chi tiết từng job).
+  - Sau khi gộp vào `main` (commit `8bd1921`): cả ba workflow `CI`, `Security`, `CodeQL` đều `success` (kiểm tra lại lúc 2026-10-22 10:01, lượt `CI` ban đầu còn đang chạy rồi đã xong).
 - **Lỗi gặp và cách sửa:** không có.
 - **Học được:**
   - CI chạy trên máy ảo Linux nên `mvnw` phải có quyền chạy (`100755` trong Git), đó là lý do trước đó phải sửa bằng `git update-index --chmod=+x`.
