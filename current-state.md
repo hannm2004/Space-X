@@ -16,6 +16,24 @@ Mẫu một mục:
 
 ---
 
+## 2026-10-22 — Khung frontend React, nút sáng/tối và hiện trạng thái hệ thống
+- **Nhánh:** `feat/frontend-skeleton`
+- **Đã làm:**
+  - Tạo dự án Vite + React + TypeScript (dùng Oxlint), thêm Tailwind CSS 4 và Vitest.
+  - Viết logic sáng/tối thành các hàm thuần trong `theme.ts` (viết test trước), thêm đoạn script trong `index.html` để trang không nháy màu khi tải, và component `ThemeToggle` lưu lựa chọn vào `localStorage` (có `try/catch` phòng trình duyệt chặn).
+  - Viết hàm `fetchHealth` (viết test trước) và component `HealthStatus` hiện 3 trạng thái: đang kiểm tra, bình thường, lỗi kèm nút "Thử lại". Thêm `proxy` trong `vite.config.ts` để khi chạy `npm run dev` thì `/api` được chuyển sang backend cổng 8080.
+- **Kiểm tra:**
+  - `npm test`: 10 test qua (6 test sáng/tối; 4 test gọi API: thành công, lỗi HTTP 503, JSON sai dạng, mất kết nối). Hai file test đều đã chạy đỏ trước khi viết code.
+  - `npm run lint`: không lỗi. `npm run build`: thành công.
+  - Chưa kiểm bằng trình duyệt thật cùng backend khi viết mục này; `ThemeToggle` và `HealthStatus` chưa có test tự động (cần thêm thư viện giả lập trình duyệt, sẽ xin duyệt trước khi thêm).
+- **Lỗi gặp và cách sửa:** nhánh này được tạo khi đang đứng ở nhánh `docs/keep-merged-branches` nên mang theo commit docs chưa gộp vào `main`. Cách xử lý: gộp Pull Request docs trước, rồi mới mở Pull Request của frontend để PR chỉ chứa commit của riêng nó.
+- **Học được:**
+  - `fetch` không ném lỗi khi server trả 503, phải tự kiểm tra `response.ok`.
+  - Dữ liệu từ mạng phải kiểm tra hình dạng (nhận là `unknown` rồi thu hẹp kiểu), không tin vô điều kiện.
+  - Muốn không nháy màu khi tải trang thì phải đặt class `dark` trước khi React chạy.
+  - Hàm thuần dễ test vì không phụ thuộc trình duyệt. Trước khi tạo nhánh mới phải `git switch main` và `git pull`, không tạo từ nhánh đang đứng.
+- **Tiếp theo:** mở Pull Request, rồi làm `feat/docker` (đóng frontend vào JAR, `Dockerfile` nhiều giai đoạn).
+
 ## 2026-10-21 — Khung backend Spring Boot và endpoint /api/health
 - **Nhánh:** `feat/backend-skeleton`
 - **Đã làm:**
