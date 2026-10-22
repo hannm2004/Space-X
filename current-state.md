@@ -16,6 +16,25 @@ Mẫu một mục:
 
 ---
 
+## 2026-10-22 — Dockerfile nhiều giai đoạn, đóng giao diện React vào JAR
+- **Nhánh:** `feat/docker`
+- **Đã làm:**
+  - Viết `Dockerfile` 3 giai đoạn: (1) Node 24 build giao diện ra `dist/`; (2) JDK 21 + Maven chép `dist/` vào `static/` rồi đóng JAR; (3) ảnh chạy chỉ có JRE, chạy bằng user thường `spacex`. JVM chạy với `MaxRAMPercentage=70`, `SerialGC`, `TieredStopAtLevel=1`; cổng lấy từ biến `PORT` (mặc định 8080).
+  - Viết `.dockerignore` chặn `.env`, `nop-bai`, `docs`, `spikes`, `.git`, `node_modules`, `target` khỏi ngữ cảnh build.
+- **Kiểm tra:**
+  - `docker build -t spacex:local .`: thành công.
+  - `docker run --memory=512m -p 8080:8080 spacex:local`: `GET /api/health` trả `200` và `{"status":"UP"}`; `GET /` trả `200`, trang có chữ `Space-X` và script chống nháy màu, cùng cổng 8080.
+  - `docker stats`: 92,44 MiB / 512 MiB; log `Started SpacexApplication in 3.81 seconds`. Container chỉ bị giới hạn bộ nhớ, không giới hạn CPU, nên chưa phản ánh Render Free.
+  - Mở `http://localhost:8080` bằng trình duyệt: nút sáng/tối đổi màu được.
+  - Chưa kiểm: tải lại trang giữ lựa chọn, không nháy màu, khối trạng thái hệ thống, độ tương phản bằng công cụ.
+- **Lỗi gặp và cách sửa:** `docker run --name spacex-test` báo trùng tên vì máy còn container cũ từ dự án trước. Không xóa container cũ mà chạy bằng tên khác (`spacex-dockercheck`).
+- **Học được:**
+  - Chia nhiều giai đoạn để ảnh cuối chỉ có JRE và JAR, không mang theo Node, Maven hay mã nguồn.
+  - Chép `pom.xml` và tải thư viện trước khi chép `src`, để sửa code không làm tải lại thư viện (tận dụng tầng cache của Docker).
+  - `.dockerignore` giữ `.env` ngoài ảnh Docker, nên mật khẩu không lọt vào ảnh.
+  - Spring Boot tự phục vụ file trong `static/` ở địa chỉ `/`, nên một ứng dụng phục vụ cả giao diện lẫn API.
+- **Tiếp theo:** mở Pull Request, rồi làm `ci/github-actions`.
+
 ## 2026-10-22 — Khung frontend React, nút sáng/tối và hiện trạng thái hệ thống
 - **Nhánh:** `feat/frontend-skeleton`
 - **Đã làm:**
