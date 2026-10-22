@@ -1,0 +1,12 @@
+# Không đưa vào ngữ cảnh build: bí mật, dữ liệu cá nhân, file sinh ra, tài liệu
+.git
+.env
+.env.*
+!.env.example
+nop-bai
+docs
+spikes
+**/node_modules
+**/dist
+**/target
+backend/src/main/resources/static
