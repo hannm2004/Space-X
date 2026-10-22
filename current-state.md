@@ -16,6 +16,22 @@ Mẫu một mục:
 
 ---
 
+## 2026-10-22 — CI trên GitHub Actions: build/test, quét bí mật, CodeQL
+- **Nhánh:** `ci/github-actions`
+- **Đã làm:**
+  - Đưa lại 3 workflow từ bản sao lưu, giữ nguyên nội dung (đã so hash): `ci.yml` (job `backend`: `mvnw test`; job `frontend`: `npm ci`, lint, test, build; job `docker`: build thử ảnh, chỉ chạy sau hai job kia), `security.yml` (gitleaks quét toàn bộ lịch sử Git, chạy thêm mỗi tuần), `codeql.yml` (phân tích Java và TypeScript, chạy thêm mỗi tuần) và `codeql/codeql-config.yml` (bỏ qua mã test).
+  - Viết lại mẫu Pull Request `.github/pull_request_template.md` cho khớp quy trình mới (nhắc ghi `current-state.md`, cập nhật `API.md`/`DATABASE_DESIGN.md`/`TESTING.md`).
+- **Kiểm tra:**
+  - `actionlint` (chạy bằng Docker ở máy): không báo lỗi cú pháp.
+  - `gitleaks` (chạy bằng Docker ở máy): quét 20 commit, không phát hiện bí mật.
+  - Chưa kiểm: các workflow chưa chạy trên GitHub. Chúng chạy lần đầu khi mở Pull Request này, kết quả sẽ ghi bổ sung sau.
+- **Lỗi gặp và cách sửa:** không có.
+- **Học được:**
+  - CI chạy trên máy ảo Linux nên `mvnw` phải có quyền chạy (`100755` trong Git), đó là lý do trước đó phải sửa bằng `git update-index --chmod=+x`.
+  - gitleaks quét cả lịch sử vì repo công khai: bí mật lỡ commit rồi thì xóa ở commit sau vẫn còn trong lịch sử.
+  - Job `docker` chạy sau `backend` và `frontend` (`needs`) để không tốn thời gian build ảnh khi test đã đỏ.
+- **Tiếp theo:** mở Pull Request, chờ cả ba workflow xanh rồi gộp; sau đó kết nối Render để deploy `/api/health`.
+
 ## 2026-10-22 — Dockerfile nhiều giai đoạn, đóng giao diện React vào JAR
 - **Nhánh:** `feat/docker`
 - **Đã làm:**

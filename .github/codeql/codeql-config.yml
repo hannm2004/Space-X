@@ -1,0 +1,8 @@
+name: Space-X CodeQL config
+
+# Không phân tích mã test: không được đóng gói chạy thật, và dữ liệu giả trong test
+# (mật khẩu mẫu, token mẫu) hay bị báo nhầm là "hard-code credential".
+paths-ignore:
+  - "backend/src/test/**"
+  - "frontend/src/**/*.test.ts"
+  - "frontend/src/**/*.test.tsx"

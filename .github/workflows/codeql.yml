@@ -1,0 +1,45 @@
+name: CodeQL
+
+# Phân tích tĩnh (SAST): tìm injection, path traversal, hard-code credential... trong chính mã nguồn.
+# Kết quả nằm ở GitHub -> Security -> Code scanning. Cần bật Code scanning trong Settings của repo.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 4 * * 1' # Thứ Hai 04:00 UTC; bộ luật CodeQL được cập nhật liên tục
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      security-events: write # đẩy kết quả lên tab Security
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [java-kotlin, javascript-typescript]
+    steps:
+      - uses: actions/checkout@v4
+      # build-mode: none = đọc mã nguồn, không biên dịch: nhanh và không cần cấu hình build.
+      # File config chỉ có tác dụng khi build-mode còn là none.
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          config-file: .github/codeql/codeql-config.yml
+      # Giữ nguyên `category`; đổi nó thì cảnh báo cũ bị tính là cảnh báo mới.
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}
