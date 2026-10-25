@@ -13,7 +13,13 @@ Trạng thái: **thiết kế, chưa có mã nguồn** (cập nhật 2026-10-21)
 - **CSRF:** mọi yêu cầu `POST`/`PUT`/`PATCH`/`DELETE` phải gửi header `X-XSRF-TOKEN` lấy từ cookie `XSRF-TOKEN`; thiếu hoặc sai thì trả `403`.
 - **Người dùng hiện tại** luôn lấy từ session. API không nhận `userId` gửi lên từ trình duyệt.
 - **Phân trang:** `?page=0&size=20` (`size` tối đa 50). Trả `{ items, page, size, totalItems }`.
-- **Lỗi:** định dạng `application/problem+json` (RFC 9457), không trả stack trace: `{ "type", "title", "status", "detail" }`.
+- **Lỗi:** định dạng `application/problem+json` (RFC 9457), không trả stack trace: `{ "type", "title", "status", "detail" }` (`Implemented` và `Tested` từ 2026-10-25, lớp `GlobalExceptionHandler`). Ví dụ lỗi không lường trước:
+
+```json
+{ "type": "about:blank", "title": "Internal Server Error", "status": 500, "detail": "Có lỗi xảy ra phía máy chủ. Vui lòng thử lại sau." }
+```
+
+Chi tiết kỹ thuật của lỗi 500 (tên exception, stack trace) chỉ ghi vào log ở server.
 
 | Mã | Ý nghĩa |
 |---|---|
@@ -22,9 +28,11 @@ Trạng thái: **thiết kế, chưa có mã nguồn** (cập nhật 2026-10-21)
 | 403 | Không đủ quyền, thiếu CSRF token, hoặc tài khoản bị khóa |
 | 404 | Không tìm thấy (kể cả bài Nháp khi người gọi là Học sinh) |
 | 409 | Xung đột: email/slug đã tồn tại, xóa khóa còn bài, khóa Admin cuối cùng |
+| 405 | Sai method (ví dụ `POST /api/health`) |
 | 413 | Ảnh vượt quá 1 MB |
 | 415 | Loại file ảnh không được hỗ trợ |
 | 429 | Gọi chatbot/Agent quá nhiều |
+| 500 | Lỗi không lường trước ở máy chủ (không lộ chi tiết) |
 | 502 / 504 | Nhà cung cấp AI lỗi / quá thời gian |
 
 ## Tài khoản

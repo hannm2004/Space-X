@@ -1,12 +1,12 @@
 # Danh mục test của Space-X
 
-Cập nhật: 2026-10-22 (đếm bằng lệnh ở mục "Cách đếm lại"). Mỗi khi thêm, xóa hoặc đổi tên test, cập nhật file này trong cùng nhánh. Số liệu phải đếm bằng lệnh, không cộng nhẩm.
+Cập nhật: 2026-10-25 (đếm bằng lệnh ở mục "Cách đếm lại"). Mỗi khi thêm, xóa hoặc đổi tên test, cập nhật file này trong cùng nhánh. Số liệu phải đếm bằng lệnh, không cộng nhẩm.
 
 ## Tổng quan
 
 | | Số test | Số lớp/file | Cần Docker? |
 |---|---|---|---|
-| Backend (JUnit 5 + Spring Test) | 4 | 2 lớp | Không |
+| Backend (JUnit 5 + Spring Test) | 7 | 3 lớp | Không |
 | Frontend (Vitest) | 10 | 2 file | Không |
 | Test tích hợp với MySQL thật | 0 | – | Có |
 
@@ -30,7 +30,7 @@ Mỗi dòng phải có test thật trước khi tuần đó được coi là xon
 | `/api/health` chỉ cho phép `GET` (`POST` bị từ chối 405) | Slice | 2 | Tested |
 | Sáng/tối: ưu tiên lựa chọn đã lưu, lần đầu theo hệ điều hành, bỏ qua giá trị lưu sai | Unit (frontend) | 2 | Tested (logic); nút bấm và script chống nháy màu chỉ kiểm bằng mắt |
 | Gọi `/api/health` ở frontend: thành công, lỗi HTTP, JSON sai dạng, mất kết nối | Unit (frontend) | 2 | Tested (`fetchHealth`); component `HealthStatus` chưa có test |
-| Lỗi trả `problem+json`, không lộ stack trace | Slice | 3 | Planned |
+| Lỗi trả `problem+json`: 404, 405 và lỗi bất ngờ (500) không lộ stack trace hay nội dung exception | Slice | 3 | Tested |
 | Flyway tạo đúng schema trên MySQL thật | Integration | 3 | Planned |
 | Đăng ký: email trùng → 409; dữ liệu sai → 400; mật khẩu được băm, không lưu rõ | Slice + Unit | 4 | Planned |
 | Đăng nhập: sai mật khẩu → 401; tài khoản bị khóa → 403 | Integration | 4 | Planned |
