@@ -16,10 +16,26 @@ Mẫu một mục:
 
 ---
 
+## 2026-10-25 — Đóng checkpoint Tuần 2
+- **Nhánh:** không mở nhánh riêng; mục này commit cùng nhánh đầu tiên của Tuần 3 (`feat/error-handling`).
+- **Đã làm:**
+  - Xác nhận cấu hình Render của service `space-x-47f1`: Health Check Path là `/api/health`; Auto-Deploy là `After CI Checks Pass` (Render chỉ deploy khi CI trên `main` xanh).
+  - Xóa service Render cũ gắn với repo đã xóa.
+  - Chốt cho Tuần 3: truy cập database bằng Spring Data JPA (`ddl-auto=validate`, chỉ Flyway tạo schema); integration test dùng Testcontainers với MySQL 8.4 thật.
+- **Kiểm tra:**
+  - `curl.exe` gọi `GET https://space-x-47f1.onrender.com/api/health` lúc ứng dụng đang ngủ (2026-10-25 17:49): `200`, mất 33,5 giây. Gọi ngay lần nữa: `200`, 0,19 giây. Mới đo 1 lần.
+  - Workflow `CI`, `Security`, `CodeQL` trên `main` (commit `ce50226`) đều `success`.
+  - RAM thật trên Render: **không xem được**. Tab Metrics của gói Free chỉ hiện lưu lượng mạng; Memory/CPU chỉ mở cho gói trả phí. Số RAM tham chiếu vẫn là số đo ở máy với giới hạn 512 MB.
+- **Lỗi gặp và cách sửa:** suýt ghi nhầm "0 MB" ở tab Metrics là RAM; thực ra đó là lưu lượng mạng.
+- **Học được:**
+  - Gói Free ngủ khi không có truy cập; request đầu tiên phải chờ ứng dụng khởi động lại (~30 giây), nên trước khi demo phải mở trang trước vài phút.
+  - `After CI Checks Pass` nối CI với CD: commit làm đỏ CI sẽ không lên production.
+- **Tiếp theo:** Tuần 3, nhánh `feat/error-handling` (lỗi trả `problem+json`). Còn mở: test component `HealthStatus` (cần thêm Testing Library + jsdom, chưa quyết thêm ngay hay để Tuần 4–5).
+
 ## 2026-10-22 — Deploy lần đầu lên Render, cập nhật README và danh mục test
 - **Nhánh:** `docs/week-2-status` (phần deploy là cấu hình trên trang Render, không có thay đổi mã)
 - **Đã làm:**
-  - Tạo Web Service mới trên Render từ repo `hannm2004/Space-X`: gói Free, khu vực Singapore, nhánh `main`, Dockerfile `./Dockerfile`. Sau đó đặt Health Check Path (lần deploy thứ hai có trigger "Health check path updated"). Auto-Deploy: [điền đúng tên tùy chọn đang chọn].
+  - Tạo Web Service mới trên Render từ repo `hannm2004/Space-X`: gói Free, khu vực Singapore, nhánh `main`, Dockerfile `./Dockerfile`. Sau đó đặt Health Check Path (lần deploy thứ hai có trigger "Health check path updated"). Auto-Deploy: `After CI Checks Pass` (xác nhận lại ngày 2026-10-25).
   - Cập nhật `README.md` (trạng thái, địa chỉ Render, lộ trình, cách chạy ở máy) và `docs/TESTING.md` (4 test backend, 10 test frontend, nhãn `Tested` cho các dòng đã có test).
 - **Kiểm tra:** từ ngoài mạng, địa chỉ `https://space-x-47f1.onrender.com` (2026-10-22):
   - `GET /api/health`: `200`, `Content-Type: application/json`, nội dung `{"status":"UP"}`.
