@@ -16,6 +16,27 @@ Mẫu một mục:
 
 ---
 
+## 2026-10-25 — Xử lý lỗi thống nhất bằng ProblemDetail
+- **Nhánh:** `feat/error-handling` (Pull Request #8, chưa gộp khi viết mục này)
+- **Đã làm:**
+  - Viết 3 test trước trong `GlobalExceptionHandlerTest` (`@WebMvcTest`): đường dẫn không tồn tại → 404, sai method → 405, lỗi bất ngờ → 500; cả ba phải trả `application/problem+json`. Test thứ ba dùng một controller giả nằm trong file test (nạp bằng `@Import`) để ném `RuntimeException("mat-khau-bi-mat")`, rồi kiểm tra body không chứa nội dung exception và không có trường `trace`.
+  - Viết `GlobalExceptionHandler` (`@RestControllerAdvice`, kế thừa `ResponseEntityExceptionHandler`): lớp cha lo các lỗi của framework (404, 405...), thêm một `@ExceptionHandler(Exception.class)` trả 500 với câu chung chung, còn chi tiết và stack trace chỉ ghi vào log ở server.
+  - Cập nhật `docs/API.md` (ví dụ JSON lỗi, thêm mã 405 và 500) và `docs/TESTING.md` (dòng lỗi `problem+json` sang `Tested`; backend 4 → 7 test, 2 → 3 lớp).
+  - Ba commit theo thứ tự: `test` → `feat` → `docs` (`917e752`, `b5125e4`, `1714636`).
+- **Kiểm tra:**
+  - Sau khi viết test, `.\mvnw test`: `Tests run: 7, Failures: 2, Errors: 1`. Hai test 404/405 fail vì `Content type not set`; test 500 báo error vì `ServletException ... mat-khau-bi-mat` văng thẳng ra ngoài. Bốn test cũ vẫn qua.
+  - Sau khi thêm handler, `.\mvnw test`: `Tests run: 7, Failures: 0, Errors: 0`, `BUILD SUCCESS`. Log của server có dòng `ERROR ... Loi khong xu ly duoc tai GET /test/loi-bat-ngo` đúng như thiết kế.
+  - Đếm test bằng lệnh: 7 test, 3 file test.
+  - Trên GitHub, Pull Request #8 (commit `1714636`): `CI`, `Security`, `CodeQL` đều `success` (đọc từ API công khai của GitHub).
+  - **Chưa kiểm:** chưa chạy server thật rồi gọi bằng `curl`; chưa kiểm trên Render sau khi gộp. Mới kiểm bằng `MockMvc`.
+- **Lỗi gặp và cách sửa:** không có lỗi ngoài ý muốn. Ba lỗi ở bước đỏ là chủ đích của TDD, để chắc test thật sự bắt được lỗi trước khi viết code.
+- **Học được:**
+  - `ProblemDetail` là lớp có sẵn của Spring cho chuẩn RFC 9457; trả `ProblemDetail` thì Spring tự đặt `Content-Type: application/problem+json`.
+  - Khi nhiều `@ExceptionHandler` cùng khớp, Spring chọn handler cụ thể nhất; nên lỗi 404/405 do lớp cha xử lý, chỉ lỗi lạ mới rơi vào handler `Exception`.
+  - Bắt `Exception` không phải "nuốt lỗi" nếu lỗi vẫn được ghi log đầy đủ và trả mã 500. Không đưa `ex.getMessage()` vào phản hồi vì có thể lộ thông tin nội bộ.
+  - Handler `Exception` sẽ bắt cả `AccessDeniedException` ném từ trong controller và đổi thành 500 thay vì 403; ở Tuần 4 phải thêm handler riêng cho lỗi phân quyền.
+- **Tiếp theo:** gộp Pull Request #8, rồi gọi `curl.exe -i https://space-x-47f1.onrender.com/api/khong-ton-tai` sau khi Render deploy xong để kiểm bản thật; sau đó làm `feat/database-flyway` (Spring Data JPA, Flyway, Testcontainers).
+
 ## 2026-10-25 — Đóng checkpoint Tuần 2
 - **Nhánh:** không mở nhánh riêng; mục này commit cùng nhánh đầu tiên của Tuần 3 (`feat/error-handling`).
 - **Đã làm:**
