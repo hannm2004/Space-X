@@ -1,6 +1,6 @@
 # Thiết kế cơ sở dữ liệu Space-X
 
-Trạng thái: **thiết kế, chưa có migration** (cập nhật 2026-10-21). Schema thật sẽ tạo bằng Flyway; khi viết hoặc sửa migration phải cập nhật file này trong cùng nhánh.
+Trạng thái: **đã có migration `V1__create_tables.sql` (6 bảng), đã kiểm trên MySQL 8.4 bằng Testcontainers; chưa chạy trên Aiven** (cập nhật 2026-10-30). Schema thật tạo bằng Flyway; khi viết hoặc sửa migration phải cập nhật file này trong cùng nhánh.
 Hệ quản trị: MySQL 8.4, `utf8mb4`, collation `utf8mb4_0900_ai_ci` (so sánh không phân biệt hoa/thường và dấu).
 
 ## 1. Sơ đồ ERD
@@ -138,10 +138,19 @@ Bảng lưu session (nếu dùng Spring Session JDBC) và bảng lịch sử mig
 4. **Trích dẫn** gồm: tiêu đề bài, slug của bài, `heading` và `knowledge_chunks.id`, để người dùng mở đúng bài và đúng mục.
 5. Bài chuyển về `DRAFT` hoặc bị xóa thì các đoạn tương ứng biến mất khỏi chỉ mục.
 
+## 6b. Ghi chú về migration V1
+
+- Thời gian dùng `DATETIME(6)` (độ chính xác micro giây); `updated_at` tự cập nhật bằng `ON UPDATE`.
+- Mỗi bảng đặt rõ `utf8mb4` + `utf8mb4_0900_ai_ci`, không phụ thuộc cấu hình mặc định của máy chủ (Aiven, Docker, CI cùng một kết quả).
+- `users.email` so sánh không phân biệt hoa/thường nhờ collation `_ai_ci`: `A@x.com` và `a@x.com` là một.
+- `knowledge_chunks.heading` là `NOT NULL`: đoạn không có tiêu đề mục (phần mở đầu bài) sẽ dùng tiêu đề bài khi chia đoạn ở Tuần 7.
+- Chưa có bảng session của Spring Session JDBC: sẽ thêm bằng `V2` ở việc 3.6.
+- Số lượng ảnh, loại ảnh, dung lượng 1 MB chưa có ràng buộc ở database (kiểm ở backend theo nội dung file, như đã thiết kế).
+
 ## 7. Quyết định để lại cho các tuần sau
 
 | Vấn đề | Lựa chọn | Chốt ở |
 |---|---|---|
-| Lưu session ở đâu | (a) bộ nhớ: mất hết khi Render cho ứng dụng ngủ, người dùng bị đăng xuất; (b) Spring Session JDBC lưu vào MySQL. **Nghiêng về (b)** | Tuần 4 |
-| Nội dung Markdown có chứa HTML không | Không cho HTML thô để tránh XSS; frontend chỉ render Markdown đã lọc | Tuần 5 |
-| Dung lượng | Aiven free có 1 GB đĩa; ảnh giới hạn 1 MB mỗi ảnh, theo dõi tổng dung lượng | Tuần 5 |
+| Lưu session ở đâu | (a) bộ nhớ: mất hết khi Render cho ứng dụng ngủ, người dùng bị đăng xuất; (b) Spring Session JDBC lưu vào MySQL. **Nghiêng về (b)** | Tuần 3 (sau D22) |
+| Nội dung Markdown có chứa HTML không | Không cho HTML thô để tránh XSS; frontend chỉ render Markdown đã lọc | Tuần 4 |
+| Dung lượng | Aiven free có 1 GB đĩa; ảnh giới hạn 1 MB mỗi ảnh, theo dõi tổng dung lượng | Tuần 4 |

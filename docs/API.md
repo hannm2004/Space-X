@@ -136,5 +136,5 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 
 ## Ghi chú
 
-- Giới hạn tần suất gọi chatbot/Agent (số yêu cầu mỗi phút mỗi người dùng) sẽ chốt ở Tuần 8 sau khi biết hạn mức thật của nhà cung cấp AI.
+- Giới hạn tần suất gọi chatbot/Agent (số yêu cầu mỗi phút mỗi người dùng) sẽ chốt ở Tuần 7 sau khi biết hạn mức thật của nhà cung cấp AI.
 - Danh sách này cập nhật cùng nhánh khi cài đặt từng endpoint.
