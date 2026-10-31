@@ -2,7 +2,7 @@
 
 Website học **Tin học lớp 10, 11, 12** (Chương trình GDPT 2018) bằng tiếng Việt cho học sinh THPT: học theo khóa và bài, lưu tiến độ học, chatbot trả lời có trích dẫn bài học, AI Agent gợi ý bài nên đọc.
 
-> **Trạng thái (2026-10-22):** đã xong khung ứng dụng (Spring Boot + React đóng chung một ứng dụng), CI và deploy lần đầu lên Render: https://space-x-47f1.onrender.com (kiểm tra ngày 2026-10-22: `GET /api/health` trả `{"status":"UP"}`, HTTP 200). Gói Free tự ngủ khi lâu không có truy cập nên lần mở đầu có thể chậm 1–2 phút. **Chưa có** đăng nhập, bài học, chatbot, AI Agent. Tiến trình từng buổi làm việc: [current-state.md](current-state.md).
+> **Trạng thái (2026-10-31):** đã xong khung ứng dụng (Spring Boot + React đóng chung một ứng dụng), CI, xử lý lỗi thống nhất, database MySQL (Flyway `V1`, 6 bảng) và deploy lên Render: https://space-x-47f1.onrender.com (kiểm tra ngày 2026-10-31: ứng dụng kết nối được database trên Aiven, `GET /api/health` trả `{"status":"UP"}`, HTTP 200). Gói Free tự ngủ khi lâu không có truy cập nên lần mở đầu có thể chậm 1–2 phút. **Chưa có** đăng nhập, bài học, chatbot, AI Agent. Tiến trình từng buổi làm việc: [current-state.md](current-state.md).
 
 ## Tính năng
 
