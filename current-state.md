@@ -16,6 +16,58 @@ Mẫu một mục:
 
 ---
 
+## 2026-10-31 — Database: Flyway, JPA, Testcontainers và kết nối Aiven trên Render
+- **Nhánh:** `feat/database-flyway` (Pull Request #9, gộp vào `main` ở commit `ef90f75`)
+- **Đã làm:**
+  - Viết migration `V1__create_tables.sql` tạo 6 bảng đúng `docs/DATABASE_DESIGN.md`: khóa ngoại `RESTRICT` và `CASCADE`, `UNIQUE` (email, slug, cặp người dùng–bài), `FULLTEXT` cho `knowledge_chunks`.
+  - Viết 6 test tích hợp chạy trên MySQL 8.4 thật bằng Testcontainers: 5 test trong `FlywayMigrationIntegrationTest` (đủ 6 bảng, email không trùng kể cả khác hoa/thường, không xóa khóa còn bài, xóa bài thì xóa ảnh/tiến độ/đoạn tri thức, mỗi học sinh một dòng tiến độ mỗi bài) và `contextLoads` chuyển thành `SpacexApplicationIntegrationTest`.
+  - Thêm `spring-boot-starter-data-jpa`, `spring-boot-starter-flyway`, `flyway-mysql`, `mysql-connector-j`; cấu hình datasource bằng biến `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` (ở máy đọc từ `.env` qua `spring.config.import`), `ddl-auto=validate`, `open-in-view=false`.
+  - Chạy `V1` lên Aiven MySQL, đặt 3 biến `DB_*` trên Render, deploy.
+- **Kiểm tra:**
+  - Test: viết test trước, `.\mvnw test -Dtest=FlywayMigrationIntegrationTest` đỏ (`No migrations found`; 1 failure, 4 errors `Table 'test.users' doesn't exist`); sau khi thêm `V1` và cấu hình, `.\mvnw test`: `Tests run: 12, Failures: 0, Errors: 0` (6 test không cần Docker, 6 test tích hợp), `BUILD SUCCESS`.
+  - Chạy ở máy với MySQL của docker compose: log `Successfully applied 1 migration`, DBeaver thấy 7 bảng (6 bảng ứng dụng và `flyway_schema_history`); chạy lần hai báo `Schema ... is up to date. No migration necessary`.
+  - Aiven (truy vấn trực tiếp bằng client MySQL): 7 bảng, `flyway_schema_history` có 1 dòng `success = 1`, MySQL 8.4.11.
+  - CI trên Pull Request #9 (commit `6b0aa25`): `CI`, `Security`, `CodeQL` đều `success`, tức 6 test tích hợp chạy được trên Ubuntu của GitHub.
+  - Render (2026-10-31): deploy thủ công `ef90f75` hiện `Live`, 1 phút 21 giây. Log: kết nối Aiven (MySQL 8.4.11, driver MySQL Connector/J), `Initialized JPA EntityManagerFactory`, `Tomcat started on port 10000`, `Started SpacexApplication in 43.301 seconds`. `curl.exe -i https://space-x-47f1.onrender.com/api/health`: `200`, `{"status":"UP"}`.
+  - Thời gian khởi động trên Render tăng từ 17,9 giây (bản chưa có database, ghi ở D8) lên 43,3 giây (có JPA, Flyway và kết nối Aiven).
+  - **Chưa kiểm:** thời gian thức dậy khi ứng dụng ngủ sau khi có JPA (trước đó 33,5 giây); RAM thật trên Render (gói Free không xem được); ứng dụng phản ứng thế nào khi Aiven bị tắt lâu hơn.
+- **Lỗi gặp và cách sửa:**
+  - Lần chạy Testcontainers đầu tiên báo `Could not find a valid Docker environment` dù `docker version` bình thường; chạy lại ngay thì ổn, chưa rõ nguyên nhân.
+  - Comment trong `application.properties` ghi sai là thiếu biến sẽ báo tên biến. Thực tế Spring giữ nguyên chuỗi `${DB_URL}` và báo `'url' must start with "jdbc"`. Đã sửa comment.
+  - `Access denied for user` khi chạy ở máy: `.env` có `MYSQL_USER=spacex_app` nhưng `DB_USERNAME` còn là giá trị mẫu `spacex`. Sửa `DB_USERNAME` cho trùng `MYSQL_USER`, và bổ sung ghi chú trong `.env.example` và `README.md`.
+  - Aiven gói free đã bị tắt (*powered off*) khi thử kết nối; bật lại thủ công. Tài liệu Aiven không nói ngưỡng thời gian không hoạt động, nên ghi nhận như rủi ro trong D8.
+  - Gộp Pull Request #9 **trước khi** đặt biến `DB_*` trên Render nên deploy tự động thất bại (`'url' must start with "jdbc"`). Render vẫn giữ bản cũ `64814bf` chạy bình thường (`/api/health` trả `200`). Sau khi đặt biến và bấm Manual Deploy thì `Live`.
+  - Mục nhật ký "Xử lý lỗi thống nhất" (commit `6ce39ea`) nằm trên nhánh `feat/error-handling` nhưng không vào `main`, vì Pull Request #8 được gộp trước khi commit đó được đẩy lên. Đã lấy lại mục đó vào nhánh này.
+- **Học được:**
+  - File migration đã áp dụng thì không sửa (Flyway so checksum); muốn đổi schema phải viết `V2`. Starter Flyway tự chạy migration khi ứng dụng khởi động.
+  - `ddl-auto=validate`: Hibernate chỉ kiểm tra Entity khớp bảng, chỉ Flyway được tạo/sửa schema.
+  - `@DynamicPropertySource` được ưu tiên hơn `application.properties`, nên test trỏ vào MySQL của Testcontainers mà không cần biến thật.
+  - Auto-Deploy nghĩa là gộp Pull Request là deploy ngay, nên phải đặt biến môi trường trước khi gộp. Khi deploy lỗi, Render giữ bản cũ đang chạy.
+  - Phải đẩy hết commit lên nhánh rồi mới gộp Pull Request; commit đẩy sau khi gộp sẽ không vào `main`.
+  - Nhập mật khẩu bằng `Read-Host -AsSecureString` và dán vào ô nhập ẩn; chữ trong ngoặc kép của `Read-Host` chỉ là lời nhắc, không phải chỗ nhập.
+- **Tiếp theo:** 3.4 đăng ký và đăng nhập (nhánh `feat/auth`): bắt đầu từ kế hoạch và test trước.
+
+## 2026-10-25 — Xử lý lỗi thống nhất bằng ProblemDetail
+- **Nhánh:** `feat/error-handling` (Pull Request #8, chưa gộp khi viết mục này)
+- **Đã làm:**
+  - Viết 3 test trước trong `GlobalExceptionHandlerTest` (`@WebMvcTest`): đường dẫn không tồn tại → 404, sai method → 405, lỗi bất ngờ → 500; cả ba phải trả `application/problem+json`. Test thứ ba dùng một controller giả nằm trong file test (nạp bằng `@Import`) để ném `RuntimeException("mat-khau-bi-mat")`, rồi kiểm tra body không chứa nội dung exception và không có trường `trace`.
+  - Viết `GlobalExceptionHandler` (`@RestControllerAdvice`, kế thừa `ResponseEntityExceptionHandler`): lớp cha lo các lỗi của framework (404, 405...), thêm một `@ExceptionHandler(Exception.class)` trả 500 với câu chung chung, còn chi tiết và stack trace chỉ ghi vào log ở server.
+  - Cập nhật `docs/API.md` (ví dụ JSON lỗi, thêm mã 405 và 500) và `docs/TESTING.md` (dòng lỗi `problem+json` sang `Tested`; backend 4 → 7 test, 2 → 3 lớp).
+  - Ba commit theo thứ tự: `test` → `feat` → `docs` (`917e752`, `b5125e4`, `1714636`).
+- **Kiểm tra:**
+  - Sau khi viết test, `.\mvnw test`: `Tests run: 7, Failures: 2, Errors: 1`. Hai test 404/405 fail vì `Content type not set`; test 500 báo error vì `ServletException ... mat-khau-bi-mat` văng thẳng ra ngoài. Bốn test cũ vẫn qua.
+  - Sau khi thêm handler, `.\mvnw test`: `Tests run: 7, Failures: 0, Errors: 0`, `BUILD SUCCESS`. Log của server có dòng `ERROR ... Loi khong xu ly duoc tai GET /test/loi-bat-ngo` đúng như thiết kế.
+  - Đếm test bằng lệnh: 7 test, 3 file test.
+  - Trên GitHub, Pull Request #8 (commit `1714636`): `CI`, `Security`, `CodeQL` đều `success` (đọc từ API công khai của GitHub).
+  - **Chưa kiểm:** chưa chạy server thật rồi gọi bằng `curl`; chưa kiểm trên Render sau khi gộp. Mới kiểm bằng `MockMvc`.
+- **Lỗi gặp và cách sửa:** không có lỗi ngoài ý muốn. Ba lỗi ở bước đỏ là chủ đích của TDD, để chắc test thật sự bắt được lỗi trước khi viết code.
+- **Học được:**
+  - `ProblemDetail` là lớp có sẵn của Spring cho chuẩn RFC 9457; trả `ProblemDetail` thì Spring tự đặt `Content-Type: application/problem+json`.
+  - Khi nhiều `@ExceptionHandler` cùng khớp, Spring chọn handler cụ thể nhất; nên lỗi 404/405 do lớp cha xử lý, chỉ lỗi lạ mới rơi vào handler `Exception`.
+  - Bắt `Exception` không phải "nuốt lỗi" nếu lỗi vẫn được ghi log đầy đủ và trả mã 500. Không đưa `ex.getMessage()` vào phản hồi vì có thể lộ thông tin nội bộ.
+  - Handler `Exception` sẽ bắt cả `AccessDeniedException` ném từ trong controller và đổi thành 500 thay vì 403; ở Tuần 4 phải thêm handler riêng cho lỗi phân quyền.
+- **Tiếp theo:** gộp Pull Request #8, rồi gọi `curl.exe -i https://space-x-47f1.onrender.com/api/khong-ton-tai` sau khi Render deploy xong để kiểm bản thật; sau đó làm `feat/database-flyway` (Spring Data JPA, Flyway, Testcontainers).
+
 ## 2026-10-25 — Đóng checkpoint Tuần 2
 - **Nhánh:** không mở nhánh riêng; mục này commit cùng nhánh đầu tiên của Tuần 3 (`feat/error-handling`).
 - **Đã làm:**
