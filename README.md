@@ -25,7 +25,7 @@ Nhãn trạng thái: `Planned` / `In progress` / `Implemented` / `Tested` / `Dep
 | | Dựng lại chỉ mục tìm kiếm | Admin | Planned |
 | Hệ thống | Kiểm tra sống `GET /api/health`, hiện trạng thái trên trang chủ | Mọi người | Deployed (Render) |
 
-Ngoài phạm vi bản đầu: đăng nhập Facebook (làm sau nếu còn thời gian), quiz, lưu lịch sử chat, quên mật khẩu qua email (Render Free chặn cổng gửi mail; thay bằng Admin đặt lại mật khẩu).
+Ngoài phạm vi bản đầu: đăng nhập Facebook và thanh toán gói Premium mở thêm lượt hỏi AI (làm sau nếu còn thời gian; thanh toán chỉ ở môi trường thử, không thu tiền thật), quiz, lưu lịch sử chat, quên mật khẩu qua email (Render Free chặn cổng gửi mail; thay bằng Admin đặt lại mật khẩu).
 
 ## Công nghệ
 
@@ -37,21 +37,20 @@ Ngoài phạm vi bản đầu: đăng nhập Facebook (làm sau nếu còn thờ
 | AI | Gemini API (tool calling); tìm kiếm bằng MySQL FULLTEXT |
 | Triển khai | Docker, Render, GitHub Actions (build/test, gitleaks, CodeQL) |
 
-## Lộ trình 12 tuần
+## Lộ trình 11 tuần
 
 | Tuần | Nội dung | Trạng thái |
 |---|---|---|
 | 1 | Use case, ERD, danh sách API; MySQL bằng Docker | Done |
 | 2 | Khung Spring Boot + React, nút sáng/tối, Dockerfile, CI, deploy `/api/health` | Done |
-| 3 | Database + Flyway, xử lý lỗi thống nhất, test tích hợp | Planned |
-| 4 | Tài khoản: đăng ký, đăng nhập, đăng xuất, phân quyền, thông tin cá nhân, đổi mật khẩu | Planned |
-| 5 | Khóa học, bài học, Admin quản lý bài và ảnh | Planned |
-| 6 | Tìm kiếm, tiến độ học tập, quản lý người dùng | Planned |
-| 7 | Admin Dashboard, đăng nhập Google, hoàn thiện giao diện; deploy bản chưa có AI | Planned |
-| 8 | Chia đoạn, truy xuất, chatbot RAG | Planned |
-| 9 | AI Agent, giới hạn vòng gọi, test prompt injection | Planned |
-| 10 | Test toàn luồng, rà soát bảo mật, sửa lỗi; ngừng thêm tính năng | Planned |
-| 11–12 | Hoàn thiện tài liệu, deploy bản cuối, tổng duyệt demo | Planned |
+| 3 | Database + Flyway, xử lý lỗi thống nhất, test tích hợp; tài khoản (đăng ký, đăng nhập, đăng xuất), phân quyền, thông tin cá nhân, đổi mật khẩu (gộp Tuần 3 + 4) | In progress |
+| 4 | Khóa học, bài học, Admin quản lý bài và ảnh | Planned |
+| 5 | Tìm kiếm, tiến độ học tập, quản lý người dùng | Planned |
+| 6 | Admin Dashboard, đăng nhập Google, hoàn thiện giao diện; deploy bản chưa có AI | Planned |
+| 7 | Chia đoạn, truy xuất, chatbot RAG | Planned |
+| 8 | AI Agent, giới hạn vòng gọi, test prompt injection | Planned |
+| 9 | Test toàn luồng, rà soát bảo mật, sửa lỗi; ngừng thêm tính năng | Planned |
+| 10–11 | Hoàn thiện tài liệu, deploy bản cuối, tổng duyệt demo | Planned |
 
 ## Quy trình phát triển
 
@@ -65,6 +64,8 @@ Yêu cầu: Docker Desktop, Java 21, Node 24. Dùng PowerShell, đứng ở thư
 
 ```powershell
 # Backend: chạy test, rồi chạy ứng dụng (cổng 8080)
+# Từ Tuần 3 ứng dụng cần MySQL đang chạy và file .env có DB_URL, DB_USERNAME, DB_PASSWORD (xem mục MySQL bên dưới).
+# Test tích hợp tự bật MySQL bằng Testcontainers, nên chỉ cần Docker Desktop đang chạy.
 cd backend
 .\mvnw test
 .\mvnw spring-boot:run          # kiểm tra: http://localhost:8080/api/health -> {"status":"UP"}
@@ -76,11 +77,12 @@ npm run dev
 npm test ; npm run lint ; npm run build
 
 # Chạy bản đóng gói như trên Render (giao diện + API cùng cổng 8080)
+# Từ Tuần 3 container cũng cần các biến DB_*; cách trỏ container tới MySQL ở máy chưa được kiểm lại.
 docker build -t spacex:local .
 docker run --rm -p 8080:8080 --memory=512m spacex:local
 
-# MySQL ở máy (chưa dùng trong ứng dụng; sẽ dùng từ Tuần 3)
-Copy-Item .env.example .env     # rồi mở .env, đặt mật khẩu của bạn
+# MySQL ở máy (backend dùng từ Tuần 3)
+Copy-Item .env.example .env     # rồi mở .env, đặt mật khẩu của bạn; DB_USERNAME, DB_PASSWORD phải trùng MYSQL_USER, MYSQL_PASSWORD
 docker compose up -d
 docker compose ps               # chờ cột STATUS có "(healthy)"
 ```
