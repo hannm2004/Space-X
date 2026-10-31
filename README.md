@@ -64,6 +64,8 @@ Yêu cầu: Docker Desktop, Java 21, Node 24. Dùng PowerShell, đứng ở thư
 
 ```powershell
 # Backend: chạy test, rồi chạy ứng dụng (cổng 8080)
+# Từ Tuần 3 ứng dụng cần MySQL đang chạy và file .env có DB_URL, DB_USERNAME, DB_PASSWORD (xem mục MySQL bên dưới).
+# Test tích hợp tự bật MySQL bằng Testcontainers, nên chỉ cần Docker Desktop đang chạy.
 cd backend
 .\mvnw test
 .\mvnw spring-boot:run          # kiểm tra: http://localhost:8080/api/health -> {"status":"UP"}
@@ -75,11 +77,12 @@ npm run dev
 npm test ; npm run lint ; npm run build
 
 # Chạy bản đóng gói như trên Render (giao diện + API cùng cổng 8080)
+# Từ Tuần 3 container cũng cần các biến DB_*; cách trỏ container tới MySQL ở máy chưa được kiểm lại.
 docker build -t spacex:local .
 docker run --rm -p 8080:8080 --memory=512m spacex:local
 
-# MySQL ở máy (chưa dùng trong ứng dụng; sẽ dùng từ Tuần 3)
-Copy-Item .env.example .env     # rồi mở .env, đặt mật khẩu của bạn
+# MySQL ở máy (backend dùng từ Tuần 3)
+Copy-Item .env.example .env     # rồi mở .env, đặt mật khẩu của bạn; DB_USERNAME, DB_PASSWORD phải trùng MYSQL_USER, MYSQL_PASSWORD
 docker compose up -d
 docker compose ps               # chờ cột STATUS có "(healthy)"
 ```

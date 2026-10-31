@@ -6,9 +6,9 @@ Cập nhật: 2026-10-25 (đếm bằng lệnh ở mục "Cách đếm lại"). 
 
 | | Số test | Số lớp/file | Cần Docker? |
 |---|---|---|---|
-| Backend (JUnit 5 + Spring Test) | 7 | 3 lớp | Không |
+| Backend (JUnit 5 + Spring Test) | 6 | 2 lớp | Không |
 | Frontend (Vitest) | 10 | 2 file | Không |
-| Test tích hợp với MySQL thật (Testcontainers) | 5 | 1 lớp | Có |
+| Test tích hợp với MySQL thật (Testcontainers) | 6 | 2 lớp | Có |
 
 CI chạy toàn bộ test trên mỗi Pull Request. **Không test nào gọi API AI thật**: dùng nhà cung cấp giả.
 
@@ -32,6 +32,7 @@ Mỗi dòng phải có test thật trước khi tuần đó được coi là xon
 | Gọi `/api/health` ở frontend: thành công, lỗi HTTP, JSON sai dạng, mất kết nối | Unit (frontend) | 2 | Tested (`fetchHealth`); component `HealthStatus` chưa có test |
 | Lỗi trả `problem+json`: 404, 405 và lỗi bất ngờ (500) không lộ stack trace hay nội dung exception | Slice | 3 | Tested |
 | Flyway tạo đủ 6 bảng trên MySQL thật; email không trùng (kể cả khác hoa/thường); không xóa khóa còn bài; xóa bài thì xóa ảnh, tiến độ, đoạn tri thức; mỗi học sinh một dòng tiến độ mỗi bài | Integration | 3 | Tested (`FlywayMigrationIntegrationTest`, 5 test) |
+| Ứng dụng khởi động được với datasource + Flyway `V1` + Hibernate `ddl-auto=validate` trên MySQL thật | Integration | 3 | Tested (`SpacexApplicationIntegrationTest`, 1 test) |
 | Đăng ký: email trùng → 409; dữ liệu sai → 400; mật khẩu được băm, không lưu rõ | Slice + Unit | 3 | Planned |
 | Đăng nhập: sai mật khẩu → 401; tài khoản bị khóa → 403 | Integration | 3 | Planned |
 | Phân quyền: chưa đăng nhập → 401; Học sinh gọi API Admin → 403 (kể cả lỗi phân quyền ném từ trong controller phải ra 403, không phải 500) | Slice | 3 | Planned |
@@ -76,6 +77,6 @@ PowerShell, đứng ở thư mục gốc dự án:
 (Get-ChildItem frontend\src -Recurse -Include *.test.ts,*.test.tsx | Select-String '^\s*(it|test)\(' | Measure-Object).Count
 ```
 
-Nếu số khác bảng "Tổng quan", sửa bảng cho khớp (không sửa test cho khớp bảng). Lệnh đếm backend đếm cả test tích hợp: 12 = 7 test không cần Docker + 5 test tích hợp.
+Nếu số khác bảng "Tổng quan", sửa bảng cho khớp (không sửa test cho khớp bảng). Lệnh đếm backend đếm cả test tích hợp: 12 = 6 test không cần Docker + 6 test tích hợp.
 
-Chạy riêng test tích hợp (cần Docker Desktop đang chạy, lần đầu phải tải image `mysql:8.4`): `.\mvnw test -Dtest=FlywayMigrationIntegrationTest`.
+Chạy riêng test tích hợp (cần Docker Desktop đang chạy, lần đầu phải tải image `mysql:8.4`): `.\mvnw test -Dtest=*IntegrationTest`. Mỗi lớp tích hợp bật một container MySQL riêng nên mỗi lớp mất khoảng 35 giây.
