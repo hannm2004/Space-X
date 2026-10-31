@@ -74,7 +74,7 @@ erDiagram
     }
 ```
 
-Bảng lưu session (nếu dùng Spring Session JDBC) và bảng lịch sử migration của Flyway do framework tự tạo, không vẽ trong ERD.
+Bảng lưu session (Spring Session JDBC, từ việc 3.6) và bảng lịch sử migration của Flyway do framework tự tạo, không vẽ trong ERD.
 
 ## 2. Mô tả bảng
 
@@ -125,10 +125,15 @@ Bảng lưu session (nếu dùng Spring Session JDBC) và bảng lịch sử mig
 - Chatbot chỉ đọc chữ, nên phần mô tả ảnh trong ngoặc vuông phải viết rõ nghĩa.
 
 **Tài khoản**
-- Đăng nhập Google: chỉ chấp nhận email Google báo đã xác minh. Đã có tài khoản cùng email thì đăng nhập vào tài khoản đó; chưa có thì tạo mới với `auth_provider = GOOGLE`, `role = LEARNER`, `password_hash = NULL`.
+- Đăng nhập Google: chỉ chấp nhận email Google báo đã xác minh. **Không tự liên kết** với tài khoản mật khẩu (D25). Email chưa có thì tạo mới với `auth_provider = GOOGLE`, `role = LEARNER`, `password_hash = NULL`; đã có tài khoản `GOOGLE` cùng email thì đăng nhập vào tài khoản đó. Email đã thuộc tài khoản `LOCAL` thì không đăng nhập và không tạo thêm được (cột `email` là `UNIQUE`); cách báo lỗi chốt khi làm đăng nhập Google.
 - Đổi mật khẩu chỉ áp dụng cho tài khoản có mật khẩu.
-- Tài khoản bị khóa không đăng nhập được, kể cả qua Google. Admin không tự khóa chính mình và không khóa được Admin cuối cùng.
+- Tài khoản bị khóa không đăng nhập được, kể cả qua Google. Đăng nhập bằng email trả `401` chung, không báo "bị khóa" (D25). Admin không tự khóa chính mình và không khóa được Admin cuối cùng.
 - Admin đầu tiên được tạo khi ứng dụng khởi động, từ biến môi trường `ADMIN_EMAIL` và `ADMIN_PASSWORD`, chỉ khi chưa có Admin nào.
+- Đăng ký bằng email (D25): `auth_provider = LOCAL`, `provider_id = NULL`, `role = LEARNER`, `enabled = TRUE`. `password_hash` lưu chuỗi BCrypt (60 ký tự, vừa cột `VARCHAR(255)`). `confirmPassword` không có cột nào.
+- Email được cắt khoảng trắng đầu/cuối và chuyển chữ thường (`Locale.ROOT`) trước khi lưu và trước mọi truy vấn theo email. Việc này làm trong ứng dụng, không dựa riêng vào collation `_ai_ci`.
+- Giới hạn cột: `email` 255 ký tự, `display_name` 100 ký tự (cắt khoảng trắng, không rỗng). Backend phải kiểm tra trước khi lưu để không gặp lỗi tràn cột của MySQL.
+- Mật khẩu: tối thiểu 8 ký tự, tối đa 72 byte UTF-8, **không cắt khoảng trắng**. Phải đếm **byte**, không đếm ký tự, vì BCrypt chỉ dùng 72 byte đầu và ký tự tiếng Việt có dấu chiếm nhiều byte.
+- Tài khoản `GOOGLE` có `password_hash = NULL`: đăng nhập bằng mật khẩu nhận cùng lỗi `401` chung như sai mật khẩu. Email đã thuộc tài khoản Google thì đăng ký bằng email trả `409` (cột `email` là `UNIQUE` cho mọi `auth_provider`).
 
 ## 6. Chia đoạn (chunking) và trích dẫn
 
@@ -151,6 +156,6 @@ Bảng lưu session (nếu dùng Spring Session JDBC) và bảng lịch sử mig
 
 | Vấn đề | Lựa chọn | Chốt ở |
 |---|---|---|
-| Lưu session ở đâu | (a) bộ nhớ: mất hết khi Render cho ứng dụng ngủ, người dùng bị đăng xuất; (b) Spring Session JDBC lưu vào MySQL. **Nghiêng về (b)** | Tuần 3 (sau D22) |
+| Lưu session ở đâu | (a) bộ nhớ: mất hết khi Render cho ứng dụng ngủ, người dùng bị đăng xuất; (b) Spring Session JDBC lưu vào MySQL. **Chọn (b)**: ở việc 3.4 dùng session trong bộ nhớ (chấp nhận mất session khi khởi động lại), chuyển sang Spring Session JDBC ở việc 3.6 cùng migration `V2` tạo bảng session (D24, D25) | Chốt (việc 3.6) |
 | Nội dung Markdown có chứa HTML không | Không cho HTML thô để tránh XSS; frontend chỉ render Markdown đã lọc | Tuần 4 |
 | Dung lượng | Aiven free có 1 GB đĩa; ảnh giới hạn 1 MB mỗi ảnh, theo dõi tổng dung lượng | Tuần 4 |

@@ -24,8 +24,8 @@ Chi tiết kỹ thuật của lỗi 500 (tên exception, stack trace) chỉ ghi 
 | Mã | Ý nghĩa |
 |---|---|
 | 400 | Dữ liệu không hợp lệ (kèm danh sách trường lỗi) |
-| 401 | Chưa đăng nhập, hoặc sai email/mật khẩu |
-| 403 | Không đủ quyền, thiếu CSRF token, hoặc tài khoản bị khóa |
+| 401 | Chưa đăng nhập, hoặc đăng nhập thất bại (sai email/mật khẩu, tài khoản bị khóa: cùng một thông báo, D25) |
+| 403 | Không đủ quyền hoặc thiếu CSRF token |
 | 404 | Không tìm thấy (kể cả bài Nháp khi người gọi là Học sinh) |
 | 409 | Xung đột: email/slug đã tồn tại, xóa khóa còn bài, khóa Admin cuối cùng |
 | 405 | Sai method (ví dụ `POST /api/health`) |
@@ -46,6 +46,43 @@ Chi tiết kỹ thuật của lỗi 500 (tên exception, stack trace) chỉ ghi 
 | GET | `/api/me` | Đăng nhập | Thông tin cá nhân: tên, email, vai trò, cách đăng nhập, ngày tham gia |
 | PUT | `/api/me` | Đăng nhập | Sửa tên hiển thị |
 | PUT | `/api/me/password` | Đăng nhập | Đổi mật khẩu, phải gửi kèm mật khẩu cũ. Tài khoản không có mật khẩu → 400 |
+
+### Đăng ký — `POST /api/auth/register` (D25)
+
+```json
+{ "displayName": "Nguyễn Văn A", "email": "a@example.com", "password": "matkhau123", "confirmPassword": "matkhau123" }
+```
+
+- `displayName`, `email`, `password`, `confirmPassword` đều bắt buộc.
+- `displayName`: cắt khoảng trắng đầu/cuối, không được rỗng, tối đa 100 ký tự.
+- `email`: cắt khoảng trắng đầu/cuối rồi chuyển chữ thường (`Locale.ROOT`) **trước khi** kiểm tra, lưu và tra cứu; đúng định dạng, tối đa 255 ký tự; không trùng với tài khoản đã có, kể cả tài khoản Google.
+- `password`: tối thiểu **8 ký tự** và tối đa **72 byte UTF-8** (giới hạn của BCrypt; tiếng Việt có dấu chiếm 2–3 byte mỗi ký tự nên số ký tự tối đa có thể ít hơn 72). **Không cắt khoảng trắng** vì khoảng trắng có thể là một phần của mật khẩu. Lưu dạng băm BCrypt.
+- `confirmPassword`: backend **bắt buộc** kiểm tra khớp `password`, không khớp → `400`. Frontend có thể kiểm tra thêm cho tiện, nhưng không thay được kiểm tra ở backend. Không được lưu.
+- Vai trò luôn là `LEARNER`. Nếu thân yêu cầu có trường `role` thì bị bỏ qua, không bao giờ được dùng.
+- Đăng ký **không** tự đăng nhập (D24); học sinh phải gọi tiếp `/api/auth/login`.
+- Kết quả: `201` thành công; `400` dữ liệu không hợp lệ (kèm danh sách trường lỗi); `409` email đã tồn tại; `403` thiếu CSRF token.
+
+### Đăng nhập — `POST /api/auth/login` (D25)
+
+```json
+{ "email": "a@example.com", "password": "matkhau123" }
+```
+
+- `email` được cắt khoảng trắng và chuyển chữ thường (`Locale.ROOT`) giống lúc đăng ký; `password` giữ nguyên.
+- Backend xác thực bằng `AuthenticationManager` của Spring Security, sau đó tạo session (cookie `HttpOnly`). Session nằm trong bộ nhớ ở việc 3.4 và chuyển sang Spring Session JDBC ở 3.6, nên session có thể mất khi ứng dụng khởi động lại.
+- **Mọi đăng nhập thất bại** trả **cùng một lỗi** `401`: email không tồn tại, sai mật khẩu, tài khoản bị Admin khóa (`enabled = false`), và tài khoản Google (không có mật khẩu) đăng nhập bằng mật khẩu. Nhờ vậy không ai dò được email nào đã đăng ký hay đang bị khóa:
+
+```json
+{ "type": "about:blank", "title": "Unauthorized", "status": 401, "detail": "Email hoặc mật khẩu không chính xác" }
+```
+
+- Thành công trả `200` kèm thông tin người dùng; session đi trong cookie, **không** trả JWT hay session ID trong thân phản hồi:
+
+```json
+{ "displayName": "Nguyễn Văn A", "email": "a@example.com", "role": "LEARNER" }
+```
+
+- Kết quả: `200` thành công; `400` thiếu trường; `401` đăng nhập thất bại (các trường hợp trên); `403` thiếu CSRF token.
 
 ## Khóa học và bài học
 
