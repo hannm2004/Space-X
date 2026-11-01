@@ -16,6 +16,8 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import vn.spacex.auth.EmailAlreadyExistsException;
 import vn.spacex.common.security.SecurityConfig;
+import vn.spacex.user.NoPasswordAccountException;
+import vn.spacex.user.WrongCurrentPasswordException;
 
 import java.util.Comparator;
 import java.util.List;
@@ -29,6 +31,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(EmailAlreadyExistsException.class)
     ProblemDetail xuLyEmailTrung() {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "Email đã được đăng ký");
+    }
+
+    // Đã đăng nhập nên báo rõ "mật khẩu hiện tại sai" không làm lộ gì thêm, khác với lúc đăng nhập (D25).
+    @ExceptionHandler(WrongCurrentPasswordException.class)
+    ProblemDetail xuLySaiMatKhauCu() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Mật khẩu hiện tại không đúng");
+    }
+
+    @ExceptionHandler(NoPasswordAccountException.class)
+    ProblemDetail xuLyTaiKhoanKhongCoMatKhau() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Tài khoản đăng nhập bằng Google không có mật khẩu để đổi");
     }
 
     // Lỗi phân quyền ném từ trong controller (ví dụ @PreAuthorize sau này). Nếu không có handler này thì

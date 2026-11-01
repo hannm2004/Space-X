@@ -69,6 +69,15 @@ public class User {
         return user;
     }
 
+    // Chỉ có hai trường được phép đổi sau khi tạo (3.7). Cố ý không có setter cho email và role.
+    public void changeDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public void changePasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
     public Long getId() {
         return id;
     }
