@@ -35,6 +35,18 @@
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
 
+		<!-- Xác thực, phân quyền, CSRF (D24). Mặc định khóa mọi endpoint, phải cho phép rõ ràng. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+		<!-- @Valid, @Email, @Size...: kiểm tra dữ liệu gửi lên ở backend. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+
 		<!-- JPA/Hibernate và repository (D20). -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -62,6 +74,13 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Test có người dùng giả (@WithMockUser) và CSRF giả (csrf()). -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 

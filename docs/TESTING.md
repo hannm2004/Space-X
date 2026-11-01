@@ -33,8 +33,8 @@ Mỗi dòng phải có test thật trước khi tuần đó được coi là xon
 | Lỗi trả `problem+json`: 404, 405 và lỗi bất ngờ (500) không lộ stack trace hay nội dung exception | Slice | 3 | Tested |
 | Flyway tạo đủ 6 bảng trên MySQL thật; email không trùng (kể cả khác hoa/thường); không xóa khóa còn bài; xóa bài thì xóa ảnh, tiến độ, đoạn tri thức; mỗi học sinh một dòng tiến độ mỗi bài | Integration | 3 | Tested (`FlywayMigrationIntegrationTest`, 5 test) |
 | Ứng dụng khởi động được với datasource + Flyway `V1` + Hibernate `ddl-auto=validate` trên MySQL thật | Integration | 3 | Tested (`SpacexApplicationIntegrationTest`, 1 test) |
-| Đăng ký: email trùng → 409; dữ liệu sai → 400; mật khẩu được băm, không lưu rõ | Slice + Unit | 3 | Planned |
-| Đăng nhập: sai mật khẩu → 401; tài khoản bị khóa → 403 | Integration | 3 | Planned |
+| Đăng ký (D25): email trùng (kể cả khác hoa/thường hoặc có khoảng trắng thừa) → 409, đăng ký bằng email đã thuộc tài khoản Google cũng 409; thiếu trường, email sai định dạng hoặc > 255 ký tự, `displayName` rỗng/chỉ có khoảng trắng hoặc > 100 ký tự, mật khẩu < 8 ký tự, mật khẩu > 72 byte UTF-8 (kể cả khi ≤ 72 ký tự có dấu), `confirmPassword` không khớp → 400; email được cắt khoảng trắng và lưu chữ thường; mật khẩu không bị cắt khoảng trắng; mật khẩu được băm BCrypt, không lưu rõ; `confirmPassword` không được lưu; thân yêu cầu gửi `role: ADMIN` vẫn ra `LEARNER`; đăng ký không tạo session | Slice + Unit + Integration | 3 | Tested (`RegisterRequestValidationTest`, `AuthServiceTest`, `AuthControllerTest`, `AuthIntegrationTest`) |
+| Đăng nhập (D25): đúng thông tin (kể cả email viết hoa hoặc có khoảng trắng thừa) → 200 kèm `displayName`, `email`, `role`, có cookie session, thân phản hồi không chứa JWT hay session ID; email không tồn tại, sai mật khẩu, tài khoản bị khóa (kể cả khi mật khẩu đúng) và tài khoản Google (không có mật khẩu) → **cùng** 401, cùng `detail` `Email hoặc mật khẩu không chính xác`, định dạng `problem+json` (so sánh nguyên thân phản hồi giữa các trường hợp); thiếu CSRF → 403; đăng xuất xong thì gọi API cần đăng nhập → 401 | Integration | 3 | Tested (`AuthIntegrationTest`, `AuthControllerTest`) |
 | Phân quyền: chưa đăng nhập → 401; Học sinh gọi API Admin → 403 (kể cả lỗi phân quyền ném từ trong controller phải ra 403, không phải 500) | Slice | 3 | Planned |
 | CSRF: thiếu token → 403 | Slice | 3 | Planned |
 | Đổi mật khẩu: sai mật khẩu cũ → 400; tài khoản không có mật khẩu → 400 | Unit | 3 | Planned |
@@ -48,7 +48,7 @@ Mỗi dòng phải có test thật trước khi tuần đó được coi là xon
 | Tiến độ: chỉ của chính mình; `COMPLETED` không bị hạ về `IN_PROGRESS`; % chỉ tính bài Đã đăng; "Học lại" chỉ xóa đúng khóa đó | Unit + Integration | 5 | Planned |
 | Quản lý người dùng: không tự khóa mình, không khóa Admin cuối cùng (409); tài khoản bị khóa không đăng nhập được | Unit | 5 | Planned |
 | Dashboard đếm đúng | Integration | 6 | Planned |
-| Đăng nhập Google: email chưa xác minh bị từ chối; email trùng đăng nhập vào tài khoản có sẵn; tài khoản mới có vai trò `LEARNER` | Unit | 6 | Planned |
+| Đăng nhập Google: email chưa xác minh bị từ chối; email đã có tài khoản Google thì đăng nhập vào tài khoản đó; email đã thuộc tài khoản mật khẩu bị từ chối, không tự liên kết (D25); tài khoản mới có vai trò `LEARNER` | Unit | 6 | Planned |
 | RAG: trích dẫn chỉ lấy từ đoạn đã truy xuất; số trích dẫn lạ bị loại | Unit | 7 | Planned |
 | RAG: không đủ căn cứ → trả lời "không tìm thấy" | Unit | 7 | Planned |
 | Nhà cung cấp AI lỗi / quá thời gian / hết hạn mức → 502 / 504 | Unit | 7 | Planned |
