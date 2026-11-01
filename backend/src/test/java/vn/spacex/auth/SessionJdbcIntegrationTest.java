@@ -209,6 +209,8 @@ class SessionJdbcIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT PRINCIPAL_NAME FROM SPRING_SESSION", String.class)).isEqualTo(emailDai);
     }
 
+    // Cờ Secure sau proxy HTTPS được kiểm trên server thật ở SecureCookieRealServerIntegrationTest, vì MockMvc
+    // sắp xếp bộ lọc khác server thật nên không phản ánh đúng.
     @Test
     void cookieSessionCoHttpOnlyVaSameSiteLax() throws Exception {
         dangKy();

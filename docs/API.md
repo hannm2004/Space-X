@@ -11,7 +11,7 @@ Trạng thái: **thiết kế, chưa có mã nguồn** (cập nhật 2026-10-21)
   - `ADMIN`: chỉ Admin.
 - **Xác thực:** session cookie (`HttpOnly`, `Secure` khi chạy HTTPS, `SameSite=Lax`). Frontend và backend cùng một domain.
 - **CSRF:** mọi yêu cầu `POST`/`PUT`/`PATCH`/`DELETE` phải gửi header `X-XSRF-TOKEN` lấy từ cookie `XSRF-TOKEN`; thiếu hoặc sai thì trả `403`. Mọi yêu cầu `GET` (kể cả `GET /api/health`) đều nhận cookie `XSRF-TOKEN`, nên giao diện chỉ cần gọi một `GET` trước khi ghi.
-- **Session:** sau khi đăng nhập, trình duyệt giữ cookie `SESSION` (`HttpOnly`, `SameSite=Lax`); phiên được lưu trong MySQL nên khởi động lại ứng dụng không làm mất đăng nhập.
+- **Session:** sau khi đăng nhập, trình duyệt giữ cookie `SESSION` (`HttpOnly`, `SameSite=Lax`, và `Secure` khi chạy sau proxy HTTPS như Render; chạy `http://localhost` ở máy thì không có `Secure`); phiên được lưu trong MySQL nên khởi động lại ứng dụng không làm mất đăng nhập.
 - **Người dùng hiện tại** luôn lấy từ session. API không nhận `userId` gửi lên từ trình duyệt.
 - **Phân trang:** `?page=0&size=20` (`size` tối đa 50). Trả `{ items, page, size, totalItems }`.
 - **Lỗi:** định dạng `application/problem+json` (RFC 9457), không trả stack trace: `{ "type", "title", "status", "detail" }` (`Implemented` và `Tested` từ 2026-10-25, lớp `GlobalExceptionHandler`). Ví dụ lỗi không lường trước:
