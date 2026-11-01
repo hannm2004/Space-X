@@ -64,6 +64,13 @@
 			<artifactId>flyway-mysql</artifactId>
 		</dependency>
 
+		<!-- Lưu session đăng nhập trong MySQL thay vì bộ nhớ, để khởi động lại ứng dụng không làm mất đăng nhập (D24, D25).
+		     Bảng session do Flyway tạo (V2), không để Spring tự tạo. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-session-jdbc</artifactId>
+		</dependency>
+
 		<!-- Driver JDBC để Java nói chuyện với MySQL; chỉ cần lúc chạy, không cần lúc biên dịch. -->
 		<dependency>
 			<groupId>com.mysql</groupId>
