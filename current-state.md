@@ -16,6 +16,35 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-01 — Phân quyền ADMIN/LEARNER và tạo ADMIN đầu tiên (việc 3.5)
+- **Nhánh:** `feat/authorization` (chưa commit và chưa mở Pull Request khi viết mục này)
+- **Đã làm:**
+  - Chốt thiết kế D26 (chỉ ở máy): API quản trị dưới `/api/admin/**`; phân quyền bằng luật URL `hasRole("ADMIN")`; `ADMIN` đầu tiên tạo từ `ADMIN_EMAIL` + `ADMIN_PASSWORD` (cả hai thiếu → bỏ qua, chỉ thiếu một → lỗi khởi động, email đã thuộc `LEARNER` → lỗi, không tự nâng quyền).
+  - Viết test trước (RED) rồi mới viết code (GREEN): `AdminAuthorizationTest` (6), `AdminBootstrapTest` (10), `AdminAuthorizationIntegrationTest` (4, MySQL 8.4 thật bằng Testcontainers), thêm 1 test vào `GlobalExceptionHandlerTest`.
+  - `SecurityConfig`: luật `/api/admin/**` đặt trước `/api/**`, thêm `accessDeniedHandler` trả 403 `problem+json`, gom việc ghi lỗi vào hàm `writeProblem` dùng chung với 401. `GlobalExceptionHandler`: handler `AccessDeniedException` → 403 (nếu không có thì handler `Exception` đổi thành 500).
+  - `AdminBootstrap` (`ApplicationRunner`), `User.newLocalAdmin` (vẫn không có setter role), `UserRepository.existsByRole`, thuộc tính `app.admin.email/password` đọc từ `ADMIN_EMAIL`/`ADMIN_PASSWORD`, thêm hai biến để trống vào `.env.example`.
+  - Cập nhật `docs/TESTING.md` (hai dòng sang `Tested`, sửa bảng tổng quan theo số thật).
+  - Cách làm: theo yêu cầu của người dùng ở buổi này, Claude viết test và code. Phần vấn đáp **chưa được trả lời** khi viết mục này, nên chưa coi là xong.
+- **Kiểm tra:**
+  - RED: `.\mvnw test-compile` lỗi vì thiếu `AdminBootstrap` và `existsByRole`. Dời `AdminBootstrapTest` ra ngoài rồi chạy riêng hai lớp test 403: `AdminAuthorizationTest` 3/6 fail (học sinh gọi API Admin nhận 200, `/api/admin` nhận 404), `GlobalExceptionHandlerTest` 1/4 fail (nhận 500 thay vì 403).
+  - GREEN: `.\mvnw test` → `Tests run: 73, Failures: 0, Errors: 0`, `BUILD SUCCESS` (trước đó 52).
+  - Chạy ứng dụng thật bằng `.\mvnw spring-boot:run` với MySQL của docker compose: `curl.exe` `GET /api/health` → `200`; `GET /api/admin/dashboard` (chưa đăng nhập) → `401`; `POST /api/auth/login` không có CSRF token → `403`. DBeaver: bảng `users` có đúng 1 dòng, `role = ADMIN`, `auth_provider = LOCAL`, `enabled = 1`, email chữ thường, mã băm bắt đầu `$2a$`.
+  - Người dùng báo đã chạy cả hai thử nghiệm thêm (chạy lại lần hai và bỏ `ADMIN_PASSWORD` còn `ADMIN_EMAIL`) và kết quả đúng mong đợi; chưa ghi lại log chi tiết.
+  - **Chưa kiểm:** Admin đăng nhập bằng `curl` rồi vào `/api/admin/**` (chưa có cách lấy CSRF token, xem bên dưới; luồng này mới kiểm bằng `AdminAuthorizationIntegrationTest`); đặt `ADMIN_*` và chạy trên Render (việc 3.8); CI trên Pull Request.
+- **Lỗi gặp và cách sửa:**
+  - `docs/API.md` ghi CSRF token lấy từ cookie `XSRF-TOKEN`, nhưng `SecurityConfig` dùng CSRF mặc định (token nằm trong session, không có cookie, không có endpoint trả token), nên không đăng nhập được bằng `curl`. Chuyển sang việc 3.6.
+  - Bảng "Tổng quan" trong `docs/TESTING.md` đã lỗi thời (ghi 6 test backend). Sửa theo số thật: 51 test không cần Docker (8 lớp) và 22 test tích hợp (4 lớp).
+  - `accessDeniedHandler` cũng xử lý lỗi thiếu CSRF, nên thông báo 403 do thiếu CSRF cũng là "Bạn không có quyền...". Chấp nhận tạm, xem xét tách ở 3.6.
+- **Học được:**
+  - Spring lấy luật `requestMatchers` khớp đầu tiên, nên luật cụ thể (`/api/admin/**`) phải đứng trước luật chung (`/api/**`).
+  - 403 do bộ lọc ném ra trước khi tới controller, nên `@RestControllerAdvice` không bắt được; phải có `accessDeniedHandler` riêng. Còn `AccessDeniedException` ném từ trong controller thì cần `@ExceptionHandler` riêng.
+  - Cấu hình sai thì nên dừng khởi động (fail fast) thay vì chạy mà thiếu Admin; thông báo lỗi chỉ nêu tên biến, không chứa mật khẩu.
+  - Mật khẩu giới hạn theo byte UTF-8, không theo ký tự (25 chữ "ạ" là 75 byte, vượt giới hạn BCrypt).
+  - Các dòng cảnh báo `HikariPool ... Communications link failure` khi chạy cả bộ test là nhiễu: container của lớp test trước đã tắt trong khi context Spring cũ còn trong cache.
+- **Tiếp theo:** trả lời vấn đáp; commit theo thứ tự `test` → `feat` → `docs` rồi mở Pull Request cho `feat/authorization`, chờ CI xanh; sau đó 3.6 (`feat/csrf-session`): đưa CSRF token cho giao diện đúng như `API.md` và lưu session trong MySQL.
+
+---
+
 ## 2026-11-01 — Đăng ký, đăng nhập, đăng xuất (việc 3.4)
 - **Nhánh:** `feat/auth` (3 commit `87b3e30`, `4025196`, `c3cbd21`; Pull Request chưa mở khi viết mục này)
 - **Đã làm:**
