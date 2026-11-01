@@ -26,7 +26,8 @@ Mẫu một mục:
 - **Kiểm tra:**
   - RED: `.\mvnw test-compile` báo `cannot find symbol` cho `UpdateProfileRequest`, `ChangePasswordRequest`, `MeResponse`, `MeService` (các lớp chưa có).
   - GREEN: 29 test nhanh qua; sau đó `.\mvnw test` → `Tests run: 128, Failures: 0, Errors: 0`, `BUILD SUCCESS` (trước đó 89).
-  - **Chưa kiểm:** chạy ứng dụng thật bằng `spring-boot:run` rồi gọi `/api/me` bằng `curl.exe`; CI trên Pull Request; trên URL Render (việc 3.8).
+  - Chạy thật: `spring-boot:run` ở cổng 8081 (cổng 8080 đang bị backend cũ giữ) với MySQL Docker, gọi bằng `curl.exe` và cookie jar: `GET /api/me` chưa đăng nhập → 401; đăng nhập → 200; `GET /api/me` → 200 (`displayName`, `email`, `role`, `authProvider`, `createdAt`, không có mật khẩu); `PUT /api/me` kèm `role=ADMIN`, `id=999`, `email` lạ → 200, tên mới được cắt khoảng trắng, `role` vẫn `LEARNER`, email không đổi; `PUT /api/me` tên rỗng → 400 kèm `errors[0].field = displayName`; thiếu CSRF → 403; đổi mật khẩu sai mật khẩu cũ → 400 "Mật khẩu hiện tại không đúng"; mật khẩu mới trùng cũ → 400 `newPasswordDifferentFromCurrent`; đổi đúng → 204; đăng nhập lại bằng mật khẩu cũ → 401. Mật khẩu của `test1@example.com` trong MySQL Docker ở máy giờ là `matkhau456`.
+  - **Chưa kiểm:** CI trên Pull Request; trên URL Render (việc 3.8).
 - **Lỗi gặp và cách sửa:** không có lỗi biên dịch hay test sau khi viết mã. Hook chặn lần tạo/sửa đầu của vài file nên phải nêu thông tin rồi làm lại.
 - **Học được:**
   - `@AuthenticationPrincipal` lấy người dùng từ session nên không cần (và không nên) nhận `userId` từ trình duyệt; test `userIdTrenDuongDanBiBoQua` chứng minh bằng `verify(meService).getProfile(7L)` và `never()` với 999.
