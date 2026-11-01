@@ -5,19 +5,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import vn.spacex.health.HealthController;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest
+// Test này chỉ kiểm tra định dạng lỗi, không kiểm tra đăng nhập; đăng nhập giả để vượt qua lớp bảo vệ.
+@WebMvcTest({GlobalExceptionHandlerTest.LoiBatNgoController.class, HealthController.class})
+@WithMockUser
 @Import(GlobalExceptionHandlerTest.LoiBatNgoController.class)
 class GlobalExceptionHandlerTest {
 
@@ -44,7 +49,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void saiMethodTraVe405DangProblemJson() throws Exception {
-        mockMvc.perform(post("/api/health"))
+        mockMvc.perform(post("/api/health").with(csrf()))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(405));
