@@ -6,9 +6,9 @@ Cập nhật: 2026-10-25 (đếm bằng lệnh ở mục "Cách đếm lại"). 
 
 | | Số test | Số lớp/file | Cần Docker? |
 |---|---|---|---|
-| Backend (JUnit 5 + Spring Test) | 51 | 8 lớp | Không |
+| Backend (JUnit 5 + Spring Test) | 57 | 9 lớp | Không |
 | Frontend (Vitest) | 10 | 2 file | Không |
-| Test tích hợp với MySQL thật (Testcontainers) | 22 | 4 lớp | Có |
+| Test tích hợp với MySQL thật (Testcontainers) | 32 | 5 lớp | Có |
 
 CI chạy toàn bộ test trên mỗi Pull Request. **Không test nào gọi API AI thật**: dùng nhà cung cấp giả.
 
@@ -37,7 +37,8 @@ Mỗi dòng phải có test thật trước khi tuần đó được coi là xon
 | Đăng nhập (D25): đúng thông tin (kể cả email viết hoa hoặc có khoảng trắng thừa) → 200 kèm `displayName`, `email`, `role`, có cookie session, thân phản hồi không chứa JWT hay session ID; email không tồn tại, sai mật khẩu, tài khoản bị khóa (kể cả khi mật khẩu đúng) và tài khoản Google (không có mật khẩu) → **cùng** 401, cùng `detail` `Email hoặc mật khẩu không chính xác`, định dạng `problem+json` (so sánh nguyên thân phản hồi giữa các trường hợp); thiếu CSRF → 403; đăng xuất xong thì gọi API cần đăng nhập → 401 | Integration | 3 | Tested (`AuthIntegrationTest`, `AuthControllerTest`) |
 | Phân quyền (D26): chưa đăng nhập gọi `/api/admin/**` → 401; `LEARNER` → 403 `problem+json` (thân không lộ email hay tên role, kể cả gọi `/api/admin` và `/api/admin/` không có phần sau); `ADMIN` → 200; `LEARNER` vẫn gọi được API thường; lỗi phân quyền ném từ trong controller ra 403, không phải 500; luồng thật trên MySQL: học sinh đăng nhập gọi API Admin → 403, Admin đăng nhập → 200 | Slice + Integration | 3 | Tested (`AdminAuthorizationTest`, `GlobalExceptionHandlerTest`, `AdminAuthorizationIntegrationTest`) |
 | Khởi tạo `ADMIN` đầu tiên (D11, D26): cả hai biến thiếu → bỏ qua, không chạm database; chỉ thiếu một → lỗi khởi động nêu tên biến; mật khẩu < 8 ký tự, > 72 byte (kể cả tiếng Việt có dấu) → lỗi, thông báo không chứa mật khẩu; đã có `ADMIN` → không tạo thêm; email đã thuộc học sinh → lỗi, không tự nâng quyền; email chuẩn hóa, mật khẩu băm BCrypt, role `ADMIN`; mật khẩu không vào log; khởi động thật tạo đúng một `ADMIN` | Unit + Integration | 3 | Tested (`AdminBootstrapTest`, `AdminAuthorizationIntegrationTest`) |
-| CSRF: thiếu token → 403 | Slice | 3 | Planned |
+| CSRF bằng cookie (docs/API.md): mọi yêu cầu `GET` nhận cookie `XSRF-TOKEN` (path `/`, JavaScript đọc được); `POST` có cookie và header `X-XSRF-TOKEN` khớp → qua (kể cả dùng đúng token lấy từ một `GET` thật); có cookie thiếu header, header khác cookie, hoặc có header thiếu cookie → 403 `problem+json`; đăng nhập bằng luồng CSRF cookie thật thành công | Slice + Integration | 3 | Tested (`CsrfCookieTest`, `SessionJdbcIntegrationTest`) |
+| Session trong MySQL (Spring Session JDBC, `V2`): đăng nhập tạo đúng một dòng `SPRING_SESSION` gắn với email (kể cả email dài hơn 100 ký tự); cookie `SESSION` (không còn `JSESSIONID`) có `HttpOnly` và `SameSite=Lax`; cookie dùng được cho API cần đăng nhập; xóa dòng session trong database thì cookie cũ bị 401; đăng xuất xóa dòng session; đăng nhập thất bại và yêu cầu ẩn danh bị 401 không tạo session hay phát cookie; cột lưu session không chứa mã băm hay mật khẩu | Integration | 3 | Tested (`SessionJdbcIntegrationTest`) |
 | Đổi mật khẩu: sai mật khẩu cũ → 400; tài khoản không có mật khẩu → 400 | Unit | 3 | Planned |
 | Thông tin cá nhân: chỉ đọc/sửa được của chính mình | Slice | 3 | Planned |
 | Khách xem được danh sách khóa và bài nhưng đọc nội dung bài → 401 | Slice | 4 | Planned |
@@ -78,6 +79,6 @@ PowerShell, đứng ở thư mục gốc dự án:
 (Get-ChildItem frontend\src -Recurse -Include *.test.ts,*.test.tsx | Select-String '^\s*(it|test)\(' | Measure-Object).Count
 ```
 
-Nếu số khác bảng "Tổng quan", sửa bảng cho khớp (không sửa test cho khớp bảng). Lệnh đếm backend đếm cả test tích hợp: 73 = 51 test không cần Docker + 22 test tích hợp.
+Nếu số khác bảng "Tổng quan", sửa bảng cho khớp (không sửa test cho khớp bảng). Lệnh đếm backend đếm cả test tích hợp: 89 = 57 test không cần Docker + 32 test tích hợp.
 
 Chạy riêng test tích hợp (cần Docker Desktop đang chạy, lần đầu phải tải image `mysql:8.4`): `.\mvnw test -Dtest=*IntegrationTest`. Mỗi lớp tích hợp bật một container MySQL riêng nên mỗi lớp mất khoảng 35 giây.

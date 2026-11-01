@@ -16,6 +16,39 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-01 — CSRF bằng cookie và lưu session trong MySQL (việc 3.6)
+- **Nhánh:** `feat/csrf-session` (chưa commit và chưa mở Pull Request khi viết mục này)
+- **Đã làm:**
+  - CSRF theo `docs/API.md`: `SecurityConfig` dùng `CookieCsrfTokenRepository.withHttpOnlyFalse()` nên mọi `GET` nhận cookie `XSRF-TOKEN`, ghi thì phải gửi lại bằng header `X-XSRF-TOKEN`. Đặt `setCsrfRequestAttributeName(null)` để token được nạp ở mọi yêu cầu (mặc định Spring chỉ nạp khi cần nên `GET` không có cookie).
+  - Session trong MySQL: thêm `spring-boot-starter-session-jdbc` (đã duyệt ở D24/D25), migration `V2__create_spring_session_tables.sql` (lấy từ `schema-mysql.sql` trong jar `spring-session-jdbc` 4.1.1, nới `PRINCIPAL_NAME` lên 255), `spring.session.jdbc.initialize-schema=never`, `serialVersionUID` cho `AppUserDetails` vì nó được tuần tự hóa vào cột BLOB.
+  - `SessionConfig`: bean `DefaultCookieSerializerCustomizer` đặt `HttpOnly` và `SameSite=Lax` cho cookie `SESSION`.
+  - Test mới: `CsrfCookieTest` (6), `SessionJdbcIntegrationTest` (10, MySQL 8.4 thật). Chuyển `AuthIntegrationTest` và `AdminAuthorizationIntegrationTest` từ `MockHttpSession` sang cookie `SESSION` vì Spring Session thay `JSESSIONID`. Cập nhật `docs/TESTING.md`, `docs/API.md`, `docs/DATABASE_DESIGN.md`.
+  - Sửa lỗi session ẩn danh: thêm `.requestCache(cache -> cache.disable())` trong `SecurityConfig` và test `yeuCauAnDanhBi401KhongTaoSessionVaKhongPhatCookieSession` (xem mục Lỗi).
+  - Cách làm: theo yêu cầu của người dùng ở buổi này, Claude viết test và code. Vấn đáp 3.6: người dùng trả lời 5 câu; câu 2, 3, 5 đạt; câu 1 thiếu ý same-origin (trang độc hại không đọc được cookie `XSRF-TOKEN` nên không đặt được header `X-XSRF-TOKEN`); câu 4 (nguyên nhân lỗi session ẩn danh) **chưa đạt** và người dùng chọn bỏ qua, nên còn nợ. Vấn đáp của 3.5 chưa thấy ghi nhận ở đây.
+- **Kiểm tra:**
+  - RED: `CsrfCookieTest` 3/6 fail (không có cookie `XSRF-TOKEN`, `POST` có header vẫn bị 403); `SessionJdbcIntegrationTest` 8/8 lỗi `Table 'test.SPRING_SESSION' doesn't exist`.
+  - GREEN: `.\mvnw test` → `Tests run: 88, Failures: 0, Errors: 0`, `BUILD SUCCESS` (trước đó 73).
+  - RED của lỗi session ẩn danh: `SessionJdbcIntegrationTest` 10 test, 1 fail (`expected: null but was: SESSION=...`). Sau khi sửa: `.\mvnw test` → `Tests run: 89, Failures: 0, Errors: 0`, `BUILD SUCCESS`.
+  - Chạy thật bằng `spring-boot:run` + MySQL Docker + `curl.exe` (cookie jar): `GET /api/health` → 200 kèm `Set-Cookie: XSRF-TOKEN`; `POST /api/auth/register` thiếu CSRF → 403 `problem+json`; có CSRF → 201, lặp lại → 409; `POST /api/auth/login` → 200 kèm `Set-Cookie: SESSION=...; Path=/; HttpOnly; SameSite=Lax` (chưa có `Secure`); `SELECT ... FROM SPRING_SESSION` có 1 dòng `PRINCIPAL_NAME = test1@example.com`; `GET /api/admin/dashboard` có cookie → 403, không cookie → 401; tắt rồi bật lại backend, gọi lại vẫn 403 (session còn); `POST /api/auth/logout` → 204 và hai cookie bị xóa. Sau khi sửa lỗi session ẩn danh, `GET /api/admin/dashboard` không cookie → 401 và không còn `Set-Cookie: SESSION`.
+  - **Chưa kiểm:** cờ `Secure` của cookie và cookie trên URL Render (việc 3.8); CI trên Pull Request; chạy `V2` trên Aiven.
+- **Lỗi gặp và cách sửa:**
+  - Cookie `SESSION` mặc định chỉ là `SESSION=...; Path=/`: **không có `HttpOnly`, không có `SameSite`**. Test `cookieSessionCoHttpOnlyVaSameSiteLax` bắt được lỗi này. Thử đặt `server.servlet.session.cookie.http-only/same-site` không có tác dụng với cookie này ở Spring Boot 4 (đã gỡ). Sửa bằng bean `DefaultCookieSerializerCustomizer` (xác định điểm mở rộng bằng `javap` trên jar `spring-boot-session`).
+  - Cột `PRINCIPAL_NAME` của thư viện chỉ `VARCHAR(100)` trong khi `users.email` tới 255 ký tự, email dài sẽ làm đăng nhập lỗi 500. Nới lên 255 trong `V2` và thêm test `emailDaiHon100KyTuVanDangNhapVaLuuDuocSession`.
+  - Hook chặn lần sửa đầu từng file nên vài lần sửa chạy song song không được áp dụng; phát hiện bằng cách đối chiếu kết quả và làm lại.
+  - Khi chạy thật phát hiện yêu cầu chưa đăng nhập tới API cần đăng nhập (ví dụ `GET /api/admin/dashboard`) vẫn nhận `Set-Cookie: SESSION` và để lại một dòng `PRINCIPAL_NAME = NULL` trong `SPRING_SESSION`. Nguyên nhân: khi chặn yêu cầu, Spring lưu nó vào session (`HttpSessionRequestCache`) để quay lại sau khi đăng nhập; với API chỉ trả 401 thì thừa, và khi session nằm trong MySQL thì mỗi yêu cầu ẩn danh ghi thêm một dòng. Sửa bằng cách tắt `requestCache`; test viết trước (RED rồi GREEN).
+  - Biến `$jar` của PowerShell rỗng khi mở cửa sổ mới nên `curl.exe -c` nuốt URL làm tên file và báo `no URL specified`; phải đặt lại `$jar` ở mỗi cửa sổ.
+  - Sau đăng nhập token `XSRF-TOKEN` **không đổi** (cùng giá trị trước và sau), khác dự đoán ban đầu.
+- **Học được:**
+  - Với Spring Security 6+, CSRF token mặc định được nạp trễ (deferred) nên cookie không được phát ở `GET`; muốn luôn có cookie phải đặt tên thuộc tính của bộ xử lý là `null`.
+  - Đổi sang Spring Session thì cookie là `SESSION` (giá trị Base64) thay `JSESSIONID`, và `MockHttpSession` trong test không còn đại diện cho session thật; test phải truyền cookie như trình duyệt.
+  - Mặc định của thư viện không có nghĩa là an toàn: phải kiểm bằng test các cờ `HttpOnly`/`SameSite` thay vì tin vào tài liệu.
+  - Đối tượng lưu trong session bị tuần tự hóa vào MySQL, nên không được chứa mã băm mật khẩu (đã có test) và cần `serialVersionUID`.
+  - Cảnh báo `Unexpected error occurred in scheduled task ... Communications link failure` khi chạy cả bộ test là nhiễu của job dọn session chạy mỗi phút sau khi container MySQL của lớp test đã tắt.
+  - Cấu hình mặc định của Spring Security dành cho web có trang đăng nhập (lưu yêu cầu bị chặn vào session); với API JSON phải tắt, nếu không mỗi yêu cầu ẩn danh có thể tạo session. Chạy thật bằng `curl.exe` bắt được lỗi mà test ban đầu không bắt.
+- **Tiếp theo:** trả lời lại câu 4 vấn đáp; commit theo thứ tự `test` → `feat` → `fix` → `docs`, **bật Aiven trước khi gộp** vì Pull Request sẽ chạy `V2` ở production (Render tự deploy); 3.7 thông tin cá nhân và đổi mật khẩu (`feat/profile`).
+
+---
+
 ## 2026-11-01 — Phân quyền ADMIN/LEARNER và tạo ADMIN đầu tiên (việc 3.5)
 - **Nhánh:** `feat/authorization` (chưa commit và chưa mở Pull Request khi viết mục này)
 - **Đã làm:**

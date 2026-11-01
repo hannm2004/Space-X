@@ -129,6 +129,7 @@ Bảng lưu session (Spring Session JDBC, từ việc 3.6) và bảng lịch s�
 - Đổi mật khẩu chỉ áp dụng cho tài khoản có mật khẩu.
 - Tài khoản bị khóa không đăng nhập được, kể cả qua Google. Đăng nhập bằng email trả `401` chung, không báo "bị khóa" (D25). Admin không tự khóa chính mình và không khóa được Admin cuối cùng.
 - Admin đầu tiên được tạo khi ứng dụng khởi động, từ biến môi trường `ADMIN_EMAIL` và `ADMIN_PASSWORD`, chỉ khi chưa có Admin nào.
+- Hai bảng `SPRING_SESSION` và `SPRING_SESSION_ATTRIBUTES` (migration `V2`) do Spring Session quản lý, lưu phiên đăng nhập; không thuộc ERD 6 bảng của ứng dụng và không có khóa ngoại tới `users`. `PRINCIPAL_NAME` là email, nới lên 255 ký tự cho khớp `users.email`. Tên bảng viết hoa vì thư viện truy vấn đúng tên này.
 - Đăng ký bằng email (D25): `auth_provider = LOCAL`, `provider_id = NULL`, `role = LEARNER`, `enabled = TRUE`. `password_hash` lưu chuỗi BCrypt (60 ký tự, vừa cột `VARCHAR(255)`). `confirmPassword` không có cột nào.
 - Email được cắt khoảng trắng đầu/cuối và chuyển chữ thường (`Locale.ROOT`) trước khi lưu và trước mọi truy vấn theo email. Việc này làm trong ứng dụng, không dựa riêng vào collation `_ai_ci`.
 - Giới hạn cột: `email` 255 ký tự, `display_name` 100 ký tự (cắt khoảng trắng, không rỗng). Backend phải kiểm tra trước khi lưu để không gặp lỗi tràn cột của MySQL.
@@ -149,7 +150,6 @@ Bảng lưu session (Spring Session JDBC, từ việc 3.6) và bảng lịch s�
 - Mỗi bảng đặt rõ `utf8mb4` + `utf8mb4_0900_ai_ci`, không phụ thuộc cấu hình mặc định của máy chủ (Aiven, Docker, CI cùng một kết quả).
 - `users.email` so sánh không phân biệt hoa/thường nhờ collation `_ai_ci`: `A@x.com` và `a@x.com` là một.
 - `knowledge_chunks.heading` là `NOT NULL`: đoạn không có tiêu đề mục (phần mở đầu bài) sẽ dùng tiêu đề bài khi chia đoạn ở Tuần 7.
-- Chưa có bảng session của Spring Session JDBC: sẽ thêm bằng `V2` ở việc 3.6.
 - Số lượng ảnh, loại ảnh, dung lượng 1 MB chưa có ràng buộc ở database (kiểm ở backend theo nội dung file, như đã thiết kế).
 
 ## 7. Quyết định để lại cho các tuần sau

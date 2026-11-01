@@ -10,7 +10,8 @@ Trạng thái: **thiết kế, chưa có mã nguồn** (cập nhật 2026-10-21)
   - `Đăng nhập`: Học sinh hoặc Admin đã đăng nhập.
   - `ADMIN`: chỉ Admin.
 - **Xác thực:** session cookie (`HttpOnly`, `Secure` khi chạy HTTPS, `SameSite=Lax`). Frontend và backend cùng một domain.
-- **CSRF:** mọi yêu cầu `POST`/`PUT`/`PATCH`/`DELETE` phải gửi header `X-XSRF-TOKEN` lấy từ cookie `XSRF-TOKEN`; thiếu hoặc sai thì trả `403`.
+- **CSRF:** mọi yêu cầu `POST`/`PUT`/`PATCH`/`DELETE` phải gửi header `X-XSRF-TOKEN` lấy từ cookie `XSRF-TOKEN`; thiếu hoặc sai thì trả `403`. Mọi yêu cầu `GET` (kể cả `GET /api/health`) đều nhận cookie `XSRF-TOKEN`, nên giao diện chỉ cần gọi một `GET` trước khi ghi.
+- **Session:** sau khi đăng nhập, trình duyệt giữ cookie `SESSION` (`HttpOnly`, `SameSite=Lax`); phiên được lưu trong MySQL nên khởi động lại ứng dụng không làm mất đăng nhập.
 - **Người dùng hiện tại** luôn lấy từ session. API không nhận `userId` gửi lên từ trình duyệt.
 - **Phân trang:** `?page=0&size=20` (`size` tối đa 50). Trả `{ items, page, size, totalItems }`.
 - **Lỗi:** định dạng `application/problem+json` (RFC 9457), không trả stack trace: `{ "type", "title", "status", "detail" }` (`Implemented` và `Tested` từ 2026-10-25, lớp `GlobalExceptionHandler`). Ví dụ lỗi không lường trước:
@@ -69,7 +70,7 @@ Chi tiết kỹ thuật của lỗi 500 (tên exception, stack trace) chỉ ghi 
 ```
 
 - `email` được cắt khoảng trắng và chuyển chữ thường (`Locale.ROOT`) giống lúc đăng ký; `password` giữ nguyên.
-- Backend xác thực bằng `AuthenticationManager` của Spring Security, sau đó tạo session (cookie `HttpOnly`). Session nằm trong bộ nhớ ở việc 3.4 và chuyển sang Spring Session JDBC ở 3.6, nên session có thể mất khi ứng dụng khởi động lại.
+- Backend xác thực bằng `AuthenticationManager` của Spring Security, sau đó tạo session (cookie `HttpOnly`). Session lưu trong MySQL bằng Spring Session JDBC (từ việc 3.6) nên khởi động lại ứng dụng không làm mất đăng nhập. Yêu cầu chưa đăng nhập tới API cần đăng nhập chỉ nhận `401`, không tạo session và không nhận cookie `SESSION`.
 - **Mọi đăng nhập thất bại** trả **cùng một lỗi** `401`: email không tồn tại, sai mật khẩu, tài khoản bị Admin khóa (`enabled = false`), và tài khoản Google (không có mật khẩu) đăng nhập bằng mật khẩu. Nhờ vậy không ai dò được email nào đã đăng ký hay đang bị khóa:
 
 ```json
