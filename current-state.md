@@ -16,6 +16,30 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-01 — Cờ Secure của cookie và kiểm tra trên URL Render (việc 3.8)
+- **Nhánh:** `feat/secure-cookie` (tạo từ `main` sau khi gộp PR #14; chưa commit và chưa mở Pull Request khi viết mục này)
+- **Đã làm:**
+  - Thêm `server.forward-headers-strategy=framework` vào `application.properties` để ứng dụng đọc `X-Forwarded-Proto` từ proxy của Render; nhờ vậy `request.isSecure()` đúng và cả `SESSION` lẫn `XSRF-TOKEN` tự có cờ `Secure` trên Render mà không có cờ ở máy (`http://localhost`).
+  - Test mới `SecureCookieRealServerIntegrationTest` (2 test) chạy trên Tomcat thật cổng ngẫu nhiên, gọi bằng `HttpClient` của JDK. Cập nhật `docs/API.md`, `docs/TESTING.md`.
+  - Cách làm: theo yêu cầu của người dùng, Claude viết test và code. Vấn đáp 3.8 bị bỏ qua theo yêu cầu của người dùng (nợ cùng 3.5, 3.6 câu 4, 3.7).
+- **Kiểm tra:**
+  - Trên URL Render thật (https://space-x-47f1.onrender.com), bằng `curl.exe`: `GET /api/health` → 200 kèm `Set-Cookie: XSRF-TOKEN=...; Path=/; Secure`; đăng ký tài khoản thử → 201; đăng nhập → 200 kèm `Set-Cookie: SESSION=...; Path=/; Secure; HttpOnly; SameSite=Lax`. `GET /api/me` ban đầu 404 vì Render chưa build xong code 3.7; kiểm lại sau thì 200. Cookie `SESSION` lấy từ **bản deploy cũ** vẫn dùng được trên bản deploy mới: session trong Aiven sống sót qua việc Render dựng lại container.
+  - Trên Tomcat thật ở máy (cổng 8081): có `X-Forwarded-Proto: https` → cả hai cookie có `Secure`; không có header → không có `Secure`.
+  - Test: RED trước khi thêm cấu hình (2 test sau proxy fail). Test MockMvc thêm ban đầu vẫn fail ở `SESSION` dù server thật đúng, vì MockMvc sắp xếp bộ lọc khác server thật; đã bỏ 3 test MockMvc đó và viết lại trên server thật. Chạy với `-Dserver.forward-headers-strategy=none` thì 1 test đỏ, bật cấu hình thì xanh. `.\mvnw test` → `Tests run: 130, Failures: 0, Errors: 0`, `BUILD SUCCESS` (trước đó 128).
+  - **Chưa kiểm:** bản Render có cấu hình `forward-headers` mới (chỉ có sau khi gộp PR); Admin đầu tiên ở production (`ADMIN_EMAIL`/`ADMIN_PASSWORD` chưa đặt trên Render, người dùng tự đặt); thời gian thức dậy của Render Free.
+- **Lỗi gặp và cách sửa:**
+  - Cờ `Secure` trên Render đã đúng **trước khi** repo có cấu hình nào cho nó (nguyên nhân chưa xác định: có thể do Render hoặc một biến môi trường đặt tay). Test chứng minh code trong repo tự nó chưa đảm bảo điều này, nên đặt cấu hình tường minh để không phụ thuộc thứ ngoài repo.
+  - Lần chạy `.\mvnw test` đầu tiên cả 6 lớp tích hợp lỗi `Previous attempts to find a Docker environment failed` trong vài giây; Docker vẫn chạy, chạy lại thì qua. Là sự cố tạm của Testcontainers/Docker, không phải lỗi code.
+  - Cổng 8080 đang bị backend cũ của người dùng giữ nên bản mới chạy ở cổng 8081 và tắt sau khi kiểm.
+- **Ghi nhận:** tài khoản thử `kiemtra-3-8@example.com` (vai trò `LEARNER`, dữ liệu giả) được tạo trong database production trên Aiven để kiểm cookie; có thể khóa hoặc bỏ qua khi có trang quản lý người dùng.
+- **Học được:**
+  - Sau proxy HTTPS, ứng dụng chỉ biết kết nối là bảo mật qua header `X-Forwarded-Proto`; phải cấu hình đọc header này thì cờ `Secure` mới đúng.
+  - Không đặt cứng `Secure` cho cookie: cookie `Secure` không được gửi lại qua `http://localhost`, nên để `request.isSecure()` quyết định.
+  - MockMvc không giống hệt server thật (thứ tự bộ lọc); điều gì phụ thuộc thứ tự bộ lọc thì phải kiểm trên server thật. Một test chưa từng thấy đỏ thì chưa đáng tin.
+- **Tiếp theo:** commit, mở Pull Request cho `feat/secure-cookie`, chờ CI xanh rồi gộp; người dùng đặt `ADMIN_*` trên Render; kiểm lại cookie và Admin trên Render sau deploy; báo cáo Tuần 3.
+
+---
+
 ## 2026-11-01 — Thông tin cá nhân và đổi mật khẩu (việc 3.7)
 - **Nhánh:** `feat/profile` (tạo từ `main` sau khi gộp PR #13; chưa commit và chưa mở Pull Request khi viết mục này)
 - **Đã làm:**
