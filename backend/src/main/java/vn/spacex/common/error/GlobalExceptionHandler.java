@@ -8,12 +8,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import vn.spacex.auth.EmailAlreadyExistsException;
+import vn.spacex.common.security.SecurityConfig;
 
 import java.util.Comparator;
 import java.util.List;
@@ -27,6 +29,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(EmailAlreadyExistsException.class)
     ProblemDetail xuLyEmailTrung() {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "Email đã được đăng ký");
+    }
+
+    // Lỗi phân quyền ném từ trong controller (ví dụ @PreAuthorize sau này). Nếu không có handler này thì
+    // handler Exception bên dưới sẽ đổi nó thành 500. Không đưa ex.getMessage() vào phản hồi.
+    @ExceptionHandler(AccessDeniedException.class)
+    ProblemDetail xuLyKhongCoQuyen() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, SecurityConfig.FORBIDDEN_DETAIL);
     }
 
     // Thêm danh sách trường lỗi (docs/API.md). Chỉ trả tên trường và thông báo, không trả giá trị người dùng gửi

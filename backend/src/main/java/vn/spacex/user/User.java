@@ -62,6 +62,13 @@ public class User {
         return user;
     }
 
+    // Chỉ AdminBootstrap gọi (D26). Vẫn không có setter role, nên dữ liệu từ trình duyệt không chọn được role.
+    public static User newLocalAdmin(String email, String passwordHash, String displayName) {
+        User user = newLocalLearner(email, passwordHash, displayName);
+        user.role = Role.ADMIN;
+        return user;
+    }
+
     public Long getId() {
         return id;
     }
