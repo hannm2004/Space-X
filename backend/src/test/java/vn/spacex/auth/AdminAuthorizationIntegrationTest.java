@@ -1,5 +1,6 @@
 package vn.spacex.auth;
 
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,7 +9,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -74,13 +74,13 @@ class AdminAuthorizationIntegrationTest {
         jdbc.update("DELETE FROM users WHERE role = 'LEARNER'");
     }
 
-    private MockHttpSession dangNhap(String email, String password) throws Exception {
+    private Cookie dangNhap(String email, String password) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/auth/login").with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"email":"%s","password":"%s"}""".formatted(email, password))).andReturn();
         assertThat(result.getResponse().getStatus()).isEqualTo(200);
-        return (MockHttpSession) result.getRequest().getSession(false);
+        return result.getResponse().getCookie("SESSION");
     }
 
     @Test
@@ -96,9 +96,9 @@ class AdminAuthorizationIntegrationTest {
 
     @Test
     void adminDangNhapRoiGoiApiAdminThanhCong() throws Exception {
-        MockHttpSession session = dangNhap(ADMIN_EMAIL, ADMIN_MAT_KHAU);
+        Cookie session = dangNhap(ADMIN_EMAIL, ADMIN_MAT_KHAU);
 
-        mockMvc.perform(get("/api/admin/ping").session(session))
+        mockMvc.perform(get("/api/admin/ping").cookie(session))
                 .andExpect(status().isOk());
     }
 
@@ -110,9 +110,9 @@ class AdminAuthorizationIntegrationTest {
                                 {"displayName":"Học sinh","email":"hs@example.com","password":"matkhau123",
                                  "confirmPassword":"matkhau123"}"""))
                 .andExpect(status().isCreated());
-        MockHttpSession session = dangNhap("hs@example.com", "matkhau123");
+        Cookie session = dangNhap("hs@example.com", "matkhau123");
 
-        mockMvc.perform(get("/api/admin/ping").session(session))
+        mockMvc.perform(get("/api/admin/ping").cookie(session))
                 .andExpect(status().isForbidden())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(403));

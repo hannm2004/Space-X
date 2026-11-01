@@ -1,5 +1,6 @@
 package vn.spacex.auth;
 
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,7 +9,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -116,7 +116,7 @@ class AuthIntegrationTest {
     void dangKyKhongTaoSessionVaKhongTuDangNhap() throws Exception {
         MvcResult result = dangKy("A", "a@example.com", "matkhau123");
 
-        assertThat(result.getRequest().getSession(false)).isNull();
+        assertThat(result.getResponse().getCookie("SESSION")).isNull();
     }
 
     @Test
@@ -153,8 +153,8 @@ class AuthIntegrationTest {
 
         assertThat(result.getResponse().getStatus()).isEqualTo(200);
         String body = result.getResponse().getContentAsString();
-        assertThat(body).doesNotContain("JSESSIONID").doesNotContain("token").doesNotContain("$2");
-        mockMvc.perform(get("/api/test/bao-ve").session((MockHttpSession) result.getRequest().getSession(false)))
+        assertThat(body).doesNotContain("SESSION").doesNotContain("token").doesNotContain("$2");
+        mockMvc.perform(get("/api/test/bao-ve").cookie(result.getResponse().getCookie("SESSION")))
                 .andExpect(status().isOk());
     }
 
@@ -193,7 +193,7 @@ class AuthIntegrationTest {
             assertThat(result.getResponse().getStatus()).isEqualTo(401);
             assertThat(result.getResponse().getContentType()).startsWith("application/problem+json");
             assertThat(result.getResponse().getContentAsString()).isEqualTo(thanMau).contains(LOI_CHUNG);
-            assertThat(result.getRequest().getSession(false)).isNull();
+            assertThat(result.getResponse().getCookie("SESSION")).isNull();
         }
     }
 
@@ -216,12 +216,12 @@ class AuthIntegrationTest {
     @Test
     void dangXuatXongThiApiCanDangNhapTraVe401() throws Exception {
         dangKy("A", "a@example.com", "matkhau123");
-        MockHttpSession session = (MockHttpSession) dangNhap("a@example.com", "matkhau123").getRequest().getSession(false);
-        mockMvc.perform(get("/api/test/bao-ve").session(session)).andExpect(status().isOk());
+        Cookie session = dangNhap("a@example.com", "matkhau123").getResponse().getCookie("SESSION");
+        mockMvc.perform(get("/api/test/bao-ve").cookie(session)).andExpect(status().isOk());
 
-        mockMvc.perform(post("/api/auth/logout").with(csrf()).session(session))
+        mockMvc.perform(post("/api/auth/logout").with(csrf()).cookie(session))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/test/bao-ve").session(session)).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/test/bao-ve").cookie(session)).andExpect(status().isUnauthorized());
     }
 }
