@@ -16,6 +16,28 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-01 — Thông tin cá nhân và đổi mật khẩu (việc 3.7)
+- **Nhánh:** `feat/profile` (tạo từ `main` sau khi gộp PR #13; chưa commit và chưa mở Pull Request khi viết mục này)
+- **Đã làm:**
+  - `GET /api/me`, `PUT /api/me` (chỉ sửa `displayName`), `PUT /api/me/password` (`currentPassword`, `newPassword`, `confirmNewPassword`) trong package `vn.spacex.user`: `MeController`, `MeService`, `MeResponse`, `UpdateProfileRequest`, `ChangePasswordRequest`, `WrongCurrentPasswordException`, `NoPasswordAccountException`. `User` thêm `changeDisplayName`, `changePasswordHash`; vẫn không có setter cho `email` và `role`. `GlobalExceptionHandler` thêm hai handler trả 400.
+  - Người dùng hiện tại lấy bằng `@AuthenticationPrincipal AppUserDetails` (id từ session); `userId` trên đường dẫn và `id`/`email`/`role` trong thân yêu cầu bị bỏ qua. Mật khẩu mới theo luật đăng ký (8 ký tự đến 72 byte, giữ khoảng trắng), thêm điều kiện khác mật khẩu cũ.
+  - Test mới: `ProfileRequestValidationTest` (12), `MeServiceTest` (5), `MeControllerTest` (12), `MeIntegrationTest` (10, MySQL 8.4 thật). Cập nhật `docs/API.md` (mục `/api/me`), `docs/TESTING.md`.
+  - Cách làm: theo yêu cầu của người dùng ở buổi này, Claude viết test và code. Người dùng yêu cầu **bỏ qua toàn bộ vấn đáp trong ngày**, nên 3.7 chưa có vấn đáp (nợ cùng câu 4 của 3.6 và vấn đáp 3.5).
+- **Kiểm tra:**
+  - RED: `.\mvnw test-compile` báo `cannot find symbol` cho `UpdateProfileRequest`, `ChangePasswordRequest`, `MeResponse`, `MeService` (các lớp chưa có).
+  - GREEN: 29 test nhanh qua; sau đó `.\mvnw test` → `Tests run: 128, Failures: 0, Errors: 0`, `BUILD SUCCESS` (trước đó 89).
+  - **Chưa kiểm:** chạy ứng dụng thật bằng `spring-boot:run` rồi gọi `/api/me` bằng `curl.exe`; CI trên Pull Request; trên URL Render (việc 3.8).
+- **Lỗi gặp và cách sửa:** không có lỗi biên dịch hay test sau khi viết mã. Hook chặn lần tạo/sửa đầu của vài file nên phải nêu thông tin rồi làm lại.
+- **Học được:**
+  - `@AuthenticationPrincipal` lấy người dùng từ session nên không cần (và không nên) nhận `userId` từ trình duyệt; test `userIdTrenDuongDanBiBoQua` chứng minh bằng `verify(meService).getProfile(7L)` và `never()` với 999.
+  - Record chỉ có trường được khai báo, nên `role`, `email`, `id` trong thân JSON tự bị bỏ qua (mặc định Jackson không báo lỗi trường lạ).
+  - Trong `@Transactional`, sửa entity đang được quản lý thì tự ghi xuống database khi commit, không cần gọi `save`.
+  - Giới hạn BCrypt tính theo **byte**, không phải ký tự: 24 ký tự `ệ` đúng 72 byte, 25 ký tự là 75 byte.
+- **Chưa làm / ghi nhận:** đổi mật khẩu chưa hủy các session đang đăng nhập khác của cùng người dùng.
+- **Tiếp theo:** chạy thật bằng `curl.exe` kiểm `/api/me`; commit `test` → `feat` → `docs`, mở Pull Request cho `feat/profile`; sau đó 3.8 (deploy, cookie trên URL thật, cờ `Secure`, đặt `ADMIN_*` trên Render); rồi báo cáo Tuần 3.
+
+---
+
 ## 2026-11-01 — CSRF bằng cookie và lưu session trong MySQL (việc 3.6)
 - **Nhánh:** `feat/csrf-session` (chưa commit và chưa mở Pull Request khi viết mục này)
 - **Đã làm:**

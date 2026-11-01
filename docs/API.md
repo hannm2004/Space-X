@@ -85,6 +85,17 @@ Chi tiết kỹ thuật của lỗi 500 (tên exception, stack trace) chỉ ghi 
 
 - Kết quả: `200` thành công; `400` thiếu trường; `401` đăng nhập thất bại (các trường hợp trên); `403` thiếu CSRF token.
 
+### Thông tin cá nhân — `/api/me` (việc 3.7)
+
+Người dùng hiện tại luôn lấy từ session. `userId` gửi lên (đường dẫn, query hay thân yêu cầu) bị bỏ qua. Chưa đăng nhập → `401`; thiếu CSRF → `403`.
+
+- `GET /api/me` → `200`: `{ "displayName", "email", "role", "authProvider", "createdAt" }`. Không có mật khẩu hay mã băm.
+- `PUT /api/me` nhận `{ "displayName" }` (cắt khoảng trắng đầu/cuối, không rỗng, tối đa 100 ký tự) → `200` kèm thông tin mới. Chỉ tên hiển thị được sửa; `email`, `role`, `id` nếu có trong thân yêu cầu thì bị bỏ qua. `400` kèm danh sách trường lỗi nếu dữ liệu sai.
+- `PUT /api/me/password` nhận `{ "currentPassword", "newPassword", "confirmNewPassword" }` → `204`, không có thân.
+  - Mật khẩu mới theo luật đăng ký (D25): tối thiểu 8 ký tự, tối đa 72 byte UTF-8, không cắt khoảng trắng; `confirmNewPassword` phải khớp; **phải khác** mật khẩu hiện tại. Sai luật → `400` kèm danh sách trường lỗi (không phản hồi lại mật khẩu).
+  - `currentPassword` sai → `400` (`detail`: "Mật khẩu hiện tại không đúng"). Tài khoản không có mật khẩu (đăng nhập bằng Google) → `400`.
+  - Đổi mật khẩu **không** hủy các session đang đăng nhập khác của chính người dùng (chưa làm, ghi nhận để xem lại).
+
 ## Khóa học và bài học
 
 | Method | Đường dẫn | Quyền | Mô tả |
