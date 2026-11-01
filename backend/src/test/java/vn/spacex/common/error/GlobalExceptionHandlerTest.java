@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,6 +34,12 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/test/loi-bat-ngo")
         String loiBatNgo() {
             throw new RuntimeException("mat-khau-bi-mat");
+        }
+
+        // Mô phỏng lỗi phân quyền ném từ trong controller (ví dụ @PreAuthorize sau này).
+        @GetMapping("/test/cam-truy-cap")
+        String camTruyCap() {
+            throw new AccessDeniedException("chi-tiet-noi-bo");
         }
     }
 
@@ -64,5 +71,14 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.trace").doesNotExist())
                 .andExpect(content().string(not(containsString("mat-khau-bi-mat"))))
                 .andExpect(content().string(not(containsString("RuntimeException"))));
+    }
+
+    @Test
+    void loiPhanQuyenNemTuTrongControllerTraVe403KhongPhaiLoi500() throws Exception {
+        mockMvc.perform(get("/test/cam-truy-cap"))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(content().string(not(containsString("chi-tiet-noi-bo"))));
     }
 }
