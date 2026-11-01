@@ -16,6 +16,32 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-01 — Đăng ký, đăng nhập, đăng xuất (việc 3.4)
+- **Nhánh:** `feat/auth` (3 commit `87b3e30`, `4025196`, `c3cbd21`; Pull Request chưa mở khi viết mục này)
+- **Đã làm:**
+  - Viết test trước (RED) rồi mới viết code (GREEN), theo thiết kế D25: `RegisterRequestValidationTest` (14), `AuthServiceTest` (3), `AuthControllerTest` (9), `AuthIntegrationTest` (12, chạy trên MySQL 8.4 thật bằng Testcontainers).
+  - `SecurityConfig`: `/api/health`, `/api/auth/register`, `/api/auth/login` công khai, còn lại dưới `/api/**` phải đăng nhập (chưa đăng nhập → 401 `problem+json`); CSRF để bật; đăng xuất `POST /api/auth/logout` trả 204; bean `PasswordEncoder` (BCrypt).
+  - Gói `user`: entity `User` (ánh xạ bảng `users`), `UserRepository`, `Role`, `AuthProvider`, `Emails.normalize` (cắt khoảng trắng, chữ thường bằng `Locale.ROOT`).
+  - Gói `auth`: `RegisterRequest`/`LoginRequest` (chuẩn hóa email ngay trong constructor, `toString` không in mật khẩu), `AuthService.register`, `AuthController` (`/register`, `/login`), `AppUserDetails` + `AppUserDetailsService`, `AuthConfig` (`AuthenticationManager` dùng `DaoAuthenticationProvider`).
+  - `GlobalExceptionHandler`: email trùng → 409; lỗi validation → 400 kèm danh sách `errors` (chỉ tên trường và thông báo, không trả lại giá trị người dùng gửi).
+  - Sửa 2 test cũ (`GlobalExceptionHandlerTest`, `HealthControllerTest`) và cập nhật 2 dòng trong `docs/TESTING.md` sang `Tested`.
+  - Cách làm: theo lựa chọn của người dùng ở buổi này, Claude viết test và code; người dùng đọc, trả lời vấn đáp rồi mới coi là xong.
+- **Kiểm tra:**
+  - Test viết trước: `.\mvnw test-compile` báo 58 lỗi biên dịch vì các lớp chưa tồn tại.
+  - Sau khi viết code, lần chạy đầu: 2 test fail ở `AuthControllerTest`, và 3 test cũ fail vì `AuthController` thiếu `AuthService` trong `@WebMvcTest` trần. Sau khi sửa: `.\mvnw test` → `Tests run: 52, Failures: 0, Errors: 0`, `BUILD SUCCESS`.
+  - **Chưa kiểm:** chạy ứng dụng thật bằng `spring-boot:run` rồi gọi bằng `curl.exe`; cookie session trên URL Render (việc 3.8); thời gian phản hồi giữa tài khoản bị khóa và sai mật khẩu (rủi ro đã ghi ở D25).
+- **Lỗi gặp và cách sửa:**
+  - Test `GlobalExceptionHandlerTest` và `HealthControllerTest` đã đỏ từ commit `085ac0c` (thêm Spring Security làm `@WebMvcTest` bị chặn 401/403). Xác nhận bằng cách tạm dời `SecurityConfig` ra ngoài, vẫn đỏ. Sửa bằng `@WithMockUser`/`@Import(SecurityConfig)` và `csrf()` cho `POST`.
+  - Sau khi thêm `AuthController`, `@WebMvcTest` trần quét luôn nó và báo thiếu bean `AuthService`. Sửa bằng cách chỉ rõ controller cần nạp trong từng test.
+  - Lỗi hạ tầng khi xác thực (database sập) bị trả 401 thay vì 500: Spring chọn `@ExceptionHandler` còn xét cả `cause` của exception, nên bọc lại trong `IllegalStateException` vẫn khớp handler `AuthenticationException`. Sửa bằng cách chỉ bắt `BadCredentialsException` và `AccountStatusException`.
+  - Test lặp qua nhiều exception gọi `when(mock.authenticate(...))` lần hai nên chính mock ném lỗi. Đổi sang `doThrow(...).when(...)`.
+- **Học được:**
+  - Mọi thất bại đăng nhập cùng một lỗi 401 để không dò được email nào tồn tại hay đang bị khóa (user enumeration).
+  - BCrypt chỉ dùng 72 byte đầu nên giới hạn tính theo byte UTF-8, không theo ký tự (tiếng Việt có dấu chiếm 2–3 byte).
+  - Kiểm `existsByEmail` chưa đủ vì hai yêu cầu cùng lúc đều qua được; ràng buộc `UNIQUE` mới là chốt chặn cuối, nên cần `saveAndFlush` và bắt `DataIntegrityViolationException`.
+  - Đăng nhập thủ công phải lưu `SecurityContext` vào session và đổi session ID (`changeSessionId`) để chống session fixation.
+- **Tiếp theo:** mở Pull Request cho `feat/auth`, chờ CI xanh rồi gộp; sau đó `feat/authorization` (3.5, phân quyền `LEARNER`/`ADMIN` và tạo `ADMIN` đầu tiên từ biến môi trường).
+
 ## 2026-10-31 — Database: Flyway, JPA, Testcontainers và kết nối Aiven trên Render
 - **Nhánh:** `feat/database-flyway` (Pull Request #9, gộp vào `main` ở commit `ef90f75`)
 - **Đã làm:**
