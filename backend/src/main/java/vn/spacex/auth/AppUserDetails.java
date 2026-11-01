@@ -14,6 +14,10 @@ import java.util.List;
 // để không nằm trong session; id lấy từ đây thay vì tin userId do trình duyệt gửi.
 public final class AppUserDetails implements UserDetails, CredentialsContainer {
 
+    // Đối tượng này được tuần tự hóa vào bảng session trong MySQL. Cố định số phiên bản để bản code mới vẫn đọc
+    // được session cũ; khi đổi các trường theo cách không tương thích thì tăng số này (người dùng phải đăng nhập lại).
+    private static final long serialVersionUID = 1L;
+
     private final Long id;
     private final String email;
     private String passwordHash;
