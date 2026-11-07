@@ -16,6 +16,46 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-07 — Việc 4.1: đọc công khai khóa học và bài học
+- **Nhánh:** `feat/courses-read`
+- **Đã làm:**
+  - Entity `Course`, `Lesson` (kèm enum `LessonStatus`: `DRAFT`/`PUBLISHED`), `CourseRepository`, `LessonRepository`, `CourseService`, `CourseController`, DTO `CourseResponse` và `LessonSummaryResponse` (chỉ `id`, `slug`, `title`, `summary`, không có `content_md`).
+  - `GET /api/courses` và `GET /api/courses/{slug}/lessons` công khai: khóa sắp theo `sort_order` rồi `id`; chỉ bài `PUBLISHED`; khóa không tồn tại → 404 `problem+json`, khóa chưa có bài đã đăng → `[]`.
+  - `SecurityConfig` mở đúng hai đường dẫn `GET` trên; `GlobalExceptionHandler` thêm handler cho `CourseNotFoundException` (câu cố định, không lặp lại slug người gửi).
+  - Cập nhật `docs/API.md` (mô tả hai endpoint, dòng trạng thái đầu file đã cũ) và `docs/TESTING.md` (số test, dòng 4.1 `Tested`).
+- **Kiểm tra:**
+  - `.\mvnw test` trong `src/backend`: **148 test, 0 lỗi, `BUILD SUCCESS`** (96 test không cần Docker + 52 test tích hợp trên MySQL 8.4 thật). Việc 4.1 thêm 18 test: `CourseControllerTest` 7, `CourseServiceTest` 3, `CourseIntegrationTest` 8 (trước đó 130).
+  - Đếm bằng lệnh trong `docs/TESTING.md`: 148 khớp bảng; frontend vẫn 10 test (chưa chạy lại lần này vì không sửa frontend).
+  - **Chưa kiểm:** chưa chạy server thật rồi gọi bằng `curl.exe`; chưa kiểm trên Render sau khi gộp.
+- **Lỗi gặp và cách sửa:** `CourseIntegrationTest` lần chạy đầu báo `Could not find a valid Docker environment` vì Docker Desktop chưa bật (không phải lỗi code). Bật Docker rồi chạy lại: 8 test qua.
+- **Học được:**
+  - Trong luật URL của Spring Security, `*` chỉ khớp đúng một đoạn đường dẫn, nên `/api/courses/*/lessons` công khai còn `/api/courses/{slug}` (nếu sau này có) vẫn đòi đăng nhập; luật chỉ áp cho `GET`, còn `POST /api/courses` khi chưa đăng nhập vẫn 401.
+  - Loại bài `DRAFT` ngay trong truy vấn (`findByCourseIdAndStatus...`) an toàn hơn lọc sau ở service, vì bài nháp không bao giờ được nạp lên cho đường dẫn công khai.
+  - Khóa không tồn tại (404) khác với khóa chưa có bài (200 với `[]`): hai trường hợp có ý nghĩa khác nhau nên không gộp.
+- **Tiếp theo:** mở Pull Request cho `feat/courses-read`, chờ CI xanh rồi gộp; sau đó việc 4.2 (`GET /api/lessons/{slug}`, nhánh `feat/lesson-detail`). Giao diện đọc và đăng nhập dời sang Tuần 5.
+
+## 2026-11-07 — Đóng Tuần 3, bắt đầu Tuần 4
+- **Nhánh:** `feat/courses-read` (tạo từ `main` ở `07502e3`; mục này là commit tài liệu đầu tiên của nhánh, chưa commit khi viết)
+- **Đã làm:**
+  - Gộp Pull Request #18 (`feat/move-to-src`) vào `main` ở `07502e3`; đồng bộ `main` ở máy bằng `git switch main`, `git pull`.
+  - Chốt Tuần 3 và chia Tuần 4 thành 6 việc (4.1 đến 4.6) trong kế hoạch ở máy; nhánh đầu tiên là `feat/courses-read`.
+  - Đổi cách làm việc: bỏ vấn đáp bắt buộc; **giữ nguyên** viết test (RED) trước rồi code (GREEN), vì test là phần bắt buộc của đồ án (ma trận test, CI, nhãn `Tested`). `CLAUDE.md` và `docs/TESTING.md` đã khớp.
+- **Kiểm tra:**
+  - CI trên Pull Request #18 (commit `6dee3f6`): `CI`, `Security`, `CodeQL` đều `success`.
+  - CI trên `main` (`07502e3`): `CI` với cả 3 job `frontend`, `backend`, `docker` đều `success`; `Security` và `CodeQL` `success`. Đây là lần đầu các đường dẫn `src/...` trong `ci.yml` và `codeql-config.yml` chạy trên GitHub.
+  - Render, gọi bằng `curl.exe` sau khi người dùng báo deploy thành công: `GET /api/health` → 200 `{"status":"UP"}` kèm `XSRF-TOKEN` có `Secure`; `GET /` → 200; `GET /api/me` khi chưa đăng nhập → 401 `problem+json`. Việc deploy đúng commit `07502e3` dựa vào lời người dùng báo (chưa xem được trang Events của Render).
+- **Tổng kết Tuần 3 (tài khoản và nền tảng dữ liệu):**
+  - Việc đã xong: 3.1 xử lý lỗi `problem+json` (PR #8); 3.2 và 3.3 JPA, Flyway `V1`, Aiven trên Render (PR #9); 3.4 đăng ký, đăng nhập, đăng xuất (PR #11); 3.5 phân quyền `LEARNER`/`ADMIN` và Admin đầu tiên (PR #12); 3.6 CSRF và session trong MySQL (PR #13); 3.7 thông tin cá nhân, đổi mật khẩu (PR #14); 3.8 cờ `Secure` của cookie và Admin ở production (PR #15); chuyển mã nguồn vào `src/` (PR #18).
+  - Số liệu: 130 test backend (86 không cần Docker, 44 tích hợp trên MySQL 8.4 thật) và 10 test frontend; `main` ở `07502e3`.
+  - Chưa làm hoặc ghi nhận, mang sang các tuần sau: đổi mật khẩu chưa hủy các session khác của cùng người dùng; thông báo 403 do thiếu CSRF dùng chung câu "Bạn không có quyền..."; chưa đo thời gian thức dậy của Render sau khi có JPA (lần đo cũ 33,5 giây là trước khi có JPA); chưa đo chênh lệch thời gian phản hồi giữa tài khoản bị khóa và sai mật khẩu (rủi ro ở D25); tài khoản thử `kiemtra-3-8@example.com` còn trong database production; test component `HealthStatus` và `ThemeToggle` chưa có (cần thêm Testing Library và jsdom, phải xin duyệt trước); vấn đáp của 3.5 đến 3.8 không còn bắt buộc.
+- **Lỗi gặp và cách sửa:** không có lỗi mới.
+- **Học được:**
+  - Render đặt Auto-Deploy là "sau khi CI xanh", nên ngay sau khi gộp mà gọi `/api/health` thấy 200 thì có thể vẫn là bản cũ; phải chờ CI trên `main` xong mới kết luận về bản mới.
+  - Đường dẫn trong `ci.yml` (`working-directory`, `cache-dependency-path`, `path` của artifact) và trong cấu hình CodeQL đều phải đổi theo khi dời thư mục, và chỉ chạy được trên GitHub nên phải xem kết quả CI của Pull Request.
+- **Tiếp theo:** việc 4.1 trên `feat/courses-read`: `GET /api/courses` và `GET /api/courses/{slug}/lessons` (chỉ bài `PUBLISHED`, không trả `content_md`). Người dùng nói kế hoạch trước, rồi viết test (RED), rồi code (GREEN).
+
+---
+
 ## 2026-11-07 — Đóng việc 3.8 (Admin ở production) và chuyển mã nguồn vào `src/`
 - **Nhánh:** `feat/move-to-src` (tạo từ `main` ở `65ee294`; chưa commit và chưa mở Pull Request khi viết mục này)
 - **Đã làm:**
@@ -28,7 +68,7 @@ Mẫu một mục:
   - CI trên `main` (`65ee294`): `CI`, `Security`, `CodeQL` đều `success` (đọc từ API công khai của GitHub).
   - Sau khi chuyển vào `src/`: `npm run lint` không lỗi; `npm test` → 10 test qua; `npm run build` thành công (đứng ở `src/frontend`). `.\mvnw test` (đứng ở `src/backend`) → `Tests run: 130, Failures: 0, Errors: 0`, `BUILD SUCCESS`. `docker build -t spacex:move-check .` ở thư mục gốc thành công.
   - Chạy thật: `.\mvnw spring-boot:run` ở `src/backend` với MySQL của docker compose, cổng 8081 → `GET /api/health` 200 `{"status":"UP"}`; log có `Schema spacex is up to date` và `Started SpacexApplication in 13.99 seconds`, chứng tỏ biến `DB_*` đã được đọc từ `.env` qua đường dẫn mới. Đã tắt ứng dụng sau khi kiểm.
-  - **Chưa kiểm:** CI trên Pull Request của nhánh này (đường dẫn mới trong `ci.yml` và `codeql-config.yml` chỉ chạy được trên GitHub); Render build lại từ `Dockerfile` sau khi gộp (mới build thử ở máy).
+  - Hai điều chưa kiểm lúc viết mục này (CI trên Pull Request với đường dẫn `src/...`, và Render build lại sau khi gộp) đã được kiểm sau đó, kết quả ở mục "Đóng Tuần 3" phía trên.
 - **Lỗi gặp và cách sửa:**
   - `spring.config.import=optional:file:../.env` là đường dẫn tương đối theo thư mục chạy. Sau khi chuyển, nếu không sửa thì `optional:` làm việc không tìm thấy `.env` thành **im lặng**, rồi mới báo `'url' must start with "jdbc"`; bộ test không bắt được vì test dùng `@DynamicPropertySource`. Phát hiện khi tìm các tham chiếu đường dẫn, sửa thành `../../.env` rồi kiểm bằng cách chạy ứng dụng thật.
   - Lần chạy `spring-boot:run` đầu báo `Connection refused` vì container MySQL ở máy chưa bật (`docker compose ps` trống), không phải lỗi đường dẫn. Bật bằng `docker compose up -d` (giữ dữ liệu) rồi chạy lại thì đạt.
@@ -40,7 +80,7 @@ Mẫu một mục:
   - Trong `Dockerfile`, chỉ đường dẫn nguồn của `COPY` (phía máy) đổi; đường dẫn bên trong container (`/frontend`, `/backend`) là tên tự đặt nên giữ nguyên.
   - Test xanh chưa đủ chứng minh cấu hình đúng khi test không đi qua cùng đường cấu hình; phải chạy ứng dụng thật.
 - **Chưa làm / ghi nhận:** nợ vấn đáp như trên; đổi mật khẩu chưa hủy các session khác; thông báo 403 do thiếu CSRF dùng chung câu "Bạn không có quyền..."; chưa đo thời gian thức dậy của Render sau khi có JPA; tài khoản thử `kiemtra-3-8@example.com` còn trong database production.
-- **Tiếp theo:** commit nhánh `feat/move-to-src`, mở Pull Request, chờ CI xanh rồi gộp; sau khi Render deploy, kiểm `GET /api/health` trên URL thật; sau đó báo cáo Tuần 3 (ghi mã commit trên `main`) và bắt đầu Tuần 4.
+- **Tiếp theo:** đã làm: commit, Pull Request #18, gộp, deploy (xem mục "Đóng Tuần 3" phía trên).
 
 ---
 

@@ -3,6 +3,7 @@ package vn.spacex.common.security;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -29,6 +30,9 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/health", "/api/auth/register", "/api/auth/login").permitAll()
+                        // Chỉ đọc danh sách khóa và bài đã đăng là công khai, và chỉ bằng GET. "*" khớp đúng một đoạn
+                        // đường dẫn nên /api/courses/{slug} (nếu sau này có) vẫn đòi đăng nhập.
+                        .requestMatchers(HttpMethod.GET, "/api/courses", "/api/courses/*/lessons").permitAll()
                         // Spring lấy luật khớp đầu tiên nên luật Admin phải đứng trước "/api/**" (D26).
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/**").authenticated()
