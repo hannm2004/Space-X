@@ -13,7 +13,7 @@ Không mở rộng sang chủ đề khác. Space-X là tên dự án, không li�
 Người dùng phải hiểu và tự giải thích được mọi phần của dự án trước giảng viên.
 - **Logic cốt lõi** (service, phân quyền, tiến độ học, RAG, Agent, test): người dùng tự viết. Claude giải thích khái niệm, gợi ý từng bước nhỏ, review và chỉ ra lỗi; không viết hộ cả phần, không sửa hộ khi chưa được yêu cầu.
 - **Cấu hình và khung** (Dockerfile, CI, cấu hình Maven/Vite): Claude có thể soạn nhưng phải giải thích từng khối; người dùng đọc hiểu rồi mới commit.
-- Mỗi tính năng: người dùng nói kế hoạch trước → viết test và code → chạy test, báo kết quả thật. Không bắt buộc thấy test đỏ (RED) trước, không có vấn đáp bắt buộc; Claude chỉ hỏi kiểm tra khi người dùng yêu cầu.
+- Mỗi tính năng: người dùng nói kế hoạch trước → viết test (RED) → viết code (GREEN). Không có vấn đáp bắt buộc; Claude chỉ hỏi kiểm tra khi người dùng yêu cầu.
 - Khi bí, được mở bản sao lưu code cũ ở máy để đối chiếu, không copy nguyên file.
 
 ## Cách giao tiếp
@@ -63,8 +63,8 @@ Người dùng phải hiểu và tự giải thích được mọi phần của 
 - Tránh dependency thừa; giải thích dependency mới.
 - Comment chỉ cho lý do/logic khó, không chú thích điều hiển nhiên.
 
-## Test (cho logic kiểm thử được)
-Viết test cùng với code, không bắt buộc viết test đỏ trước. Test mặc định không gọi API AI thật (dùng fake/mock provider).
+## Test (TDD cho logic kiểm thử được)
+RED → GREEN → REFACTOR. Test mặc định không gọi API AI thật (dùng fake/mock provider).
 Test phải bao: quyền truy cập, validation, lỗi, tiến độ học chỉ của chính mình, kiểm tra file ảnh, citation mapping của RAG, giới hạn vòng lặp và prompt injection của Agent. Danh mục: `docs/TESTING.md`.
 
 ## RAG & Agent — ràng buộc

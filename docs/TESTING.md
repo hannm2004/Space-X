@@ -17,7 +17,7 @@ CI chạy toàn bộ test trên mỗi Pull Request. **Không test nào gọi API
 - **Unit test:** kiểm một hàm/lớp cô lập, không khởi động Spring, không mạng.
 - **Slice test:** khởi động một phần Spring, ví dụ `@WebMvcTest` chỉ nạp tầng web.
 - **Integration test:** Spring đầy đủ + MySQL 8.4 thật, tên lớp kết thúc bằng `IntegrationTest`. Cần MySQL thật vì tìm kiếm FULLTEXT không chạy trên H2. Thư viện Testcontainers phải được duyệt trước khi thêm.
-- Viết test cùng với code; không bắt buộc viết test đỏ trước.
+- Viết test trước: RED → GREEN → REFACTOR.
 - Tên test mô tả **hành vi** như một câu. Mỗi tính năng có ít nhất một trường hợp lỗi, không chỉ trường hợp thành công.
 
 ## Ma trận test bắt buộc
