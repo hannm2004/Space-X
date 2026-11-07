@@ -9,4 +9,4 @@ spikes
 **/node_modules
 **/dist
 **/target
-backend/src/main/resources/static
+src/backend/src/main/resources/static
