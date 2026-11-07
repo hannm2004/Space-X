@@ -16,6 +16,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import vn.spacex.auth.EmailAlreadyExistsException;
 import vn.spacex.common.security.SecurityConfig;
+import vn.spacex.course.CourseNotFoundException;
 import vn.spacex.user.NoPasswordAccountException;
 import vn.spacex.user.WrongCurrentPasswordException;
 
@@ -31,6 +32,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(EmailAlreadyExistsException.class)
     ProblemDetail xuLyEmailTrung() {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "Email đã được đăng ký");
+    }
+
+    // Câu cố định, không lặp lại slug người dùng gửi lên.
+    @ExceptionHandler(CourseNotFoundException.class)
+    ProblemDetail xuLyKhongTimThayKhoaHoc() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Không tìm thấy khóa học");
     }
 
     // Đã đăng nhập nên báo rõ "mật khẩu hiện tại sai" không làm lộ gì thêm, khác với lúc đăng nhập (D25).
