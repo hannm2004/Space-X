@@ -6,9 +6,9 @@ Cập nhật: 2026-11-07 (đếm bằng lệnh ở mục "Cách đếm lại"). 
 
 | | Số test | Số lớp/file | Cần Docker? |
 |---|---|---|---|
-| Backend (JUnit 5 + Spring Test) | 96 | 14 lớp | Không |
+| Backend (JUnit 5 + Spring Test) | 102 | 16 lớp | Không |
 | Frontend (Vitest) | 10 | 2 file | Không |
-| Test tích hợp với MySQL thật (Testcontainers) | 52 | 8 lớp | Có |
+| Test tích hợp với MySQL thật (Testcontainers) | 57 | 9 lớp | Có |
 
 CI chạy toàn bộ test trên mỗi Pull Request. **Không test nào gọi API AI thật**: dùng nhà cung cấp giả.
 
@@ -43,8 +43,7 @@ Mỗi dòng phải có test thật trước khi tuần đó được coi là xon
 | Đổi mật khẩu (`PUT /api/me/password`): dữ liệu hợp lệ → 204 và mã băm BCrypt mới (mật khẩu cũ hết hiệu lực, mật khẩu mới đăng nhập được); sai mật khẩu cũ → 400, mã băm không đổi; tài khoản không có mật khẩu → 400; mật khẩu mới < 8 ký tự, > 72 byte (tính theo byte, tiếng Việt có dấu), xác nhận không khớp, trùng mật khẩu cũ → 400; khoảng trắng trong mật khẩu giữ nguyên; thân phản hồi và `toString` không chứa mật khẩu; chưa đăng nhập → 401, thiếu CSRF → 403; chỉ đổi mật khẩu của chính mình | Unit + Slice + Integration | 3 | Tested (`MeServiceTest`, `ProfileRequestValidationTest`, `MeControllerTest`, `MeIntegrationTest`) |
 | Thông tin cá nhân (`GET/PUT /api/me`): chỉ đọc/sửa được của chính mình (userId lấy từ session, `userId` trên đường dẫn và `id`/`email`/`role` trong thân bị bỏ qua); phản hồi không lộ mã băm; tên rỗng/quá 100 ký tự → 400, tên được cắt khoảng trắng; chưa đăng nhập → 401, thiếu CSRF → 403; sửa tên lưu vào MySQL và không đụng tài khoản khác | Unit + Slice + Integration | 3 | Tested (`MeServiceTest`, `ProfileRequestValidationTest`, `MeControllerTest`, `MeIntegrationTest`) |
 | Đọc công khai (4.1): khách (chưa đăng nhập) gọi `GET /api/courses` và `GET /api/courses/{slug}/lessons` → 200, mảng rỗng khi chưa có dữ liệu; khóa sắp theo `sort_order` rồi `id`, bài cũng vậy; khóa chỉ có `id`, `slug`, `title`, `description` (`null` khi để trống), bài chỉ có `id`, `slug`, `title`, `summary` (không có nội dung, không có trạng thái); bài `DRAFT` không lọt vào danh sách, khóa chỉ có bài nháp trả `[]` chứ không lỗi; bài khóa khác không lẫn vào; khóa không tồn tại → 404 `problem+json`, `detail` là câu cố định; tiếng Việt có dấu đi qua MySQL và JSON không hỏng; chỉ hai đường dẫn `GET` đó là công khai (`/api/courses/{slug}` vẫn 401, `POST /api/courses` khi chưa đăng nhập → 401) | Slice + Unit + Integration | 4 | Tested (`CourseControllerTest`, `CourseServiceTest`, `CourseIntegrationTest`) |
-| Khách đọc nội dung một bài (`GET /api/lessons/{slug}`) → 401 | Slice | 4 | Planned |
-| Học sinh không thấy bài Nháp (404) | Integration | 4 | Planned |
+| Đọc một bài (4.2, `GET /api/lessons/{slug}`): khách chưa đăng nhập → 401, service không được gọi, nội dung bài đã đăng không lọt vào thân phản hồi 401 (luật `/api/**` thật của `SecurityConfig`); đã đăng nhập → 200 với đúng 5 trường (`id`, `slug`, `title`, `summary`, `contentMd`), không có `status`, `courseId`, `createdBy`; `contentMd` giữ nguyên Markdown và tiếng Việt có dấu qua MySQL và JSON; bài `DRAFT` → 404 `problem+json` và không lộ nội dung nháp; slug không tồn tại và bài nháp trả **cùng một** phản hồi 404 (không dò được slug nào là bài nháp); `detail` là câu cố định, không lặp lại slug; service chỉ hỏi bài `PUBLISHED` ngay trong truy vấn | Slice + Unit + Integration | 4 | Tested (`LessonControllerTest`, `LessonServiceTest`, `LessonIntegrationTest`) |
 | Không xóa được khóa còn bài (409) | Unit | 4 | Planned |
 | Ảnh: sai loại → 415; quá 1 MB → 413; đuôi `.png` nhưng nội dung không phải ảnh → 415 | Unit | 4 | Planned |
 | Markdown của bài học không chạy được script (XSS) | Unit (frontend) | 4 | Planned |
@@ -81,6 +80,6 @@ PowerShell, đứng ở thư mục gốc dự án:
 (Get-ChildItem src\frontend\src -Recurse -Include *.test.ts,*.test.tsx | Select-String '^\s*(it|test)\(' | Measure-Object).Count
 ```
 
-Nếu số khác bảng "Tổng quan", sửa bảng cho khớp (không sửa test cho khớp bảng). Lệnh đếm backend đếm cả test tích hợp: 148 = 96 test không cần Docker + 52 test tích hợp.
+Nếu số khác bảng "Tổng quan", sửa bảng cho khớp (không sửa test cho khớp bảng). Lệnh đếm backend đếm cả test tích hợp: 159 = 102 test không cần Docker + 57 test tích hợp.
 
 Chạy riêng test tích hợp (cần Docker Desktop đang chạy, lần đầu phải tải image `mysql:8.4`): `.\mvnw test -Dtest=*IntegrationTest`. Mỗi lớp tích hợp bật một container MySQL riêng nên mỗi lớp mất khoảng 35 giây.
