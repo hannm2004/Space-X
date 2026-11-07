@@ -66,12 +66,12 @@ Yêu cầu: Docker Desktop, Java 21, Node 24. Dùng PowerShell, đứng ở thư
 # Backend: chạy test, rồi chạy ứng dụng (cổng 8080)
 # Từ Tuần 3 ứng dụng cần MySQL đang chạy và file .env có DB_URL, DB_USERNAME, DB_PASSWORD (xem mục MySQL bên dưới).
 # Test tích hợp tự bật MySQL bằng Testcontainers, nên chỉ cần Docker Desktop đang chạy.
-cd backend
+cd src\backend
 .\mvnw test
 .\mvnw spring-boot:run          # kiểm tra: http://localhost:8080/api/health -> {"status":"UP"}
 
 # Frontend (terminal khác): tự tải lại khi sửa; /api được chuyển sang backend cổng 8080
-cd frontend
+cd src\frontend
 npm install
 npm run dev
 npm test ; npm run lint ; npm run build

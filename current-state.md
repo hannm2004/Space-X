@@ -16,6 +16,34 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-07 — Đóng việc 3.8 (Admin ở production) và chuyển mã nguồn vào `src/`
+- **Nhánh:** `feat/move-to-src` (tạo từ `main` ở `65ee294`; chưa commit và chưa mở Pull Request khi viết mục này)
+- **Đã làm:**
+  - Đồng bộ máy với GitHub: `git switch main`, `git pull` (fast-forward lên `65ee294`). Pull Request #15 (`feat/secure-cookie`) mang cấu hình `forward-headers` vào `main`; Pull Request #16 (từ nhánh `main` vào `main`) và #17 là hai lần gộp thừa, nội dung không đổi so với `fa750f2`.
+  - Kiểm Admin đầu tiên ở production sau khi người dùng đặt `ADMIN_EMAIL` và `ADMIN_PASSWORD` trên Render (xem Kiểm tra).
+  - Chuyển mã nguồn: `backend/` → `src/backend/`, `frontend/` → `src/frontend/` bằng `git mv` (77 file được Git ghi nhận là đổi tên, lịch sử giữ nguyên). Sửa các đường dẫn tham chiếu: `Dockerfile` (5 dòng `COPY`), `.dockerignore`, `.github/workflows/ci.yml` (`working-directory`, `cache-dependency-path`, đường dẫn báo cáo test), `.github/codeql/codeql-config.yml`, `application.properties` (`spring.config.import` từ `../.env` thành `../../.env`), `README.md` (hai lệnh `cd`), `docs/TESTING.md` (chú thích và hai lệnh đếm test).
+  - Cách làm: theo yêu cầu của người dùng, Claude thực hiện việc di chuyển và viết mục này. Đây là việc đổi vị trí, không thêm hành vi mới nên không viết test mới; 130 test cũ là bằng chứng hành vi không đổi. Người dùng yêu cầu **bỏ qua vấn đáp**, nên vẫn còn nợ vấn đáp 3.5, 3.6 (câu 4), 3.7 và 3.8.
+- **Kiểm tra:**
+  - Production (Render, `curl.exe` với cookie jar, 2026-11-07): `POST /api/auth/login` bằng tài khoản Admin → 200, `Set-Cookie: SESSION=...; Path=/; Secure; HttpOnly; SameSite=Lax`, thân có `role: ADMIN`; `GET /api/me` → 200 với `role: ADMIN`, `authProvider: LOCAL`, không có mật khẩu; `GET /api/admin/dashboard` → 404 `problem+json` (chưa có controller, nên 404 chứng tỏ đã qua luật `hasRole("ADMIN")`, không phải 401/403); `POST /api/auth/logout` → 204, cả `SESSION` và `XSRF-TOKEN` bị xóa. `GET /api/health` → 200 kèm `XSRF-TOKEN` có `Secure`.
+  - CI trên `main` (`65ee294`): `CI`, `Security`, `CodeQL` đều `success` (đọc từ API công khai của GitHub).
+  - Sau khi chuyển vào `src/`: `npm run lint` không lỗi; `npm test` → 10 test qua; `npm run build` thành công (đứng ở `src/frontend`). `.\mvnw test` (đứng ở `src/backend`) → `Tests run: 130, Failures: 0, Errors: 0`, `BUILD SUCCESS`. `docker build -t spacex:move-check .` ở thư mục gốc thành công.
+  - Chạy thật: `.\mvnw spring-boot:run` ở `src/backend` với MySQL của docker compose, cổng 8081 → `GET /api/health` 200 `{"status":"UP"}`; log có `Schema spacex is up to date` và `Started SpacexApplication in 13.99 seconds`, chứng tỏ biến `DB_*` đã được đọc từ `.env` qua đường dẫn mới. Đã tắt ứng dụng sau khi kiểm.
+  - **Chưa kiểm:** CI trên Pull Request của nhánh này (đường dẫn mới trong `ci.yml` và `codeql-config.yml` chỉ chạy được trên GitHub); Render build lại từ `Dockerfile` sau khi gộp (mới build thử ở máy).
+- **Lỗi gặp và cách sửa:**
+  - `spring.config.import=optional:file:../.env` là đường dẫn tương đối theo thư mục chạy. Sau khi chuyển, nếu không sửa thì `optional:` làm việc không tìm thấy `.env` thành **im lặng**, rồi mới báo `'url' must start with "jdbc"`; bộ test không bắt được vì test dùng `@DynamicPropertySource`. Phát hiện khi tìm các tham chiếu đường dẫn, sửa thành `../../.env` rồi kiểm bằng cách chạy ứng dụng thật.
+  - Lần chạy `spring-boot:run` đầu báo `Connection refused` vì container MySQL ở máy chưa bật (`docker compose ps` trống), không phải lỗi đường dẫn. Bật bằng `docker compose up -d` (giữ dữ liệu) rồi chạy lại thì đạt.
+  - Lần `.\mvnw test` đầu chạy quá 10 phút nên bị chuyển xuống nền, nhưng kết thúc đúng (`BUILD SUCCESS`); hai lớp tích hợp lớn mất 75 giây và 59 giây vì Testcontainers khởi động MySQL.
+  - Cổng 8080 vẫn bị backend cũ của người dùng giữ nên chạy thử ở cổng 8081.
+- **Học được:**
+  - `git mv` thư mục thì Git ghi nhận từng file là đổi tên và giữ lịch sử; thư mục không theo dõi (`target`, `node_modules`) đi theo vì cả thư mục được di chuyển.
+  - Đường dẫn tương đối trong cấu hình (`../.env`) phụ thuộc thư mục chạy, nên đổi cấu trúc thư mục phải rà cả các đường dẫn kiểu này, không chỉ `Dockerfile` và CI.
+  - Trong `Dockerfile`, chỉ đường dẫn nguồn của `COPY` (phía máy) đổi; đường dẫn bên trong container (`/frontend`, `/backend`) là tên tự đặt nên giữ nguyên.
+  - Test xanh chưa đủ chứng minh cấu hình đúng khi test không đi qua cùng đường cấu hình; phải chạy ứng dụng thật.
+- **Chưa làm / ghi nhận:** nợ vấn đáp như trên; đổi mật khẩu chưa hủy các session khác; thông báo 403 do thiếu CSRF dùng chung câu "Bạn không có quyền..."; chưa đo thời gian thức dậy của Render sau khi có JPA; tài khoản thử `kiemtra-3-8@example.com` còn trong database production.
+- **Tiếp theo:** commit nhánh `feat/move-to-src`, mở Pull Request, chờ CI xanh rồi gộp; sau khi Render deploy, kiểm `GET /api/health` trên URL thật; sau đó báo cáo Tuần 3 (ghi mã commit trên `main`) và bắt đầu Tuần 4.
+
+---
+
 ## 2026-11-01 — Cờ Secure của cookie và kiểm tra trên URL Render (việc 3.8)
 - **Nhánh:** `feat/secure-cookie` (tạo từ `main` sau khi gộp PR #14; chưa commit và chưa mở Pull Request khi viết mục này)
 - **Đã làm:**

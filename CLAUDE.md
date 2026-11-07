@@ -13,7 +13,7 @@ Không mở rộng sang chủ đề khác. Space-X là tên dự án, không li�
 Người dùng phải hiểu và tự giải thích được mọi phần của dự án trước giảng viên.
 - **Logic cốt lõi** (service, phân quyền, tiến độ học, RAG, Agent, test): người dùng tự viết. Claude giải thích khái niệm, gợi ý từng bước nhỏ, review và chỉ ra lỗi; không viết hộ cả phần, không sửa hộ khi chưa được yêu cầu.
 - **Cấu hình và khung** (Dockerfile, CI, cấu hình Maven/Vite): Claude có thể soạn nhưng phải giải thích từng khối; người dùng đọc hiểu rồi mới commit.
-- Mỗi tính năng: người dùng nói kế hoạch trước → viết test (RED) → viết code (GREEN) → Claude hỏi 3–5 câu vấn đáp. Chưa tự giải thích lại được thì chưa coi là xong.
+- Mỗi tính năng: người dùng nói kế hoạch trước → viết test (RED) → viết code (GREEN). Không có vấn đáp bắt buộc; Claude chỉ hỏi kiểm tra khi người dùng yêu cầu.
 - Khi bí, được mở bản sao lưu code cũ ở máy để đối chiếu, không copy nguyên file.
 
 ## Cách giao tiếp
@@ -21,7 +21,6 @@ Người dùng phải hiểu và tự giải thích được mọi phần của 
 - Giải thích từ cơ bản, gắn với code thật của dự án.
 - Khi đưa lệnh: nói rõ mở terminal nào, đứng thư mục nào, lệnh làm gì, kết quả mong đợi, cách kiểm tra, lỗi thường gặp.
 - Không bịa kết quả. Chưa chạy test/deploy thì không nói đã chạy. Báo test fail kèm output thật.
-- Cuối tuần: kèm vài câu hỏi vấn đáp + đáp án mẫu ngắn.
 
 ## Cách duyệt (nhẹ)
 - **Phải hỏi trước** khi: đổi kiến trúc/scope/database/auth, thêm dependency lớn, phát sinh chi phí, tạo tài khoản dịch vụ ngoài, public dữ liệu, thao tác khó hoàn tác (xóa volume, reset DB, force push).

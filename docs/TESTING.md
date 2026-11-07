@@ -64,10 +64,10 @@ Mỗi dòng phải có test thật trước khi tuần đó được coi là xon
 Chạy riêng từng phần:
 
 ```powershell
-# Backend (đứng ở backend/)
+# Backend (đứng ở src/backend/)
 .\mvnw test
 
-# Frontend (đứng ở frontend/)
+# Frontend (đứng ở src/frontend/)
 npm test ; npm run lint ; npm run build
 ```
 
@@ -76,8 +76,8 @@ npm test ; npm run lint ; npm run build
 PowerShell, đứng ở thư mục gốc dự án:
 
 ```powershell
-(Get-ChildItem backend\src\test -Recurse -Filter *.java | Select-String '^\s*@Test\b' | Measure-Object).Count
-(Get-ChildItem frontend\src -Recurse -Include *.test.ts,*.test.tsx | Select-String '^\s*(it|test)\(' | Measure-Object).Count
+(Get-ChildItem src\backend\src\test -Recurse -Filter *.java | Select-String '^\s*@Test\b' | Measure-Object).Count
+(Get-ChildItem src\frontend\src -Recurse -Include *.test.ts,*.test.tsx | Select-String '^\s*(it|test)\(' | Measure-Object).Count
 ```
 
 Nếu số khác bảng "Tổng quan", sửa bảng cho khớp (không sửa test cho khớp bảng). Lệnh đếm backend đếm cả test tích hợp: 130 = 86 test không cần Docker + 44 test tích hợp.

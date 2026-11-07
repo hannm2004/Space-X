@@ -1,19 +1,19 @@
 # Giai đoạn 1: build giao diện React thành file tĩnh (dist/)
 FROM node:24-alpine AS frontend
 WORKDIR /frontend
-COPY frontend/package.json frontend/package-lock.json ./
+COPY src/frontend/package.json src/frontend/package-lock.json ./
 RUN npm ci
-COPY frontend/ ./
+COPY src/frontend/ ./
 RUN npm run build
 
 # Giai đoạn 2: build JAR Spring Boot, đặt giao diện vào static/ để một ứng dụng phục vụ cả hai
 FROM eclipse-temurin:21-jdk AS backend
 WORKDIR /backend
-COPY backend/.mvn .mvn
-COPY backend/mvnw backend/pom.xml ./
+COPY src/backend/.mvn .mvn
+COPY src/backend/mvnw src/backend/pom.xml ./
 # chmod: phòng khi file mất quyền thực thi do sao chép từ Windows, khi đó "./mvnw" báo "Permission denied" trên Linux.
 RUN chmod +x mvnw && ./mvnw -B -q dependency:go-offline
-COPY backend/src src
+COPY src/backend/src src
 COPY --from=frontend /frontend/dist src/main/resources/static
 RUN ./mvnw -B -q -DskipTests package && mv target/spacex-*.jar app.jar
 
