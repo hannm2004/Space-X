@@ -16,6 +16,24 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-07 — Việc 4.1: đọc công khai khóa học và bài học
+- **Nhánh:** `feat/courses-read`
+- **Đã làm:**
+  - Entity `Course`, `Lesson` (kèm enum `LessonStatus`: `DRAFT`/`PUBLISHED`), `CourseRepository`, `LessonRepository`, `CourseService`, `CourseController`, DTO `CourseResponse` và `LessonSummaryResponse` (chỉ `id`, `slug`, `title`, `summary`, không có `content_md`).
+  - `GET /api/courses` và `GET /api/courses/{slug}/lessons` công khai: khóa sắp theo `sort_order` rồi `id`; chỉ bài `PUBLISHED`; khóa không tồn tại → 404 `problem+json`, khóa chưa có bài đã đăng → `[]`.
+  - `SecurityConfig` mở đúng hai đường dẫn `GET` trên; `GlobalExceptionHandler` thêm handler cho `CourseNotFoundException` (câu cố định, không lặp lại slug người gửi).
+  - Cập nhật `docs/API.md` (mô tả hai endpoint, dòng trạng thái đầu file đã cũ) và `docs/TESTING.md` (số test, dòng 4.1 `Tested`).
+- **Kiểm tra:**
+  - `.\mvnw test` trong `src/backend`: **148 test, 0 lỗi, `BUILD SUCCESS`** (96 test không cần Docker + 52 test tích hợp trên MySQL 8.4 thật). Việc 4.1 thêm 18 test: `CourseControllerTest` 7, `CourseServiceTest` 3, `CourseIntegrationTest` 8 (trước đó 130).
+  - Đếm bằng lệnh trong `docs/TESTING.md`: 148 khớp bảng; frontend vẫn 10 test (chưa chạy lại lần này vì không sửa frontend).
+  - **Chưa kiểm:** chưa chạy server thật rồi gọi bằng `curl.exe`; chưa kiểm trên Render sau khi gộp.
+- **Lỗi gặp và cách sửa:** `CourseIntegrationTest` lần chạy đầu báo `Could not find a valid Docker environment` vì Docker Desktop chưa bật (không phải lỗi code). Bật Docker rồi chạy lại: 8 test qua.
+- **Học được:**
+  - Trong luật URL của Spring Security, `*` chỉ khớp đúng một đoạn đường dẫn, nên `/api/courses/*/lessons` công khai còn `/api/courses/{slug}` (nếu sau này có) vẫn đòi đăng nhập; luật chỉ áp cho `GET`, còn `POST /api/courses` khi chưa đăng nhập vẫn 401.
+  - Loại bài `DRAFT` ngay trong truy vấn (`findByCourseIdAndStatus...`) an toàn hơn lọc sau ở service, vì bài nháp không bao giờ được nạp lên cho đường dẫn công khai.
+  - Khóa không tồn tại (404) khác với khóa chưa có bài (200 với `[]`): hai trường hợp có ý nghĩa khác nhau nên không gộp.
+- **Tiếp theo:** mở Pull Request cho `feat/courses-read`, chờ CI xanh rồi gộp; sau đó việc 4.2 (`GET /api/lessons/{slug}`, nhánh `feat/lesson-detail`). Giao diện đọc và đăng nhập dời sang Tuần 5.
+
 ## 2026-11-07 — Đóng Tuần 3, bắt đầu Tuần 4
 - **Nhánh:** `feat/courses-read` (tạo từ `main` ở `07502e3`; mục này là commit tài liệu đầu tiên của nhánh, chưa commit khi viết)
 - **Đã làm:**

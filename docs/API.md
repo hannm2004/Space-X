@@ -1,6 +1,6 @@
 # Danh sách API Space-X
 
-Trạng thái: **thiết kế, chưa có mã nguồn** (cập nhật 2026-10-21). Khi làm, mỗi endpoint chuyển nhãn `Planned` → `Implemented` → `Tested`.
+Trạng thái (cập nhật 2026-11-07): đã có mã nguồn và test (`Tested`) cho `GET /api/health`, nhóm **Tài khoản** (đăng ký, đăng nhập, đăng xuất, `/api/me`, đổi mật khẩu; riêng đăng nhập Google chưa làm) và hai `GET` công khai của **Khóa học và bài học** (`/api/courses`, `/api/courses/{slug}/lessons`). Mọi endpoint còn lại là thiết kế, `Planned`. Khi làm, mỗi endpoint chuyển nhãn `Planned` → `Implemented` → `Tested`.
 
 ## Quy ước chung
 
@@ -100,8 +100,8 @@ Người dùng hiện tại luôn lấy từ session. `userId` gửi lên (đư�
 
 | Method | Đường dẫn | Quyền | Mô tả |
 |---|---|---|---|
-| GET | `/api/courses` | Công khai | Danh sách khóa học |
-| GET | `/api/courses/{slug}/lessons` | Công khai | Danh sách bài Đã đăng của khóa: chỉ tiêu đề và tóm tắt, không có nội dung |
+| GET | `/api/courses` | Công khai | Danh sách khóa học, sắp theo `sort_order` rồi `id`. Mỗi khóa: `id`, `slug`, `title`, `description` (`null` nếu để trống). Chưa có khóa nào → `[]` |
+| GET | `/api/courses/{slug}/lessons` | Công khai | Danh sách bài Đã đăng của khóa, sắp theo `sort_order` rồi `id`. Mỗi bài: `id`, `slug`, `title`, `summary`; không có nội dung và không có trạng thái. Bài Nháp không bao giờ có mặt. Khóa chưa có bài đã đăng → `[]`; khóa không tồn tại → `404` |
 | GET | `/api/lessons/{slug}` | Đăng nhập | Nội dung một bài Đã đăng |
 | GET | `/api/lessons?q=từ khóa` | Đăng nhập | Tìm bài Đã đăng, phân trang |
 | GET | `/api/images/{id}` | Đăng nhập | Ảnh thuộc bài mà người gọi được xem |
