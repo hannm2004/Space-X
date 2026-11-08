@@ -21,6 +21,7 @@ import vn.spacex.course.CourseHasLessonsException;
 import vn.spacex.course.CourseNotFoundException;
 import vn.spacex.course.CourseSlugAlreadyExistsException;
 import vn.spacex.lesson.LessonNotFoundException;
+import vn.spacex.lesson.LessonSlugAlreadyExistsException;
 import vn.spacex.user.NoPasswordAccountException;
 import vn.spacex.user.WrongCurrentPasswordException;
 
@@ -52,6 +53,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(CourseHasLessonsException.class)
     ProblemDetail xuLyKhoaHocConBai() {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "Không xóa được khóa học còn bài học");
+    }
+
+    @ExceptionHandler(LessonSlugAlreadyExistsException.class)
+    ProblemDetail xuLySlugBaiHocTrung() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "Slug bài học đã tồn tại");
     }
 
     // Cùng một câu cho bài không tồn tại và bài nháp, và không lặp lại slug người dùng gửi lên.
