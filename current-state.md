@@ -16,6 +16,24 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-07 — Việc 4.2: đọc nội dung một bài học
+- **Nhánh:** `feat/lesson-detail` (tạo từ `main` ở `66ad1da` sau khi PR #19 của 4.1 đã gộp và CI trên `main` xanh)
+- **Đã làm:**
+  - `GET /api/lessons/{slug}` cần đăng nhập: trả `id`, `slug`, `title`, `summary`, `contentMd`; không có trạng thái, mã khóa hay người tạo.
+  - Bài không tồn tại và bài `DRAFT` trả **cùng một** 404 `problem+json` (`detail` cố định "Không tìm thấy bài học"), nên không dò được slug nào là bài nháp.
+  - Thêm 6 file trong `vn.spacex.lesson`: `LessonContent` (entity chỉ-đọc), `LessonContentRepository`, `LessonDetailResponse`, `LessonNotFoundException`, `LessonService`, `LessonController`; thêm một handler trong `GlobalExceptionHandler`. Không sửa `SecurityConfig`.
+  - Cập nhật `docs/API.md` và `docs/TESTING.md`.
+- **Kiểm tra:**
+  - Viết test trước: lần chạy RED là lỗi biên dịch vì thiếu đúng 6 class (chưa thấy từng test đỏ riêng lẻ). Sau khi có code: `LessonControllerTest` 4, `LessonServiceTest` 2 và `LessonIntegrationTest` 5 (MySQL 8.4 thật) đều qua.
+  - `.\mvnw test` trong `src/backend`: **159 test, 0 lỗi, `BUILD SUCCESS`** (102 không cần Docker + 57 tích hợp; trước đó 148, việc 4.2 thêm 11). Đếm bằng lệnh trong `docs/TESTING.md` ra 159, khớp bảng.
+  - **Chưa kiểm:** chưa chạy server thật rồi gọi bằng `curl.exe`; chưa kiểm trên Render sau khi gộp; chưa chạy lại test frontend (không sửa frontend).
+- **Lỗi gặp và cách sửa:** không có lỗi ngoài ý muốn ở bước chạy test.
+- **Học được:**
+  - Entity `Lesson` cố ý không ánh xạ `content_md` để danh sách bài không tải nội dung. Nên trang đọc dùng entity thứ hai `LessonContent` trên cùng bảng `lessons`, đánh dấu `@Immutable` (Hibernate không ghi lớp này xuống database). Hai entity cùng một bảng vẫn qua `ddl-auto=validate`.
+  - Cùng một câu 404 cho "không tồn tại" và "bài nháp" là cách tránh lộ thông tin: người ngoài không phân biệt được hai trường hợp. Test tích hợp so sánh hai phản hồi giống hệt nhau (trừ đường dẫn).
+  - Luật `"/api/**"` yêu cầu đăng nhập đã đủ cho API đọc bài, không cần luật mới; test khách 401 trên Spring Security thật chứng minh điều này.
+- **Tiếp theo:** mở Pull Request cho `feat/lesson-detail`, **đợi `CI`, `Security`, `CodeQL` xanh rồi mới gộp**; sau đó việc 4.3 (Admin quản lý khóa học, `feat/admin-courses`). Giao diện đọc và đăng nhập ở Tuần 5.
+
 ## 2026-11-07 — Việc 4.1: đọc công khai khóa học và bài học
 - **Nhánh:** `feat/courses-read`
 - **Đã làm:**
