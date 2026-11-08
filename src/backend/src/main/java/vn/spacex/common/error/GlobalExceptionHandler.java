@@ -3,6 +3,7 @@ package vn.spacex.common.error;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -16,7 +17,9 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import vn.spacex.auth.EmailAlreadyExistsException;
 import vn.spacex.common.security.SecurityConfig;
+import vn.spacex.course.CourseHasLessonsException;
 import vn.spacex.course.CourseNotFoundException;
+import vn.spacex.course.CourseSlugAlreadyExistsException;
 import vn.spacex.lesson.LessonNotFoundException;
 import vn.spacex.user.NoPasswordAccountException;
 import vn.spacex.user.WrongCurrentPasswordException;
@@ -39,6 +42,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(CourseNotFoundException.class)
     ProblemDetail xuLyKhongTimThayKhoaHoc() {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Không tìm thấy khóa học");
+    }
+
+    @ExceptionHandler(CourseSlugAlreadyExistsException.class)
+    ProblemDetail xuLySlugKhoaHocTrung() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "Slug khóa học đã tồn tại");
+    }
+
+    @ExceptionHandler(CourseHasLessonsException.class)
+    ProblemDetail xuLyKhoaHocConBai() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "Không xóa được khóa học còn bài học");
     }
 
     // Cùng một câu cho bài không tồn tại và bài nháp, và không lặp lại slug người dùng gửi lên.
@@ -77,6 +90,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .toList();
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Dữ liệu không hợp lệ");
         problem.setProperty("errors", errors);
+        return handleExceptionInternal(ex, problem, headers, status, request);
+    }
+
+    // Ví dụ id không phải số. Câu mặc định của Spring lặp lại giá trị người dùng gửi lên nên thay bằng câu cố định.
+    @Override
+    protected ResponseEntity<Object> handleTypeMismatch(
+            TypeMismatchException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, "Tham số trong đường dẫn không hợp lệ");
         return handleExceptionInternal(ex, problem, headers, status, request);
     }
 

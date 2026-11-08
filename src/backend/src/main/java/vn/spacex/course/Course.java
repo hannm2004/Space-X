@@ -30,6 +30,19 @@ public class Course {
     protected Course() {
     }
 
+    public static Course create(String slug, String title, String description, int sortOrder) {
+        Course course = new Course();
+        course.update(slug, title, description, sortOrder);
+        return course;
+    }
+
+    public void update(String slug, String title, String description, int sortOrder) {
+        this.slug = slug;
+        this.title = title;
+        this.description = description;
+        this.sortOrder = sortOrder;
+    }
+
     public Long getId() {
         return id;
     }
