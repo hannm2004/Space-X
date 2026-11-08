@@ -20,6 +20,11 @@ import vn.spacex.common.security.SecurityConfig;
 import vn.spacex.course.CourseHasLessonsException;
 import vn.spacex.course.CourseNotFoundException;
 import vn.spacex.course.CourseSlugAlreadyExistsException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import vn.spacex.image.ImageNotFoundException;
+import vn.spacex.image.ImageService;
+import vn.spacex.image.ImageTooLargeException;
+import vn.spacex.image.UnsupportedImageTypeException;
 import vn.spacex.lesson.LessonNotFoundException;
 import vn.spacex.lesson.LessonSlugAlreadyExistsException;
 import vn.spacex.user.NoPasswordAccountException;
@@ -96,6 +101,32 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .toList();
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Dữ liệu không hợp lệ");
         problem.setProperty("errors", errors);
+        return handleExceptionInternal(ex, problem, headers, status, request);
+    }
+
+    @ExceptionHandler(UnsupportedImageTypeException.class)
+    ProblemDetail xuLyAnhKhongHopLe() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                "Chỉ nhận ảnh PNG, JPEG hoặc WebP hợp lệ");
+    }
+
+    @ExceptionHandler(ImageTooLargeException.class)
+    ProblemDetail xuLyAnhQuaLon() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONTENT_TOO_LARGE, ImageService.TOO_LARGE_DETAIL);
+    }
+
+    // Cùng một câu cho ảnh không tồn tại và ảnh của bài nháp.
+    @ExceptionHandler(ImageNotFoundException.class)
+    ProblemDetail xuLyKhongTimThayAnh() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Không tìm thấy ảnh");
+    }
+
+    // Vượt giới hạn của spring.servlet.multipart (tầng container, trước khi tới controller).
+    @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONTENT_TOO_LARGE,
+                ImageService.TOO_LARGE_DETAIL);
         return handleExceptionInternal(ex, problem, headers, status, request);
     }
 
