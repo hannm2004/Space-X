@@ -16,6 +16,31 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-08 — Việc 4.3: Admin quản lý khóa học; kiểm tra 4.2 trên Render
+- **Nhánh:** `feat/admin-courses` (tạo từ `main` ở `8eccae5`, sau khi PR #20 của 4.2 đã gộp)
+- **Đã làm:**
+  - `POST /api/admin/courses` (201), `PUT /api/admin/courses/{id}` (200), `DELETE /api/admin/courses/{id}` (204). Luật `/api/admin/**` yêu cầu `ADMIN` đã có sẵn trong `SecurityConfig`, nên không sửa file đó.
+  - Thêm trong `vn.spacex.course`: `AdminCourseRequest` (validate và chuẩn hóa), `AdminCourseResponse`, `AdminCourseService`, `AdminCourseController`, `CourseSlugAlreadyExistsException`, `CourseHasLessonsException`. Thêm `Course.create/update`, `CourseRepository.existsBySlug/existsBySlugAndIdNot`, `LessonRepository.existsByCourseId`, hai handler 409 trong `GlobalExceptionHandler`. Không cần migration mới.
+  - Quy tắc: slug chỉ chữ thường không dấu, số và gạch ngang giữa các từ (tối đa 100); tiêu đề tối đa 200; mô tả tối đa 500, chỉ khoảng trắng thì lưu `null`; `sortOrder` bắt buộc, không âm. Slug trùng → 409; xóa khóa còn bài (kể cả bài nháp) → 409. Cả hai được kiểm tra trước ở service và còn có chốt cuối ở database (`UNIQUE` của slug, khóa ngoại `RESTRICT`).
+  - Cập nhật `docs/API.md` và `docs/TESTING.md`.
+  - Trên Render, kiểm tra việc 4.2 (xem mục Kiểm tra).
+- **Kiểm tra:**
+  - Viết test trước: lần chạy RED là lỗi biên dịch vì thiếu các class mới.
+  - `.\mvnw test` trong `src/backend`: **210 test, 0 lỗi, `BUILD SUCCESS`** (139 không cần Docker + 71 tích hợp; trước đó 159, việc 4.3 thêm 51: `AdminCourseControllerTest` 15, `AdminCourseServiceTest` 11, `AdminCourseRequestValidationTest` 11, `AdminCourseIntegrationTest` 14). Đếm bằng lệnh trong `docs/TESTING.md` ra 210, khớp Surefire.
+  - Render (URL production), gọi `curl.exe`: `GET /api/health` → 200; `GET /api/courses` → 200 `[]`; đăng nhập Admin → 200 vai trò `ADMIN`; `GET /api/lessons/khong-ton-tai` → 404 `problem+json` "Không tìm thấy bài học". Vậy 4.2 đã chạy trên production, nhưng chưa thử với bài đã đăng thật vì chưa có dữ liệu mẫu (việc 4.6).
+  - Chạy thật ở máy: MySQL 8.4 của Docker Compose + `.\mvnw spring-boot:run`, rồi gọi 17 lệnh `curl.exe` với ba vai (khách, học sinh, Admin). Kết quả: khách `POST` → 401; học sinh `POST` và `DELETE` → 403; Admin thiếu header CSRF → 403; dữ liệu sai → 400 kèm danh sách trường lỗi; tạo hợp lệ → 201; tạo trùng slug → 409; `GET /api/courses` công khai thấy hai khóa vừa tạo; sửa → 200; sửa sang slug của khóa khác → 409; sửa khóa không tồn tại → 404; `id` không phải số → 400; xóa → 204 (hai khóa), xóa lần hai → 404; cuối cùng `GET /api/courses` → `[]`. Chưa thử "xóa khóa còn bài → 409" bằng `curl.exe` (chưa có API tạo bài, việc 4.4); ca này chỉ được kiểm bằng test tích hợp.
+  - Phát hiện khi chạy thật: `id` không phải số trả 400 với `detail` là câu mặc định của Spring "Failed to convert 'id' with value: 'abc'" (có lặp lại giá trị người gửi); khác với các lỗi khác của dự án dùng câu cố định. Đã sửa: ghi đè `handleTypeMismatch` trong `GlobalExceptionHandler` trả câu cố định "Tham số trong đường dẫn không hợp lệ". Test được sửa trước và thấy đỏ đúng lý do (`detail` vẫn là câu mặc định), sau đó xanh.
+  - **Chưa kiểm:** chưa mở Pull Request, chưa kiểm trên Render; chưa chạy lại test frontend (không sửa frontend). Database ở máy còn lại tài khoản học sinh thử `kiemtra-4-3@example.com`.
+- **Lỗi gặp và cách sửa:**
+  - Gọi API đăng nhập bằng `curl.exe` từ Windows PowerShell 5.1 bị 400 `Failed to read request`: PowerShell làm mất dấu `"` trong chuỗi JSON truyền cho chương trình ngoài. Sửa bằng cách escape thành `\"` trong chuỗi.
+  - Đăng nhập báo 401 lần đầu vì dùng nhầm email giữ chỗ chứ không phải `ADMIN_EMAIL` thật.
+- **Học được:**
+  - Luật `"/api/**"` bắt đăng nhập cho mọi đường dẫn, kể cả đường dẫn chưa tồn tại, nên 401 của khách không chứng minh một endpoint đã được deploy; phải đăng nhập rồi gọi mới phân biệt được bản mới với bản cũ.
+  - `AdminBootstrap` bỏ qua khi đã có `ADMIN`, nên đổi `ADMIN_PASSWORD` trên Render không đổi mật khẩu thật; đổi mật khẩu bằng `PUT /api/me/password`.
+  - Kiểm tra trước (`existsBy...`) cho thông báo lỗi rõ ràng, còn ràng buộc của database mới là chốt cuối khi hai yêu cầu đến cùng lúc; cần cả hai.
+  - `existsBySlugAndIdNot` cho phép `PUT` giữ nguyên slug của chính khóa đó mà không bị báo trùng.
+- **Tiếp theo:** chạy thật bằng `spring-boot:run` + `curl.exe`; commit theo thứ tự `test` → `feat` → `docs`; mở Pull Request cho `feat/admin-courses`, đợi `CI`, `Security`, `CodeQL` xanh rồi mới gộp; sau đó việc 4.4 (Admin quản lý bài học).
+
 ## 2026-11-07 — Việc 4.2: đọc nội dung một bài học
 - **Nhánh:** `feat/lesson-detail` (tạo từ `main` ở `66ad1da` sau khi PR #19 của 4.1 đã gộp và CI trên `main` xanh)
 - **Đã làm:**
