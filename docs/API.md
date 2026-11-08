@@ -1,6 +1,6 @@
 # Danh sách API Space-X
 
-Trạng thái (cập nhật 2026-11-08): đã có mã nguồn và test (`Tested`) cho `GET /api/health`, nhóm **Tài khoản** (đăng ký, đăng nhập, đăng xuất, `/api/me`, đổi mật khẩu; riêng đăng nhập Google chưa làm), ba `GET` của **Khóa học và bài học** (`/api/courses`, `/api/courses/{slug}/lessons` công khai; `/api/lessons/{slug}` cần đăng nhập) và ba endpoint **Admin khóa học** (`POST/PUT/DELETE /api/admin/courses`). Mọi endpoint còn lại là thiết kế, `Planned`. Khi làm, mỗi endpoint chuyển nhãn `Planned` → `Implemented` → `Tested`.
+Trạng thái (cập nhật 2026-11-08): đã có mã nguồn và test (`Tested`) cho `GET /api/health`, nhóm **Tài khoản** (đăng ký, đăng nhập, đăng xuất, `/api/me`, đổi mật khẩu; riêng đăng nhập Google chưa làm), ba `GET` của **Khóa học và bài học** (`/api/courses`, `/api/courses/{slug}/lessons` công khai; `/api/lessons/{slug}` cần đăng nhập) ba endpoint **Admin khóa học** (`POST/PUT/DELETE /api/admin/courses`) và sáu endpoint **Admin bài học** (`/api/admin/lessons`; riêng ảnh bài học chưa làm). Mọi endpoint còn lại là thiết kế, `Planned`. Khi làm, mỗi endpoint chuyển nhãn `Planned` → `Implemented` → `Tested`.
 
 ## Quy ước chung
 
@@ -163,12 +163,12 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 | POST | `/api/admin/courses` | Tạo khóa. `201` kèm khóa vừa tạo; `400` dữ liệu sai (kèm `errors`); `409` slug trùng. Xem "Khóa học (Admin)" bên dưới |
 | PUT | `/api/admin/courses/{id}` | Sửa khóa. `200`; `400`; `404` không có khóa; `409` slug trùng với khóa khác |
 | DELETE | `/api/admin/courses/{id}` | Xóa khóa. `204`; `404`; `409` khóa còn bài (kể cả bài Nháp) |
-| GET | `/api/admin/lessons` | Mọi bài kể cả Nháp; lọc `?courseId=&status=`, phân trang |
-| GET | `/api/admin/lessons/{id}` | Chi tiết một bài để sửa (kể cả Nháp) |
-| POST | `/api/admin/lessons` | Tạo bài, mặc định `DRAFT` |
-| PUT | `/api/admin/lessons/{id}` | Sửa bài |
-| PATCH | `/api/admin/lessons/{id}/status` | Đăng (`PUBLISHED`) hoặc ẩn (`DRAFT`) |
-| DELETE | `/api/admin/lessons/{id}` | Xóa bài (kèm ảnh, tiến độ, đoạn tri thức của bài) |
+| GET | `/api/admin/lessons` | Mọi bài kể cả Nháp; lọc `?courseId=&status=`, phân trang. Xem "Bài học (Admin)" bên dưới |
+| GET | `/api/admin/lessons/{id}` | Chi tiết một bài để sửa (kể cả Nháp), có `contentMd`. `404` nếu không có |
+| POST | `/api/admin/lessons` | Tạo bài, luôn là `DRAFT`, người tạo lấy từ session. `201`; `400`; `404` không có khóa; `409` slug trùng |
+| PUT | `/api/admin/lessons/{id}` | Sửa bài (có thể chuyển sang khóa khác), không đổi trạng thái và người tạo. `200`; `400`; `404` (bài hoặc khóa); `409` |
+| PATCH | `/api/admin/lessons/{id}/status` | Đăng (`PUBLISHED`) hoặc ẩn (`DRAFT`): `{ "status": "PUBLISHED" }`. `200`; `400`; `404` |
+| DELETE | `/api/admin/lessons/{id}` | Xóa bài (kèm ảnh, tiến độ, đoạn tri thức của bài). `204`; `404` |
 | GET | `/api/admin/lessons/{id}/images` | Danh sách ảnh của bài |
 | POST | `/api/admin/lessons/{id}/images` | Tải ảnh lên (`multipart/form-data`; PNG/JPEG/WebP; tối đa 1 MB); trả `{ "id", "url" }` để chèn vào Markdown |
 | DELETE | `/api/admin/images/{id}` | Xóa ảnh |
@@ -190,6 +190,25 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 - `PUT` được đổi `slug`; giữ nguyên slug của chính khóa đó không bị tính là trùng. Đổi slug làm đường dẫn cũ `/api/courses/{slug}/lessons` ngừng hoạt động.
 - Lỗi `409` có hai câu khác nhau, đều không lặp lại dữ liệu người gửi: "Slug khóa học đã tồn tại" và "Không xóa được khóa học còn bài học". Slug trùng được chặn hai lần: kiểm tra trước ở service, và ràng buộc `UNIQUE` của database cho trường hợp hai Admin cùng gửi một lúc. Khóa còn bài được chặn bằng kiểm tra trước và khóa ngoại `RESTRICT`.
 - `401` khi chưa đăng nhập, `403` với học sinh hoặc khi thiếu CSRF token. `id` trong đường dẫn không phải số → `400` với `detail` cố định "Tham số trong đường dẫn không hợp lệ" (áp dụng cho mọi endpoint có tham số số trong đường dẫn).
+
+### Bài học (Admin) — `/api/admin/lessons`
+
+Tạo và sửa dùng cùng một body:
+
+```json
+{ "courseId": 2, "slug": "may-tinh-la-gi", "title": "Máy tính là gì", "summary": "Tóm tắt", "contentMd": "# Máy tính\n\nNội dung Markdown", "sortOrder": 1 }
+```
+
+- `courseId`: bắt buộc, số dương, phải là khóa đang tồn tại (không có → `404` "Không tìm thấy khóa học").
+- `slug`: bắt buộc, tối đa 150 ký tự, cùng quy tắc với slug khóa (chữ thường không dấu, số, gạch ngang giữa các từ). **Duy nhất trên toàn bộ bài**, không chỉ trong một khóa: trùng → `409` "Slug bài học đã tồn tại".
+- `title`: bắt buộc, tối đa 200. `summary`: tùy chọn, tối đa 500, chỉ khoảng trắng thì lưu `null`. `sortOrder`: bắt buộc, không âm.
+- `contentMd`: bắt buộc nhưng được là chuỗi rỗng, tối đa 100000 ký tự. **Không bị cắt khoảng trắng** (khoảng trắng đầu dòng có nghĩa trong Markdown). `slug` và `title` được cắt khoảng trắng hai đầu.
+- Không có `status` và `createdBy` trong body: bài mới luôn là `DRAFT`, người tạo lấy từ session. Nếu trình duyệt gửi hai trường này thì bị bỏ qua.
+- Trả về một bài: `id`, `courseId`, `slug`, `title`, `summary`, `contentMd`, `status`, `sortOrder` (không có người tạo).
+- `GET /api/admin/lessons?courseId=&status=&page=0&size=20`: `status` là `DRAFT` hoặc `PUBLISHED`; bỏ trống bộ lọc nghĩa là không lọc. Trả `{ items, page, size, totalItems }`, mỗi phần tử gồm `id`, `courseId`, `slug`, `title`, `summary`, `status`, `sortOrder` (không có `contentMd`). Sắp theo `courseId`, `sortOrder`, `id`. `page` ≥ 0, `size` từ 1 đến 50; ngoài khoảng đó hoặc `courseId`/`status` sai kiểu → `400`. Trang vượt quá cuối trả `items` rỗng, không phải lỗi.
+- Đăng bài (`PATCH .../status` sang `PUBLISHED`) là cách duy nhất để học sinh thấy bài; ẩn bài (`DRAFT`) làm bài biến mất khỏi danh sách công khai và `GET /api/lessons/{slug}` trả `404`. Giá trị `status` ngoài hai trị trên hoặc thiếu → `400`.
+- Xóa bài kéo theo ảnh, tiến độ học và đoạn tri thức của bài (`ON DELETE CASCADE`); người dùng và khóa học không bị ảnh hưởng. Khóa chỉ xóa được sau khi hết bài (xem mục khóa học).
+- Mọi endpoint, kể cả `GET`, chỉ `ADMIN` gọi được: khách → `401`, học sinh → `403` (bài nháp không lộ cho học sinh); ghi mà thiếu CSRF token → `403`.
 
 ## Hệ thống
 

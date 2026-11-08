@@ -16,6 +16,41 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-08 — Đóng việc 4.3 (đã deploy), bắt đầu 4.4
+- **Nhánh:** `feat/admin-lessons` (tạo từ `main` ở `a578fa9`; mục này là commit tài liệu đầu tiên của nhánh)
+- **Đã làm:**
+  - Gộp Pull Request #21 (`feat/admin-courses`) vào `main` ở `a578fa9`; `CI`, `Security`, `CodeQL` xanh trên Pull Request theo báo của người dùng; đồng bộ `main` ở máy bằng `git switch main`, `git pull`.
+  - Người dùng báo đã chạy script kiểm tra trên Render (đăng nhập Admin, tạo khóa thử, thử trùng slug, sửa, xóa) và deploy thành công. Chi tiết từng mã trả về là kết quả người dùng tự thấy, chưa dán vào nhật ký này.
+  - Chốt Tuần 4: 4.1, 4.2, 4.3 xong và đã deploy; còn 4.4 (Admin bài học), 4.5 (ảnh), 4.6 (dữ liệu mẫu).
+- **Kiểm tra:**
+  - Tự gọi `curl.exe` sau khi người dùng báo deploy: `GET /api/health` → 200 `{"status":"UP"}`; `GET /api/courses` → 200 `[]` (khớp với việc khóa thử đã được xóa).
+  - Không tự kiểm được `POST /api/admin/courses` trên production vì cần đăng nhập Admin; việc đó do người dùng chạy bằng script riêng (mật khẩu nhập tại máy).
+  - Không xem được trạng thái CI trên `main` bằng lệnh (máy không có `gh`).
+- **Lỗi gặp và cách sửa:** không có lỗi mới.
+- **Học được:** kiểm tra production cần tài khoản thật nên script phải hỏi mật khẩu lúc chạy (`Read-Host -AsSecureString`), không ghi mật khẩu vào file hay lệnh; script cũng phải tự dọn dữ liệu thử (xóa khóa vừa tạo) để production không còn rác.
+- **Tiếp theo:** việc 4.4 trên `feat/admin-lessons`: `GET /api/admin/lessons` (lọc `courseId`, `status`, phân trang), `GET /{id}`, `POST` (mặc định `DRAFT`, `created_by` từ session), `PUT`, `PATCH .../status`, `DELETE`. Viết test (RED) trước rồi code (GREEN). Kết quả ở mục ngay bên dưới.
+
+## 2026-11-08 — Việc 4.4: Admin quản lý bài học
+- **Nhánh:** `feat/admin-lessons`
+- **Đã làm:**
+  - Sáu endpoint dưới `/api/admin/lessons`: danh sách (lọc `courseId`, `status`, phân trang `page`/`size` tối đa 50), chi tiết, tạo (201, luôn `DRAFT`), sửa (200, được chuyển bài sang khóa khác), đổi trạng thái `PATCH .../status` (200), xóa (204). Luật `/api/admin/**` yêu cầu `ADMIN` đã có sẵn, nên không sửa `SecurityConfig`; vì thế cả các `GET` cũng chỉ Admin gọi được, bài nháp không lộ cho học sinh.
+  - `created_by` lấy từ session (`@AuthenticationPrincipal`); `createdBy` và `status` gửi lên trong body bị bỏ qua. Slug bài là duy nhất trên toàn bộ bài (không chỉ trong một khóa); trùng → 409 (kiểm tra trước ở service và chốt cuối bằng `UNIQUE` của database).
+  - Thêm trong `vn.spacex.lesson`: `AdminLesson` (entity đọc/ghi đủ cột, `created_by` không cập nhật được), `AdminLessonRepository`, `AdminLessonRequest`, `AdminLessonStatusRequest`, `AdminLessonResponse`, `AdminLessonSummaryResponse`, `AdminLessonService`, `AdminLessonController`, `LessonSlugAlreadyExistsException`; thêm `LessonRepository.findForAdmin` (truy vấn lọc có phân trang trên entity `Lesson` không có `content_md`, nên danh sách không tải nội dung); thêm `common.api.PageResponse`; thêm một handler 409 trong `GlobalExceptionHandler`. Không cần migration mới. Lúc này bảng `lessons` có ba entity cùng ánh xạ: `Lesson` (danh sách), `LessonContent` (đọc nội dung, chỉ-đọc), `AdminLesson` (ghi).
+  - Xóa bài kéo theo ảnh, tiến độ, đoạn tri thức nhờ `ON DELETE CASCADE` của database (không code thêm); khóa học xóa được sau khi hết bài.
+  - Cập nhật `docs/API.md` (mục "Bài học (Admin)") và `docs/TESTING.md`.
+- **Kiểm tra:**
+  - Viết test trước: lần chạy RED là 112 lỗi biên dịch vì thiếu các class mới.
+  - `.\mvnw test` trong `src/backend`: **283 test, 0 lỗi, `BUILD SUCCESS`** (193 không cần Docker + 90 tích hợp trên MySQL 8.4 thật; trước đó 210, việc 4.4 thêm 73: `AdminLessonControllerTest` 23, `AdminLessonServiceTest` 17, `AdminLessonRequestValidationTest` 14, `AdminLessonIntegrationTest` 19). Đếm bằng lệnh trong `docs/TESTING.md` ra 283, khớp Surefire. Cuối lần chạy có dòng `[ERROR] Surefire is going to kill self fork JVM` vì JVM tắt chậm hơn 30 giây sau khi test xong; build vẫn thành công.
+  - Chạy thật ở máy: MySQL 8.4 của Docker Compose + `.\mvnw spring-boot:run`, rồi gọi khoảng 45 lệnh `curl.exe` với ba vai (khách, học sinh, Admin). Khách → 401; học sinh `GET` và `POST` → 403; Admin thiếu CSRF → 403; dữ liệu sai → 400 kèm danh sách trường lỗi; tạo hợp lệ (kèm `createdBy: 999`, `status: PUBLISHED` trong body) → 201 và `status` là `DRAFT`; trùng slug → 409. Bài nháp: danh sách công khai `[]`, học sinh đọc → 404, Admin xem chi tiết → 200. Đăng → danh sách công khai có bài, học sinh đọc → 200 kèm nội dung Markdown; ẩn lại → học sinh đọc → 404. `PATCH` với `ARCHIVED` → 400. Sửa → 200; sửa sang slug của bài khác → 409; sửa sang khóa không tồn tại → 404; sửa bài không tồn tại → 404. Danh sách: lọc theo khóa, lọc `PUBLISHED` (rỗng), `page=1&size=1` (`totalItems` 2); `size=51`, `page=-1` → 400; `status` sai và `id` không phải số → 400 với câu cố định. Xóa khóa còn bài → 409; xóa bài → 204, xóa lần hai → 404; xóa hết bài rồi xóa khóa → 204; danh sách cuối cùng rỗng.
+  - **Chưa kiểm:** chưa mở Pull Request, chưa deploy, chưa kiểm trên Render; chưa chạy lại test frontend (không sửa frontend). Với `size=51` và `page=-1`, `detail` là câu mặc định của Spring "Validation failure" (không lặp lại giá trị người gửi).
+- **Lỗi gặp và cách sửa:** không có lỗi ngoài ý muốn ở bước chạy test.
+- **Học được:**
+  - Bảng `lessons` có ba entity khác nhau cho ba nhu cầu (danh sách không có nội dung, đọc nội dung chỉ-đọc, ghi đủ cột): tách như vậy để đường đọc công khai không bao giờ tải hay ghi nhầm cột. `ddl-auto=validate` vẫn qua.
+  - Bộ lọc tùy chọn viết một lần bằng `(:param is null or cột = :param)` trong JPQL; truy vấn đếm tổng cho phân trang do Spring Data tự sinh.
+  - Ràng buộc trên tham số `@RequestParam` (`@Min`, `@Max`) tự cho 400 khi không cần thêm cấu hình, nên không phải bắt `ConstraintViolationException`.
+  - `ON DELETE CASCADE` của database lo việc xóa ảnh, tiến độ, đoạn tri thức; test tích hợp chứng minh bằng cách tạo đủ ba loại dữ liệu con rồi xóa bài.
+- **Tiếp theo:** commit theo thứ tự `test` → `feat` → `docs`, push, mở Pull Request cho `feat/admin-lessons`, đợi `CI`, `Security`, `CodeQL` xanh rồi mới gộp; sau đó việc 4.5 (ảnh bài học, `feat/lesson-images`).
+
 ## 2026-11-08 — Việc 4.3: Admin quản lý khóa học; kiểm tra 4.2 trên Render
 - **Nhánh:** `feat/admin-courses` (tạo từ `main` ở `8eccae5`, sau khi PR #20 của 4.2 đã gộp)
 - **Đã làm:**
