@@ -16,6 +16,24 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-08 — Việc 4.6: dữ liệu mẫu (3 khóa, 6 bài)
+- **Nhánh:** `feat/sample-data` (tạo từ `main` ở `45d6d0b`, sau khi PR #23 của 4.5 đã gộp)
+- **Đã làm:**
+  - Thư mục `seed/`: `courses.json` (ba khóa `tin-hoc-10`, `tin-hoc-11`, `tin-hoc-12`), `lessons.json` (6 bài, mỗi khóa 2 bài) và 6 tệp Markdown trong `seed/lessons/<khóa>/`. Mỗi bài có dòng đánh dấu "Bài mẫu" để người dùng thay bằng nội dung tự viết sau.
+  - `scripts/seed-sample-data.ps1`: đăng nhập Admin, tạo khóa, tạo bài, đăng bài qua **API Admin có sẵn** (không đụng schema, không cần migration). Chạy lại an toàn: khóa/bài đã có (theo slug) bị bỏ qua, không ghi đè bài đã sửa. Có `-DryRun`, `-NoPublish`, `-FromEnv` (đọc `ADMIN_EMAIL`/`ADMIN_PASSWORD` từ `.env`). Nạp vào địa chỉ không phải máy mình thì đòi gõ "yes". Mật khẩu chỉ nằm trong bộ nhớ.
+  - `SeedDataTest` (8 test): dữ liệu mẫu qua đúng luật validate của `AdminCourseRequest`/`AdminLessonRequest`, slug không trùng, bài thuộc khóa có thật, thứ tự không trùng, không có tệp Markdown mồ côi, không có BOM/`<script`/`<iframe`/`javascript:`.
+  - Cập nhật `README.md` (cách nạp) và `docs/TESTING.md` (bảng tổng quan 249 test không cần Docker, thêm dòng 4.6).
+- **Kiểm tra:**
+  - `.\mvnw test -Dtest=SeedDataTest` trong `src/backend`: `Tests run: 8, Failures: 0, Errors: 0`, `BUILD SUCCESS`.
+  - Lệnh đếm trong `docs/TESTING.md` ra 356 = 249 + 107, khớp bảng.
+  - Theo ghi chú trong `docs/TESTING.md`, script đã được chạy thật ở máy (`-DryRun`, nạp thật, chạy lại lần hai bỏ qua hết, đọc lại bài qua API thấy nội dung giống hệt tệp gốc). Lần này chỉ chạy lại `SeedDataTest`: **chưa chạy lại script** và **chưa chạy lại toàn bộ `.\mvnw test`**.
+- **Chưa kiểm:** chưa mở Pull Request, chưa nạp vào bản deploy trên Render; phần script PowerShell không có test tự động (chỉ kiểm tay); nội dung 6 bài là bài mẫu ngắn, chưa phải bài học đầy đủ.
+- **Lỗi gặp và cách sửa:** Windows PowerShell 5.1 trả mảng JSON của `ConvertFrom-Json` như một đối tượng (và `[]` thành `$null`), còn PowerShell 7 tách phần tử; script có hàm `ConvertFrom-JsonArray` để cho cùng kết quả ở cả hai bản. Truyền chuỗi JSON thẳng cho `curl.exe` bị mất dấu `"` ở 5.1, nên script ghi thân JSON ra tệp UTF-8 rồi gửi bằng `--data-binary @tệp`.
+- **Học được:**
+  - Dữ liệu mẫu nên đi qua API có sẵn thay vì chèn thẳng SQL: được kiểm quyền, validate và `created_by` như dữ liệu thật.
+  - Test dữ liệu mẫu bằng chính lớp validate của API để biết trước script có bị từ chối hay không.
+- **Tiếp theo:** commit nhánh này, mở Pull Request, chờ CI xanh rồi gộp; sau đó nạp dữ liệu mẫu vào bản deploy bằng `-BaseUrl` và kiểm tay trên trình duyệt.
+
 ## 2026-11-08 — Đóng việc 4.4 (đã deploy); việc 4.5: ảnh bài học
 - **Nhánh:** `feat/lesson-images` (tạo từ `main` ở `f6814c8`, sau khi PR #22 của 4.4 đã gộp)
 - **Đã làm:**

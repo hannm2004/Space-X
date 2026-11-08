@@ -1,0 +1,20 @@
+[
+  {
+    "slug": "tin-hoc-10",
+    "title": "Tin học 10",
+    "description": "Khóa học Tin học lớp 10 (Chương trình GDPT 2018).",
+    "sortOrder": 1
+  },
+  {
+    "slug": "tin-hoc-11",
+    "title": "Tin học 11",
+    "description": "Khóa học Tin học lớp 11 (Chương trình GDPT 2018).",
+    "sortOrder": 2
+  },
+  {
+    "slug": "tin-hoc-12",
+    "title": "Tin học 12",
+    "description": "Khóa học Tin học lớp 12 (Chương trình GDPT 2018).",
+    "sortOrder": 3
+  }
+]

@@ -1,0 +1,50 @@
+[
+  {
+    "courseSlug": "tin-hoc-10",
+    "slug": "thong-tin-va-du-lieu",
+    "title": "Thông tin và dữ liệu",
+    "summary": "Phân biệt thông tin và dữ liệu, làm quen với bit, byte và các đơn vị đo lượng dữ liệu.",
+    "sortOrder": 1,
+    "file": "tin-hoc-10/thong-tin-va-du-lieu.md"
+  },
+  {
+    "courseSlug": "tin-hoc-10",
+    "slug": "mang-may-tinh-va-internet",
+    "title": "Mạng máy tính và Internet",
+    "summary": "Mạng máy tính là gì, Internet khác mạng máy tính thế nào, địa chỉ IP và tên miền dùng để làm gì.",
+    "sortOrder": 2,
+    "file": "tin-hoc-10/mang-may-tinh-va-internet.md"
+  },
+  {
+    "courseSlug": "tin-hoc-11",
+    "slug": "he-dieu-hanh-lam-gi",
+    "title": "Hệ điều hành làm những việc gì",
+    "summary": "Vai trò của hệ điều hành: quản lý tài nguyên, chạy chương trình, quản lý tệp và giao tiếp với người dùng.",
+    "sortOrder": 1,
+    "file": "tin-hoc-11/he-dieu-hanh-lam-gi.md"
+  },
+  {
+    "courseSlug": "tin-hoc-11",
+    "slug": "tep-va-thu-muc",
+    "title": "Tệp và thư mục",
+    "summary": "Cách tổ chức tệp trong thư mục, đường dẫn tuyệt đối và tương đối, thói quen đặt tên và sao lưu.",
+    "sortOrder": 2,
+    "file": "tin-hoc-11/tep-va-thu-muc.md"
+  },
+  {
+    "courseSlug": "tin-hoc-12",
+    "slug": "tri-tue-nhan-tao-co-ban",
+    "title": "Trí tuệ nhân tạo là gì",
+    "summary": "Trí tuệ nhân tạo là gì, máy học từ dữ liệu ra sao và vì sao cần dùng AI một cách có trách nhiệm.",
+    "sortOrder": 1,
+    "file": "tin-hoc-12/tri-tue-nhan-tao-co-ban.md"
+  },
+  {
+    "courseSlug": "tin-hoc-12",
+    "slug": "bao-ve-thong-tin-ca-nhan",
+    "title": "Bảo vệ thông tin cá nhân trên mạng",
+    "summary": "Thông tin cá nhân gồm những gì, cách đặt mật khẩu tốt và nhận biết các chiêu lừa đảo phổ biến.",
+    "sortOrder": 2,
+    "file": "tin-hoc-12/bao-ve-thong-tin-ca-nhan.md"
+  }
+]
