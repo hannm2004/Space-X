@@ -1,6 +1,6 @@
 # Danh sách API Space-X
 
-Trạng thái (cập nhật 2026-11-08): đã có mã nguồn và test (`Tested`) cho `GET /api/health`, nhóm **Tài khoản** (đăng ký, đăng nhập, đăng xuất, `/api/me`, đổi mật khẩu; riêng đăng nhập Google chưa làm), ba `GET` của **Khóa học và bài học** (`/api/courses`, `/api/courses/{slug}/lessons` công khai; `/api/lessons/{slug}` cần đăng nhập) ba endpoint **Admin khóa học** (`POST/PUT/DELETE /api/admin/courses`) và sáu endpoint **Admin bài học** (`/api/admin/lessons`; riêng ảnh bài học chưa làm). Mọi endpoint còn lại là thiết kế, `Planned`. Khi làm, mỗi endpoint chuyển nhãn `Planned` → `Implemented` → `Tested`.
+Trạng thái (cập nhật 2026-11-08): đã có mã nguồn và test (`Tested`) cho `GET /api/health`, nhóm **Tài khoản** (đăng ký, đăng nhập, đăng xuất, `/api/me`, đổi mật khẩu; riêng đăng nhập Google chưa làm), ba `GET` của **Khóa học và bài học** (`/api/courses`, `/api/courses/{slug}/lessons` công khai; `/api/lessons/{slug}` cần đăng nhập) ba endpoint **Admin khóa học** (`POST/PUT/DELETE /api/admin/courses`) sáu endpoint **Admin bài học** (`/api/admin/lessons`) và nhóm **Ảnh bài học** (tải lên, liệt kê, xóa, xem). Mọi endpoint còn lại là thiết kế, `Planned`. Khi làm, mỗi endpoint chuyển nhãn `Planned` → `Implemented` → `Tested`.
 
 ## Quy ước chung
 
@@ -104,7 +104,7 @@ Người dùng hiện tại luôn lấy từ session. `userId` gửi lên (đư�
 | GET | `/api/courses/{slug}/lessons` | Công khai | Danh sách bài Đã đăng của khóa, sắp theo `sort_order` rồi `id`. Mỗi bài: `id`, `slug`, `title`, `summary`; không có nội dung và không có trạng thái. Bài Nháp không bao giờ có mặt. Khóa chưa có bài đã đăng → `[]`; khóa không tồn tại → `404` |
 | GET | `/api/lessons/{slug}` | Đăng nhập | Nội dung một bài Đã đăng: `id`, `slug`, `title`, `summary`, `contentMd` (Markdown). Không có trạng thái, mã khóa hay người tạo. Bài không tồn tại và bài Nháp trả **cùng một** `404` (`detail`: "Không tìm thấy bài học") nên không dò được bài nháp. Chưa đăng nhập → `401` |
 | GET | `/api/lessons?q=từ khóa` | Đăng nhập | Tìm bài Đã đăng, phân trang |
-| GET | `/api/images/{id}` | Đăng nhập | Ảnh thuộc bài mà người gọi được xem |
+| GET | `/api/images/{id}` | Đăng nhập | Ảnh thuộc bài mà người gọi được xem: học sinh chỉ xem ảnh của bài Đã đăng, Admin xem cả ảnh của bài Nháp. Trả chính ảnh (không phải JSON); không có ảnh hoặc ảnh của bài Nháp (với học sinh) → cùng một `404`. Xem "Ảnh bài học" bên dưới |
 
 ## Tiến độ học tập
 
@@ -169,9 +169,9 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 | PUT | `/api/admin/lessons/{id}` | Sửa bài (có thể chuyển sang khóa khác), không đổi trạng thái và người tạo. `200`; `400`; `404` (bài hoặc khóa); `409` |
 | PATCH | `/api/admin/lessons/{id}/status` | Đăng (`PUBLISHED`) hoặc ẩn (`DRAFT`): `{ "status": "PUBLISHED" }`. `200`; `400`; `404` |
 | DELETE | `/api/admin/lessons/{id}` | Xóa bài (kèm ảnh, tiến độ, đoạn tri thức của bài). `204`; `404` |
-| GET | `/api/admin/lessons/{id}/images` | Danh sách ảnh của bài |
-| POST | `/api/admin/lessons/{id}/images` | Tải ảnh lên (`multipart/form-data`; PNG/JPEG/WebP; tối đa 1 MB); trả `{ "id", "url" }` để chèn vào Markdown |
-| DELETE | `/api/admin/images/{id}` | Xóa ảnh |
+| GET | `/api/admin/lessons/{id}/images` | Danh sách ảnh của bài (không kèm dữ liệu ảnh). `200`; `404` không có bài |
+| POST | `/api/admin/lessons/{id}/images` | Tải ảnh lên (`multipart/form-data`, phần tên `file`; PNG/JPEG/WebP; tối đa 1 MB); trả `{ "id", "url" }` để chèn vào Markdown. `201`; `400` thiếu phần `file`; `404` không có bài; `413` quá 1 MB; `415` không phải ảnh hợp lệ |
+| DELETE | `/api/admin/images/{id}` | Xóa ảnh. `204`; `404` |
 | GET | `/api/admin/users` | Danh sách người dùng, tìm theo email/tên, phân trang |
 | PATCH | `/api/admin/users/{id}/status` | Khóa/mở: `{ "enabled": false }`. Không tự khóa mình, không khóa Admin cuối cùng (409) |
 | POST | `/api/admin/users/{id}/reset-password` | Đặt mật khẩu tạm và trả về **một lần** để Admin báo cho học sinh; không ghi mật khẩu vào log |
@@ -209,6 +209,17 @@ Tạo và sửa dùng cùng một body:
 - Đăng bài (`PATCH .../status` sang `PUBLISHED`) là cách duy nhất để học sinh thấy bài; ẩn bài (`DRAFT`) làm bài biến mất khỏi danh sách công khai và `GET /api/lessons/{slug}` trả `404`. Giá trị `status` ngoài hai trị trên hoặc thiếu → `400`.
 - Xóa bài kéo theo ảnh, tiến độ học và đoạn tri thức của bài (`ON DELETE CASCADE`); người dùng và khóa học không bị ảnh hưởng. Khóa chỉ xóa được sau khi hết bài (xem mục khóa học).
 - Mọi endpoint, kể cả `GET`, chỉ `ADMIN` gọi được: khách → `401`, học sinh → `403` (bài nháp không lộ cho học sinh); ghi mà thiếu CSRF token → `403`.
+
+### Ảnh bài học — `/api/admin/lessons/{id}/images`, `/api/admin/images/{id}`, `/api/images/{id}`
+
+- **Tải lên:** `POST /api/admin/lessons/{id}/images`, `Content-Type: multipart/form-data`, phần tên `file`. Trả `201` `{ "id": 7, "url": "/api/images/7" }`; chèn `![mô tả](/api/images/7)` vào `contentMd` của bài.
+- **Kiểm tra nội dung thật, không tin trình duyệt:** loại ảnh được nhận diện từ **chữ ký byte và phần đầu tệp**, không dựa vào đuôi tệp hay `Content-Type` khai báo. Chỉ nhận PNG, JPEG, WebP. Từ chối (`415` "Chỉ nhận ảnh PNG, JPEG hoặc WebP hợp lệ"): HTML, SVG (có thể chứa script), GIF, tệp thực thi, tệp rỗng, tệp có chữ ký đúng nhưng phần còn lại là rác hoặc bị cụt, WebP sai cấu trúc RIFF, và ảnh có cạnh nào **lớn hơn 4096 điểm ảnh** (chặn "bom giải nén": ảnh nén vài KB nhưng rộng hàng chục nghìn điểm ảnh). Loại lưu và trả về (`Content-Type` khi xem) là loại do ứng dụng nhận diện.
+- **Kích thước:** tối đa 1 MB (1.048.576 byte) mỗi tệp. Vượt → `413` "Ảnh vượt quá 1 MB", được chặn ở hai tầng: cấu hình `spring.servlet.multipart.max-file-size=1MB` (request tổng tối đa 2 MB) và kiểm tra lại trong `ImageService`.
+- **Tên tệp** chỉ để hiển thị: bỏ phần đường dẫn (`../../etc/passwd.png` → `passwd.png`, cả `/` lẫn `\`), bỏ ký tự điều khiển, tối đa 255 ký tự; thiếu hoặc rỗng thì đặt `image.png`/`image.jpg`/`image.webp` theo loại thật. Tên này không bao giờ được dùng làm đường dẫn tệp (ảnh nằm trong MySQL).
+- **Xem ảnh:** `GET /api/images/{id}` yêu cầu đăng nhập (khách → `401`). Học sinh chỉ xem được ảnh của bài **Đã đăng**; ảnh của bài Nháp và ảnh không tồn tại trả **cùng một** `404` "Không tìm thấy ảnh" (không dò được id nào thuộc bài nháp). Admin xem được mọi ảnh. Khi bài chuyển `DRAFT` ↔ `PUBLISHED`, quyền xem ảnh đổi theo ngay. Phản hồi có `X-Content-Type-Options: nosniff` và `Cache-Control: private, max-age=3600`.
+- **Danh sách:** `GET /api/admin/lessons/{id}/images` → `[ { id, fileName, contentType, sizeBytes, url } ]` sắp theo `id`, không có dữ liệu ảnh.
+- **Xóa:** xóa một ảnh bằng `DELETE /api/admin/images/{id}`; xóa bài kéo theo toàn bộ ảnh của bài (`ON DELETE CASCADE`). Chưa có giới hạn số ảnh mỗi bài.
+- Chỉ `ADMIN` được tải lên, liệt kê, xóa (khách → `401`, học sinh → `403`, thiếu CSRF → `403`).
 
 ## Hệ thống
 

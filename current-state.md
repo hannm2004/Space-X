@@ -16,6 +16,33 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-08 — Đóng việc 4.4 (đã deploy); việc 4.5: ảnh bài học
+- **Nhánh:** `feat/lesson-images` (tạo từ `main` ở `f6814c8`, sau khi PR #22 của 4.4 đã gộp)
+- **Đã làm:**
+  - Gộp Pull Request #22 (`feat/admin-lessons`) vào `main` ở `f6814c8`; `CI`, `Security`, `CodeQL` xanh trên Pull Request và deploy thành công theo báo của người dùng. Tự gọi `GET /api/health` trên production → 200; không tự kiểm được API Admin bài học trên production vì cần đăng nhập Admin.
+  - Việc 4.5, bốn endpoint: tải ảnh lên `POST /api/admin/lessons/{id}/images` (multipart, phần tên `file`; 201 `{ id, url }`), danh sách `GET /api/admin/lessons/{id}/images`, xóa `DELETE /api/admin/images/{id}` (204), xem `GET /api/images/{id}` (cần đăng nhập). Ảnh lưu trong MySQL (cột `MEDIUMBLOB` đã có từ `V1`), không cần migration mới.
+  - **Kiểm tra nội dung ảnh không dùng thư viện ngoài:** `ImageInspector` nhận diện loại ảnh từ chữ ký byte (PNG, JPEG) kèm đọc phần đầu tệp bằng `ImageIO` của JDK để lấy kích thước (chỉ đọc header, không giải mã cả ảnh, và dùng `MemoryCacheImageInputStream` để không sinh tệp tạm); WebP (JDK không đọc được) kiểm cấu trúc RIFF bằng tay. Chỉ nhận PNG/JPEG/WebP, từ chối HTML, SVG, GIF, tệp rỗng, tệp có chữ ký đúng nhưng phần còn lại là rác, và ảnh có cạnh > 4096 điểm ảnh (chặn "bom giải nén"). Loại lưu và trả về là loại nhận diện được, không phải loại trình duyệt khai báo.
+  - Giới hạn 1 MB ở hai tầng: `spring.servlet.multipart.max-file-size=1MB` (request tối đa 2 MB) và kiểm lại trong `ImageService`; vượt → 413 với câu cố định.
+  - Quyền xem: học sinh chỉ xem ảnh của bài Đã đăng; ảnh bài Nháp và ảnh không tồn tại trả cùng một 404; Admin xem tất cả. Dữ liệu ảnh chỉ được tải sau khi qua kiểm quyền (truy vấn đầu dùng dạng chiếu `LessonImageInfo` không có cột `data`). Tên tệp chỉ để hiển thị (bỏ đường dẫn, ký tự điều khiển, tối đa 255 ký tự). Phản hồi ảnh có `X-Content-Type-Options: nosniff` và `Cache-Control: private`.
+  - Thêm trong `vn.spacex.image`: `ImageType`, `ImageInspector`, `LessonImage`, `LessonImageInfo`, `LessonImageRepository`, `ImageService`, `AdminImageController`, `ImageController`, ba exception, ba record phản hồi. Thêm ba handler và một ghi đè `handleMaxUploadSizeExceededException` trong `GlobalExceptionHandler`; thêm hai dòng cấu hình multipart trong `application.properties`.
+  - Cập nhật `docs/API.md` (mục "Ảnh bài học") và `docs/TESTING.md`.
+- **Kiểm tra:**
+  - Viết test trước: lần chạy RED là 114 lỗi biên dịch vì thiếu các class mới.
+  - `.\mvnw test` trong `src/backend`: **348 test, 0 lỗi, `BUILD SUCCESS`** (241 không cần Docker + 107 tích hợp trên MySQL 8.4 thật; trước đó 283, việc 4.5 thêm 65: `ImageInspectorTest` 12, `ImageServiceTest` 20, `ImageControllerTest` 16, `ImageIntegrationTest` 17). Đếm bằng lệnh trong `docs/TESTING.md` ra 348, khớp Surefire. Cuối lần chạy có dòng `[ERROR] Surefire is going to kill self fork JVM` (JVM tắt chậm hơn 30 giây); build vẫn thành công.
+  - Chạy thật ở máy: MySQL 8.4 của Docker Compose + `.\mvnw spring-boot:run`, rồi gọi `curl.exe` với ba vai (khách, học sinh, Admin) và tệp ảnh thật. Khách upload → 401; học sinh → 403; Admin thiếu CSRF → 403. Tải PNG thật (đặt tên `../../etc/passwd.png`) → 201, lưu tên `passwd.png`; tải về lại bằng `GET` thì SHA-256 giống hệt tệp đã gửi, `Content-Type: image/png`, `X-Content-Type-Options: nosniff`, `Cache-Control: max-age=3600, private`. JPEG đặt tên `.png` và khai báo `image/gif` → 201 và được lưu là `image/jpeg`. HTML đặt tên `.png`, SVG chứa script, ảnh nén mạnh 6000×6000 (4514 byte) → 415. Tệp 1,2 MB và 3 MB → 413 (cả hai giới hạn: của container và của service). Thiếu phần `file` → 400; bài không tồn tại → 404. Học sinh xem ảnh bài nháp → 404, phản hồi giống hệt ảnh không tồn tại (sau khi bỏ id); đăng bài → học sinh xem được đúng byte; ẩn lại → 404; khách → 401; `id` không phải số → 400 câu cố định. Xóa ảnh: học sinh 403, Admin 204, xóa lần hai 404; xóa bài kéo theo ảnh còn lại; xóa khóa → 204.
+  - **Chưa kiểm:** chưa mở Pull Request, chưa deploy, chưa kiểm trên Render (đặc biệt: giới hạn upload qua proxy của Render và kích thước cột/bộ nhớ khi lưu ảnh vào Aiven); chưa chạy lại test frontend (không sửa frontend). Chưa có giới hạn số ảnh mỗi bài. WebP chỉ kiểm cấu trúc RIFF, chưa kiểm kích thước điểm ảnh. Với thiếu phần `file`, `detail` là câu mặc định của Spring "Required part 'file' is not present." (không lặp lại dữ liệu người gửi).
+- **Lỗi gặp và cách sửa:**
+  - Lỗi biên dịch trong test: `0x90` vượt kiểu `byte`, sửa bằng `(byte) 0x90`.
+  - Ba test của `ImageServiceTest` lỗi do cách viết test: gọi một hàm có `when(...)` bên trong `thenReturn(...)` của một `when(...)` khác (`UnfinishedStubbing`) và stub thừa (`UnnecessaryStubbing`). Sửa bằng cách tạo đối tượng giả ra biến riêng trước và dùng `lenient()` cho stub không phải test nào cũng dùng.
+  - Lúc viết `ImageService.upload` có gõ nhầm lời gọi `withUrl()` không tồn tại; phát hiện khi đọc lại trước khi biên dịch và sửa ngay.
+- **Học được:**
+  - Không tin tên tệp và `Content-Type` do trình duyệt gửi; nhận diện loại ảnh từ nội dung và lưu loại nhận diện được. SVG bị loại hẳn vì có thể chứa script.
+  - Ảnh nén mạnh nhỏ vài KB vẫn có thể rộng hàng chục nghìn điểm ảnh, nên phải giới hạn cả kích thước điểm ảnh chứ không chỉ số byte.
+  - `MockMvc` không áp giới hạn upload của container, nên test dùng MockMvc phải kiểm lại giới hạn trong code và giới hạn thật của container phải kiểm bằng server thật (`curl.exe`).
+  - Hibernate `ddl-auto=validate` với cột `MEDIUMBLOB` cần khai báo kiểu cột (`@JdbcTypeCode(SqlTypes.LONGVARBINARY)`) để khớp; test tích hợp trên MySQL thật chứng minh điều này.
+  - Dạng chiếu của Spring Data (`LessonImageInfo`) chỉ SELECT các cột cần, nhờ đó kiểm quyền xong mới tải dữ liệu ảnh.
+- **Tiếp theo:** commit theo thứ tự `test` → `feat` → `docs`, push, mở Pull Request cho `feat/lesson-images`, đợi `CI`, `Security`, `CodeQL` xanh rồi mới gộp; sau đó việc 4.6 (dữ liệu mẫu: 3 khóa Tin học 10/11/12 và vài bài; cách nạp cần hỏi trước vì đụng database).
+
 ## 2026-11-08 — Đóng việc 4.3 (đã deploy), bắt đầu 4.4
 - **Nhánh:** `feat/admin-lessons` (tạo từ `main` ở `a578fa9`; mục này là commit tài liệu đầu tiên của nhánh)
 - **Đã làm:**
