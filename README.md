@@ -85,6 +85,12 @@ docker run --rm -p 8080:8080 --memory=512m spacex:local
 Copy-Item .env.example .env     # rồi mở .env, đặt mật khẩu của bạn; DB_USERNAME, DB_PASSWORD phải trùng MYSQL_USER, MYSQL_PASSWORD
 docker compose up -d
 docker compose ps               # chờ cột STATUS có "(healthy)"
+
+# Dữ liệu mẫu: 3 khóa Tin học 10/11/12 và 6 bài mẫu (thư mục seed/), nạp qua API Admin khi ứng dụng đang chạy.
+# Chạy lại nhiều lần an toàn: khóa/bài đã có (theo slug) bị bỏ qua, không ghi đè bài đã sửa.
+.\scripts\seed-sample-data.ps1 -FromEnv -DryRun   # xem trước, chưa tạo gì (-FromEnv: lấy ADMIN_EMAIL/ADMIN_PASSWORD từ .env)
+.\scripts\seed-sample-data.ps1 -FromEnv           # nạp vào localhost:8080
+.\scripts\seed-sample-data.ps1 -BaseUrl https://<địa-chỉ-bản-deploy>   # nạp vào bản deploy: hỏi email/mật khẩu và đòi gõ "yes"
 ```
 
 ## Tài liệu
