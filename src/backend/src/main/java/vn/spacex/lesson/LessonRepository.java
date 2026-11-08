@@ -7,4 +7,7 @@ import java.util.List;
 public interface LessonRepository extends JpaRepository<Lesson, Long> {
 
     List<Lesson> findByCourseIdAndStatusOrderBySortOrderAscIdAsc(Long courseId, LessonStatus status);
+
+    // Tính cả bài DRAFT: khóa ngoại RESTRICT cũng chặn xóa khóa còn bài nháp.
+    boolean existsByCourseId(Long courseId);
 }

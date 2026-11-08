@@ -1,6 +1,6 @@
 # Danh sách API Space-X
 
-Trạng thái (cập nhật 2026-11-07): đã có mã nguồn và test (`Tested`) cho `GET /api/health`, nhóm **Tài khoản** (đăng ký, đăng nhập, đăng xuất, `/api/me`, đổi mật khẩu; riêng đăng nhập Google chưa làm) và ba `GET` của **Khóa học và bài học** (`/api/courses`, `/api/courses/{slug}/lessons` công khai; `/api/lessons/{slug}` cần đăng nhập). Mọi endpoint còn lại là thiết kế, `Planned`. Khi làm, mỗi endpoint chuyển nhãn `Planned` → `Implemented` → `Tested`.
+Trạng thái (cập nhật 2026-11-08): đã có mã nguồn và test (`Tested`) cho `GET /api/health`, nhóm **Tài khoản** (đăng ký, đăng nhập, đăng xuất, `/api/me`, đổi mật khẩu; riêng đăng nhập Google chưa làm), ba `GET` của **Khóa học và bài học** (`/api/courses`, `/api/courses/{slug}/lessons` công khai; `/api/lessons/{slug}` cần đăng nhập) và ba endpoint **Admin khóa học** (`POST/PUT/DELETE /api/admin/courses`). Mọi endpoint còn lại là thiết kế, `Planned`. Khi làm, mỗi endpoint chuyển nhãn `Planned` → `Implemented` → `Tested`.
 
 ## Quy ước chung
 
@@ -160,9 +160,9 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
 | GET | `/api/admin/dashboard` | Số người dùng (tổng, mới trong 7 ngày), số bài theo trạng thái và theo khóa, số học sinh đang học, số lượt hoàn thành bài |
-| POST | `/api/admin/courses` | Tạo khóa |
-| PUT | `/api/admin/courses/{id}` | Sửa khóa |
-| DELETE | `/api/admin/courses/{id}` | Xóa khóa; còn bài thì 409 |
+| POST | `/api/admin/courses` | Tạo khóa. `201` kèm khóa vừa tạo; `400` dữ liệu sai (kèm `errors`); `409` slug trùng. Xem "Khóa học (Admin)" bên dưới |
+| PUT | `/api/admin/courses/{id}` | Sửa khóa. `200`; `400`; `404` không có khóa; `409` slug trùng với khóa khác |
+| DELETE | `/api/admin/courses/{id}` | Xóa khóa. `204`; `404`; `409` khóa còn bài (kể cả bài Nháp) |
 | GET | `/api/admin/lessons` | Mọi bài kể cả Nháp; lọc `?courseId=&status=`, phân trang |
 | GET | `/api/admin/lessons/{id}` | Chi tiết một bài để sửa (kể cả Nháp) |
 | POST | `/api/admin/lessons` | Tạo bài, mặc định `DRAFT` |
@@ -176,6 +176,20 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 | PATCH | `/api/admin/users/{id}/status` | Khóa/mở: `{ "enabled": false }`. Không tự khóa mình, không khóa Admin cuối cùng (409) |
 | POST | `/api/admin/users/{id}/reset-password` | Đặt mật khẩu tạm và trả về **một lần** để Admin báo cho học sinh; không ghi mật khẩu vào log |
 | POST | `/api/admin/knowledge/reindex` | Dựng lại toàn bộ đoạn tri thức từ các bài Đã đăng |
+
+### Khóa học (Admin) — `POST`, `PUT /api/admin/courses`
+
+```json
+{ "slug": "tin-hoc-10", "title": "Tin học 10", "description": "Chương trình lớp 10", "sortOrder": 1 }
+```
+
+- `slug`: bắt buộc, tối đa 100 ký tự, chỉ chữ thường không dấu, số và dấu gạch ngang giữa các từ (`tin-hoc-10`; không nhận `Tin-Hoc`, `tin_hoc`, `-tin`, `tin--hoc`).
+- `title`: bắt buộc, tối đa 200 ký tự. `description`: tùy chọn, tối đa 500 ký tự; chỉ có khoảng trắng thì lưu `null`. `sortOrder`: bắt buộc, số nguyên không âm.
+- `slug` và `title` được cắt khoảng trắng hai đầu trước khi kiểm tra.
+- Trả về (`201` khi tạo, `200` khi sửa): `id`, `slug`, `title`, `description`, `sortOrder`.
+- `PUT` được đổi `slug`; giữ nguyên slug của chính khóa đó không bị tính là trùng. Đổi slug làm đường dẫn cũ `/api/courses/{slug}/lessons` ngừng hoạt động.
+- Lỗi `409` có hai câu khác nhau, đều không lặp lại dữ liệu người gửi: "Slug khóa học đã tồn tại" và "Không xóa được khóa học còn bài học". Slug trùng được chặn hai lần: kiểm tra trước ở service, và ràng buộc `UNIQUE` của database cho trường hợp hai Admin cùng gửi một lúc. Khóa còn bài được chặn bằng kiểm tra trước và khóa ngoại `RESTRICT`.
+- `401` khi chưa đăng nhập, `403` với học sinh hoặc khi thiếu CSRF token. `id` trong đường dẫn không phải số → `400` với `detail` cố định "Tham số trong đường dẫn không hợp lệ" (áp dụng cho mọi endpoint có tham số số trong đường dẫn).
 
 ## Hệ thống
 
