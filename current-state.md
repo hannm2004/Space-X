@@ -16,6 +16,33 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-09 — Cập nhật README theo trạng thái sau Tuần 4
+- **Nhánh:** `feat/frontend-learning` (tạo từ `main` ở `b96b9d1`); commit tài liệu đầu tiên của nhánh, chưa có mã frontend mới.
+- **Đã làm:**
+  - `README.md` đang dừng ở mốc 2026-10-31 (ghi "chưa có đăng nhập, bài học", Tuần 3 `In progress`, Tuần 4 `Planned`). Sửa theo `docs/API.md` và `docs/TESTING.md`: banner trạng thái, bảng tính năng, lộ trình.
+  - Bảng tính năng: các mục tài khoản, xem khóa/bài, đọc bài, Admin quản lý khóa/bài/ảnh và dữ liệu mẫu chuyển từ `Planned` sang `Tested`, kèm ghi chú **chỉ API, chưa có giao diện**; tìm kiếm, tiến độ, Google, chatbot, Agent, dashboard, quản lý người dùng vẫn `Planned`.
+  - Lộ trình: Tuần 3 `Done`; Tuần 4 `Done (mã)` kèm việc còn lại là nạp dữ liệu mẫu lên bản deploy; Tuần 5 ghi thêm giao diện đọc bài và đăng ký/đăng nhập (khớp mục 2026-11-08). Thêm dòng nhắc kiểm `/api/courses` sau khi nạp.
+- **Kiểm tra:** chỉ sửa tài liệu, không chạy lại test hay build. Số liệu trong README (356 test backend = 249 + 107, 10 test frontend, PR #19 đến #24) lấy từ `docs/TESTING.md` và nhật ký 2026-11-08, không đếm lại. Mốc "kiểm ngày 2026-11-08" của bản deploy là lần gọi `curl.exe` hôm đó; **hôm nay chưa gọi lại**.
+- **Chưa kiểm / còn dở:** dữ liệu mẫu vẫn chưa xác nhận có trên production (`/api/courses` trả `[]` lần kiểm gần nhất); README vẫn ghi "Lộ trình 11 tuần" trong khi `CLAUDE.md` ghi 12 tuần, chưa đối chiếu với `docs/DECISIONS.md`.
+- **Tiếp theo:** nạp dữ liệu mẫu lên Render và xác nhận bằng `/api/courses`; rồi việc đầu của Tuần 5 trên nhánh này (giao diện đọc bài: trang chủ, danh sách khóa, danh sách bài, trang đọc bài).
+
+## 2026-11-08 — Đóng việc 4.6 và Tuần 4; tạo bài nộp Tuần 4
+- **Nhánh:** `main` (chỉ đồng bộ, không commit); mục này được commit cùng README ở commit tài liệu đầu tiên của nhánh `feat/frontend-learning` (xem mục 2026-11-09).
+- **Đã làm:**
+  - Gộp Pull Request #24 (`feat/sample-data`) vào `main` ở `b96b9d1`; đồng bộ `main` ở máy bằng `git switch main`, `git pull`. Người dùng báo deploy thành công.
+  - Tuần 4 xong về mặt mã: 4.1 đến 4.6 đều đã gộp (PR #19 đến #24).
+  - Tạo bài nộp Tuần 4 trong `nop-bai/` (`.docx` và `.pdf`, chỉ ở máy, bị `.gitignore` chặn): cấu trúc theo bài Tuần 3, số liệu lấy từ nhật ký, `docs/TESTING.md` và kết quả CI.
+- **Kiểm tra:**
+  - Tự gọi `curl.exe` trên Render: `GET /api/health` → 200 `{"status":"UP"}`; `GET /api/courses` → 200 `[]` (gọi nhiều lần trong buổi).
+  - CI trên GitHub đọc qua API công khai (máy không có `gh`): sáu commit gộp `66ad1da`, `8eccae5`, `a578fa9`, `f6814c8`, `45d6d0b`, `b96b9d1` đều có đủ sáu job (`backend`, `frontend`, `docker`, `gitleaks`, hai `CodeQL`) báo `success`.
+  - Bài nộp: xuất PDF 6 trang bằng Word. **Chưa xem được hình từng trang** (máy không có công cụ vẽ PDF thành ảnh); mới kiểm bằng chữ, cần mở file xem lại bố cục trước khi nộp.
+- **Chưa kiểm / còn dở:**
+  - **Dữ liệu mẫu chưa có trên production:** người dùng báo đã chạy script nạp, nhưng `GET /api/courses` vẫn trả `[]`, nên chưa thể ghi là đã nạp. Chưa rõ nguyên nhân (chưa có kết quả in ra của script). Bài nộp đang ghi đúng tình trạng này; sau khi nạp xong cần gọi lại `/api/courses`, rồi dựng lại bài nộp (đổi nội dung các chỗ liên quan).
+  - Chưa kiểm API Admin của 4.4, 4.5, 4.6 trên production (cần đăng nhập Admin); giới hạn upload ảnh qua proxy Render và lưu ảnh vào Aiven chưa thử.
+- **Lỗi gặp và cách sửa:** `python -c` in tiếng Việt ra console Windows bị `UnicodeEncodeError` (cp1252); ghi kết quả ra tệp UTF-8 rồi đọc. Máy chưa có thư viện `docx` cho Node, nên cài vào thư mục tạm (không đụng dự án) để dựng bài nộp.
+- **Học được:** khi người dùng báo "xong" một việc có kiểm được từ bên ngoài (dữ liệu trên production), gọi API công khai để xác nhận trước khi ghi nhật ký.
+- **Tiếp theo:** nạp dữ liệu mẫu lên Render (xem lệnh trong `README.md`), xác nhận bằng `/api/courses`, cập nhật bài nộp rồi mới nộp; sau đó Tuần 5 (giao diện đọc, đăng ký và đăng nhập trong React, tìm kiếm, tiến độ học tập, quản lý người dùng).
+
 ## 2026-11-08 — Việc 4.6: dữ liệu mẫu (3 khóa, 6 bài)
 - **Nhánh:** `feat/sample-data` (tạo từ `main` ở `45d6d0b`, sau khi PR #23 của 4.5 đã gộp)
 - **Đã làm:**
