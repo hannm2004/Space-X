@@ -16,15 +16,51 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-09 — CP5.1: nền frontend (routing, API client, component test)
+- **Nhánh:** `feat/frontend-learning`; **chưa commit** khi viết mục này.
+- **Đã làm:**
+  - Thêm dependency (đã duyệt ở D27): `react-router` 8.5.1, và dev: `@testing-library/react` 16.3.3, `@testing-library/dom` 10.4.2 (bắt buộc đi kèm bản React), `jsdom` 31.0.0. `react-markdown` chưa cài (để CP5.2).
+  - `vite.config.ts`: thêm khối `test` (môi trường `jsdom`, `setupFiles`); `src/test-setup.ts` gọi `cleanup()` sau mỗi test.
+  - `src/client.ts`: `apiRequest(method, path, data?)` và `ApiError` (`status`, `title`, `detail`, `fieldErrors`). Yêu cầu ghi tự gắn `X-XSRF-TOKEN` từ cookie `XSRF-TOKEN`; chưa có cookie thì gọi một `GET /api/health` để máy chủ cấp. Lỗi đọc theo `problem+json`; thân lỗi không phải JSON chỉ cho thông báo chung (không lộ nội dung thô); mất kết nối → `ApiError` status 0. `fetchHealth` giữ nguyên.
+  - Routing: `main.tsx` bọc `BrowserRouter`; `App.tsx` khai báo route; `Layout.tsx` (thanh đầu trang có liên kết Space-X và nút sáng/tối), `pages/HomePage.tsx` (nội dung trang chủ cũ), `pages/NotFoundPage.tsx`.
+  - Backend `common/web/SpaWebConfig.java`: máy chủ trả `index.html` cho đường dẫn không phải file và không thuộc `/api`, để F5 trên trang con của React Router không bị 404. Dùng `ResourceResolver` thay cho controller vì controller sẽ chặn cả file tĩnh thật; tắt bộ nhớ đệm của chuỗi resolver để đường dẫn lạ không làm đầy bộ nhớ.
+  - Cập nhật `docs/TESTING.md` (bảng tổng quan, ba dòng mới, hai dòng cũ về `HealthStatus`/`ThemeToggle`), `README.md` (số test, trạng thái), `docs/PLAN.md`.
+- **Kiểm tra:**
+  - RED trước: `client.test.ts` không nạp được vì thiếu `./client`; 2 test của `App` fail; `SpaWebConfigTest` lỗi biên dịch vì thiếu `SpaWebConfig`. Hai file component test qua ngay vì kiểm component đã có.
+  - Frontend (`src/frontend`): `npm test` → 6 file, **42 test qua** (10 cũ + 32 mới: `client` 18, `HealthStatus` 5, `ThemeToggle` 6, `App` 3); `npm run lint` exit 0; `npm run build` thành công. Lệnh đếm trong `docs/TESTING.md` ra 42, khớp Vitest.
+  - Backend (`src/backend`): `SpaWebConfigTest` 11 test qua; `.\mvnw test` toàn bộ → `Tests run: 367, Failures: 0, Errors: 0`, `BUILD SUCCESS` (356 + 11). Cuối lần chạy vẫn có dòng `Surefire is going to kill self fork JVM` và các `WARN` của Hikari, giống các lần trước.
+  - Chạy thật ở máy: MySQL của Docker Compose + `.\mvnw spring-boot:run` cổng 8081 với frontend đã build chép vào `target/classes/static`; `curl.exe`: `/`, `/khoa-hoc`, `/khoa-hoc/tin-hoc-10/bai/...`, `/dang-nhap` → 200 `text/html` (thân là `index.html`); `/assets/index-*.js` → 200 `text/javascript`; `/assets/khong-co.js` và `/favicon-khong-co.ico` → 404; `/api/khong-co` (khách) → 401 `problem+json`; `/api/health` → 200; `POST /khoa-hoc` thiếu CSRF → 403; `GET` trang vẫn nhận cookie `XSRF-TOKEN`. Đã tắt ứng dụng và xóa bản chép tạm.
+- **Chưa kiểm / còn dở:** chưa mở trình duyệt xem trang chủ, trang 404 và nút sáng/tối (test chỉ chạy trong jsdom); chưa chạy `docker build`/bản deploy với `SpaWebConfig`; chưa commit, chưa mở Pull Request; MySQL của Docker Compose đang bật (tôi bật cho lần thử này, dùng `docker compose stop` để tắt, giữ dữ liệu).
+- **Lỗi gặp và cách sửa:**
+  - Test `GET /` của `SpaWebConfigTest` lần đầu fail: Spring Boot xử lý `/` bằng `forward` tới `index.html`, mà MockMvc không đi theo forward nên thân rỗng. Sửa test: kiểm `forwardedUrl("index.html")` và thêm test riêng cho `/index.html`.
+  - Lệnh đếm test frontend chỉ đếm dòng bắt đầu `it(`/`test(`, nên `it.each` (4 trường hợp, 1 dòng) sẽ làm số đếm thấp hơn Vitest; đã tách thành 4 test rõ ràng và ghi lưu ý vào `docs/TESTING.md`.
+  - Hướng thiết kế đầu (controller `@GetMapping` chuyển tiếp về `index.html`) bị loại vì controller có ưu tiên cao hơn bộ phục vụ file tĩnh nên sẽ nuốt luôn `/assets/*.js`.
+- **Học được:** MockMvc không chạy forward như container thật nên test cần kiểm `forwardedUrl`; bật bộ nhớ đệm cho resolver "trả `index.html` cho mọi đường dẫn lạ" sẽ nhớ mỗi đường dẫn người lạ gõ vào, nên tắt.
+- **Tiếp theo:** CP5.2: giao diện đọc (danh sách khóa, danh sách bài, trang đọc bài bằng `react-markdown`, hiển thị ảnh, chuyển sang đăng nhập khi gặp 401), đọc thử đủ 6 bài mẫu trên trình duyệt; cần cài `react-markdown` (đã duyệt ở D27).
+
 ## 2026-11-09 — Cập nhật README theo trạng thái sau Tuần 4
 - **Nhánh:** `feat/frontend-learning` (tạo từ `main` ở `b96b9d1`); commit tài liệu đầu tiên của nhánh, chưa có mã frontend mới.
 - **Đã làm:**
   - `README.md` đang dừng ở mốc 2026-10-31 (ghi "chưa có đăng nhập, bài học", Tuần 3 `In progress`, Tuần 4 `Planned`). Sửa theo `docs/API.md` và `docs/TESTING.md`: banner trạng thái, bảng tính năng, lộ trình.
   - Bảng tính năng: các mục tài khoản, xem khóa/bài, đọc bài, Admin quản lý khóa/bài/ảnh và dữ liệu mẫu chuyển từ `Planned` sang `Tested`, kèm ghi chú **chỉ API, chưa có giao diện**; tìm kiếm, tiến độ, Google, chatbot, Agent, dashboard, quản lý người dùng vẫn `Planned`.
   - Lộ trình: Tuần 3 `Done`; Tuần 4 `Done (mã)` kèm việc còn lại là nạp dữ liệu mẫu lên bản deploy; Tuần 5 ghi thêm giao diện đọc bài và đăng ký/đăng nhập (khớp mục 2026-11-08). Thêm dòng nhắc kiểm `/api/courses` sau khi nạp.
-- **Kiểm tra:** chỉ sửa tài liệu, không chạy lại test hay build. Số liệu trong README (356 test backend = 249 + 107, 10 test frontend, PR #19 đến #24) lấy từ `docs/TESTING.md` và nhật ký 2026-11-08, không đếm lại. Mốc "kiểm ngày 2026-11-08" của bản deploy là lần gọi `curl.exe` hôm đó; **hôm nay chưa gọi lại**.
-- **Chưa kiểm / còn dở:** dữ liệu mẫu vẫn chưa xác nhận có trên production (`/api/courses` trả `[]` lần kiểm gần nhất); README vẫn ghi "Lộ trình 11 tuần" trong khi `CLAUDE.md` ghi 12 tuần, chưa đối chiếu với `docs/DECISIONS.md`.
-- **Tiếp theo:** nạp dữ liệu mẫu lên Render và xác nhận bằng `/api/courses`; rồi việc đầu của Tuần 5 trên nhánh này (giao diện đọc bài: trang chủ, danh sách khóa, danh sách bài, trang đọc bài).
+  - Ghi kế hoạch Tuần 5 (checkpoint CP5.0 đến CP5.7) vào `docs/PLAN.md` (file chỉ ở máy).
+  - **CP5.0, dữ liệu mẫu trên production:** theo yêu cầu của người dùng, Claude cho script `scripts/seed-sample-data.ps1 -FromEnv` đọc `ADMIN_EMAIL`/`ADMIN_PASSWORD` trong `.env` ở máy (không in ra) và nạp vào https://space-x-47f1.onrender.com. Sau đó cập nhật `README.md`, `docs/PLAN.md` cho khớp.
+- **Kiểm tra:**
+  - Trước khi nạp, `GET /api/courses` trên Render trả 200 `[]` (lần gọi đầu mất 83,8 giây, có vẻ lúc Render đang ngủ; mới đo một lần).
+  - `-DryRun`: đăng nhập Admin thành công bằng thông tin trong `.env` ở máy (trùng với Admin của Render), báo sẽ tạo 3 khóa và 6 bài.
+  - Nạp thật: `Khóa: tạo 3, bỏ qua 0. Bài: tạo 6 (đăng 6), bỏ qua 0.`
+  - Chạy lần hai: `Khóa: tạo 0, bỏ qua 3. Bài: tạo 0 (đăng 0), bỏ qua 6.` (không tạo trùng).
+  - Từ bên ngoài, `curl.exe`: `GET /api/courses` → 200 với `tin-hoc-10`, `tin-hoc-11`, `tin-hoc-12`; `GET /api/courses/{slug}/lessons` của cả ba khóa → 200, mỗi khóa 2 bài đã đăng.
+  - Phần sửa tài liệu: không chạy lại test hay build. Số liệu trong README (356 test backend = 249 + 107, 10 test frontend, PR #19 đến #24) lấy từ `docs/TESTING.md` và nhật ký 2026-11-08, không đếm lại.
+- **Lỗi gặp và cách sửa:** lần nạp trước (người dùng báo đã chạy mà `/api/courses` vẫn `[]`) **không xác định được nguyên nhân** vì không có kết quả script in ra; lần này `-DryRun` thấy production đang trống. Script hỏi `yes` bằng `Read-Host` nên Claude chạy bằng `"yes" | powershell.exe -File ...` để đưa câu trả lời qua stdin.
+- **Chưa kiểm / còn dở:**
+  - Chưa đọc nội dung từng bài qua `GET /api/lessons/{slug}` (cần đăng nhập); "đọc thử đủ 6 bài" thuộc CP5.2. Chưa thử ảnh trên production (giới hạn upload qua proxy Render, lưu ảnh vào Aiven).
+  - Dữ liệu mẫu là 6 bài ngắn, có dòng đánh dấu "Bài mẫu", chưa phải bài tự viết đầy đủ.
+  - Bài nộp Tuần 4 trong `nop-bai/` vẫn ghi dữ liệu mẫu chưa nạp; cần dựng lại trước khi nộp.
+  - README ghi "Lộ trình 11 tuần" còn `CLAUDE.md` ghi 12 tuần, chưa đối chiếu với `docs/DECISIONS.md`.
+- **Học được:** `-DryRun` đã đăng nhập thật nên vừa kiểm được thông tin Admin vừa cho biết production trống, trước khi ghi gì.
+- **Tiếp theo:** CP5.1 (nền frontend: routing, API client gắn `X-XSRF-TOKEN`, component test cho `HealthStatus` và `ThemeToggle`) trên nhánh này.
 
 ## 2026-11-08 — Đóng việc 4.6 và Tuần 4; tạo bài nộp Tuần 4
 - **Nhánh:** `main` (chỉ đồng bộ, không commit); mục này được commit cùng README ở commit tài liệu đầu tiên của nhánh `feat/frontend-learning` (xem mục 2026-11-09).
