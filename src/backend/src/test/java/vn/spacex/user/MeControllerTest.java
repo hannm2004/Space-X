@@ -8,7 +8,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockHttpSession;
 import vn.spacex.auth.AppUserDetails;
+import vn.spacex.auth.OtherSessionsRevoker;
 import vn.spacex.common.error.GlobalExceptionHandler;
 import vn.spacex.common.security.SecurityConfig;
 
@@ -45,6 +47,9 @@ class MeControllerTest {
 
     @MockitoBean
     private MeService meService;
+
+    @MockitoBean
+    private OtherSessionsRevoker otherSessionsRevoker;
 
     private static AppUserDetails nguoiDung() {
         return new AppUserDetails(USER_ID, "a@example.com", null, "Nguyễn Văn A", Role.LEARNER, true);
@@ -145,6 +150,29 @@ class MeControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(meService).changePassword(eq(USER_ID), any(ChangePasswordRequest.class));
+    }
+
+    // Hủy session khác theo email và id session lấy từ session đang dùng, không nhận từ trình duyệt (D28).
+    @Test
+    void doiMatKhauThanhCongHuyCacSessionKhacTruSessionHienTai() throws Exception {
+        mockMvc.perform(put("/api/me/password").with(user(nguoiDung())).with(csrf())
+                        .session(new MockHttpSession(null, "phien-hien-tai"))
+                        .contentType(MediaType.APPLICATION_JSON).content(DOI_MAT_KHAU_HOP_LE))
+                .andExpect(status().isNoContent());
+
+        verify(otherSessionsRevoker).revokeOthers("a@example.com", "phien-hien-tai");
+    }
+
+    @Test
+    void doiMatKhauThatBaiKhongHuySessionNao() throws Exception {
+        doThrow(new WrongCurrentPasswordException()).when(meService).changePassword(eq(USER_ID), any());
+
+        mockMvc.perform(put("/api/me/password").with(user(nguoiDung())).with(csrf())
+                        .session(new MockHttpSession(null, "phien-hien-tai"))
+                        .contentType(MediaType.APPLICATION_JSON).content(DOI_MAT_KHAU_HOP_LE))
+                .andExpect(status().isBadRequest());
+
+        verify(otherSessionsRevoker, never()).revokeOthers(any(), any());
     }
 
     @Test
