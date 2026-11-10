@@ -26,6 +26,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 // Session nằm trong MySQL (Spring Session JDBC, migration V2) và CSRF đi bằng cookie/header thật, giống trình duyệt.
@@ -207,6 +208,61 @@ class SessionJdbcIntegrationTest {
 
         assertThat(result.getResponse().getStatus()).isEqualTo(200);
         assertThat(jdbc.queryForObject("SELECT PRINCIPAL_NAME FROM SPRING_SESSION", String.class)).isEqualTo(emailDai);
+    }
+
+    private MvcResult doiMatKhau(Cookie session, String matKhauCu, String matKhauMoi) throws Exception {
+        Cookie xsrf = layXsrf();
+        return mockMvc.perform(put("/api/me/password").contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"currentPassword":"%s","newPassword":"%s","confirmNewPassword":"%s"}"""
+                        .formatted(matKhauCu, matKhauMoi, matKhauMoi))
+                .cookie(xsrf, session).header("X-XSRF-TOKEN", xsrf.getValue())).andReturn();
+    }
+
+    // D28: đổi mật khẩu hủy các session khác của tài khoản, giữ session đang dùng để đổi.
+    @Test
+    void doiMatKhauHuyCacSessionKhacVaGiuSessionHienTai() throws Exception {
+        dangKy();
+        Cookie sessionDoi = dangNhap(MAT_KHAU).getResponse().getCookie("SESSION");
+        Cookie sessionMayKhac = dangNhap(MAT_KHAU).getResponse().getCookie("SESSION");
+        assertThat(demSession()).isEqualTo(2);
+
+        MvcResult result = doiMatKhau(sessionDoi, MAT_KHAU, "matkhau-moi-456");
+
+        assertThat(result.getResponse().getStatus()).isEqualTo(204);
+        mockMvc.perform(get("/api/test/bao-ve").cookie(sessionMayKhac)).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/test/bao-ve").cookie(sessionDoi)).andExpect(status().isOk());
+        assertThat(demSession()).isEqualTo(1);
+    }
+
+    @Test
+    void doiMatKhauThatBaiKhongHuySessionKhac() throws Exception {
+        dangKy();
+        Cookie sessionDoi = dangNhap(MAT_KHAU).getResponse().getCookie("SESSION");
+        Cookie sessionMayKhac = dangNhap(MAT_KHAU).getResponse().getCookie("SESSION");
+
+        MvcResult result = doiMatKhau(sessionDoi, "mat-khau-cu-sai", "matkhau-moi-456");
+
+        assertThat(result.getResponse().getStatus()).isEqualTo(400);
+        mockMvc.perform(get("/api/test/bao-ve").cookie(sessionMayKhac)).andExpect(status().isOk());
+        assertThat(demSession()).isEqualTo(2);
+    }
+
+    @Test
+    void doiMatKhauKhongHuySessionCuaNguoiKhac() throws Exception {
+        dangKy();
+        String emailB = "b@example.com";
+        MvcResult dangKyB = postJson("/api/auth/register", """
+                {"displayName":"B","email":"%s","password":"%s","confirmPassword":"%s"}"""
+                .formatted(emailB, MAT_KHAU, MAT_KHAU));
+        assertThat(dangKyB.getResponse().getStatus()).isEqualTo(201);
+        Cookie sessionA = dangNhap(MAT_KHAU).getResponse().getCookie("SESSION");
+        Cookie sessionB = postJson("/api/auth/login", """
+                {"email":"%s","password":"%s"}""".formatted(emailB, MAT_KHAU)).getResponse().getCookie("SESSION");
+
+        doiMatKhau(sessionA, MAT_KHAU, "matkhau-moi-456");
+
+        mockMvc.perform(get("/api/test/bao-ve").cookie(sessionB)).andExpect(status().isOk());
     }
 
     // Cờ Secure sau proxy HTTPS được kiểm trên server thật ở SecureCookieRealServerIntegrationTest, vì MockMvc

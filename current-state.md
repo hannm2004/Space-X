@@ -16,6 +16,34 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-10 — CP5.3: giao diện tài khoản và hủy session khi đổi mật khẩu
+- **Nhánh:** `feat/password-revoke-sessions` (backend, 3 commit, chưa push) và `feat/frontend-auth` (giao diện, tạo từ nhánh trước; **chưa commit**).
+- **Quyết định:** D28 (người dùng chọn): đổi mật khẩu hủy mọi session khác, giữ session đang dùng. Ghi trong `docs/DECISIONS.md` (chỉ ở máy).
+- **Đã làm (backend):**
+  - `OtherSessionsRevoker` (`vn.spacex.auth`): tìm session theo `PRINCIPAL_NAME` (chính là email, `V2`; email không đổi được) bằng `FindByIndexNameSessionRepository` và xóa mọi session trừ session hiện tại.
+  - `MeController.changePassword` gọi nó sau khi `MeService.changePassword` thành công; email và id session lấy từ session đang dùng, không nhận từ trình duyệt.
+  - `docs/API.md` bỏ ghi chú "chưa làm"; `docs/TESTING.md` thêm dòng test D28.
+- **Đã làm (giao diện):**
+  - `authApi.ts` (`fetchCurrentUser` trả `null` khi 401, `login`, `register`, `logout`, `changePassword`), `formErrors.ts` (đổi lỗi thành câu cho người dùng; 403 và 5xx dùng câu của frontend), `authRedirect.ts` (chỉ nhận đường dẫn nội bộ; chặn `//host`, `https://`, dấu `\`, `/dang-nhap`, `/dang-ky`).
+  - `AuthContext.tsx` + `useAuth.ts` (hỏi `/api/me` một lần khi mở trang), `FormParts.tsx`; trang `LoginPage`, `RegisterPage`, `ChangePasswordPage`; `Layout.tsx` có khu vực tài khoản (đang hỏi thì chưa hiện gì để tránh nháy).
+  - Route `/dang-nhap`, `/dang-ky`, `/doi-mat-khau`. Đăng ký không tự đăng nhập (D24): chuyển sang trang đăng nhập kèm lời nhắn.
+- **Kiểm tra:**
+  - Backend: RED là lỗi biên dịch (chưa có `OtherSessionsRevoker`); sau khi viết mã, `.\mvnw test` → `Tests run: 375, Failures: 0, Errors: 0`, `BUILD SUCCESS` (367 + 8). Cố ý tắt dòng gọi hủy session thì `doiMatKhauHuyCacSessionKhacVaGiuSessionHienTai` đỏ (`Status expected:<401> but was:<200>`), rồi hoàn lại.
+  - Frontend: RED là 7 file không nạp được vì thiếu module; sau khi viết mã `npm test` → 17 file, **156 test qua** (93 + 63 mới); `npm run lint` không cảnh báo; `npm run build` thành công. Lệnh đếm của `docs/TESTING.md` ra 156, khớp Vitest.
+  - **Thử thật ở máy** (ứng dụng Spring Boot cổng 8081 + frontend đã build + MySQL Docker Compose): `curl` với cookie jar cho 2 "thiết bị": đăng ký 201, đăng nhập cả hai 200; đổi mật khẩu từ thiết bị A → 204, sau đó A vẫn `200`, B bị `401`; đăng xuất A bằng token CSRF lấy từ jar → 204 (CSRF sau đăng nhập hoạt động); mật khẩu cũ 401, mật khẩu mới 200. **Chrome thật:** mở thẳng `/dang-nhap`; sai mật khẩu hiện thông báo, xóa ô mật khẩu; đăng nhập đúng về trang chủ, thanh điều hướng hiện tên, "Đổi mật khẩu", "Đăng xuất"; F5 trên `/doi-mat-khau` vẫn đăng nhập; đổi mật khẩu hiện lời báo thành công; "Đăng xuất" về trang chủ và hiện lại "Đăng nhập/Đăng ký"; console chỉ có một gợi ý mức verbose.
+- **Chưa kiểm / còn dở:**
+  - Chưa thử trên Render với cookie `Secure` (cần deploy); chưa kiểm cỡ màn hình điện thoại.
+  - Sửa cuối (thêm ô username ẩn vào form đổi mật khẩu theo gợi ý của Chrome) chỉ chạy lại test/lint/build, chưa mở lại Chrome.
+  - Giao diện chưa có trang xem/sửa thông tin cá nhân (API đã có).
+  - Chưa deploy; frontend chưa commit.
+- **Lỗi gặp và cách sửa:**
+  - Sau khi đăng xuất từ `/doi-mat-khau`, trang đó thấy "chưa đăng nhập" và tự chuyển sang `/dang-nhap` trước khi lệnh về trang chủ kịp chạy (test đỏ, chờ thêm vẫn đỏ nên là lỗi thật). Sửa bằng cách về trang chủ (công khai) trước, rồi mới gọi hủy session.
+  - Cảnh báo lint "Fast refresh" vì `AuthContext.tsx` vừa xuất component vừa xuất hook; tách hook sang `useAuth.ts`.
+  - Một file báo cáo Surefire cũ (`SpacexApplicationTests`, 2026-10-30) làm tổng cộng tay ra 376 và 1 lỗi; số đúng là 375 theo Maven.
+- **Dữ liệu thử:** tài khoản `kiemtra-5-3@example.com` trong database **ở máy**; không có trên production.
+- **Học được:** test jsdom xanh chưa chứng minh luồng cookie/CSRF thật; thứ tự "đổi trạng thái" và "chuyển trang" có thể gây chuyển hướng ngoài ý muốn. Đường dẫn quay lại sau đăng nhập phải lọc (open redirect, vòng lặp).
+- **Tiếp theo:** commit giao diện, đẩy hai nhánh, mở Pull Request (backend trước, rồi frontend); sau đó CP5.4 (tìm kiếm bài, cần duyệt phương án FULLTEXT cho `lessons`).
+
 ## 2026-11-09 — CP5.2: giao diện đọc (khóa, bài, Markdown)
 - **Nhánh:** `feat/frontend-learning`; **chưa commit** (CP5.1 và CP5.2 cùng nằm trong thư mục làm việc).
 - **Đã làm:**
