@@ -16,6 +16,31 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-09 — CP5.2: giao diện đọc (khóa, bài, Markdown)
+- **Nhánh:** `feat/frontend-learning`; **chưa commit** (CP5.1 và CP5.2 cùng nằm trong thư mục làm việc).
+- **Đã làm:**
+  - Thêm dependency: `react-markdown` 10.1.0 (đã duyệt ở D27) và `remark-gfm` 4.0.1 (**hỏi người dùng riêng ngày 2026-11-09 và được duyệt**, vì bài mẫu `thong-tin-va-du-lieu` dùng bảng Markdown mà `react-markdown` một mình không dựng được bảng).
+  - `learningApi.ts`: `fetchCourses`, `fetchLessons`, `fetchLesson` gọi qua `apiRequest`, kiểm dữ liệu đúng dạng, mã hóa slug trong đường dẫn.
+  - `MarkdownContent.tsx`: dựng Markdown an toàn. Tiêu đề hạ một bậc (trang chỉ có một `h1`); HTML nhúng không thành phần tử; địa chỉ `javascript:`/`data:` bị bỏ; liên kết ngoài mở tab mới với `noopener noreferrer`; chỉ ảnh `/api/images/{id}` được hiển thị (ảnh từ trang ngoài có thể dùng để theo dõi người học nên chỉ hiện chữ thay thế); bảng GFM.
+  - `useLoad.ts` (tải dữ liệu, đổi `key` thì tải lại, bỏ kết quả cũ đến muộn, `reload` cho nút Thử lại), `LoadError.tsx`, `lessonLinkState.ts` (trang khóa gửi kèm khóa đang xem sang trang bài, chỉ nhận slug đúng dạng).
+  - Trang: `HomePage` (thêm danh sách khóa), `CoursePage` (`/khoa-hoc/:courseSlug`, tên khóa, mô tả, danh sách bài có tóm tắt; 404 → "Không tìm thấy khóa học"), `LessonPage` (`/bai/:lessonSlug`; 401 → mời đăng nhập, 404 → "Không tìm thấy bài học"; bỏ dòng `# Tên bài` ở đầu nội dung nếu trùng tên bài). Route thêm vào `App.tsx`.
+  - Cập nhật `docs/TESTING.md`, `README.md`, `docs/PLAN.md`.
+- **Kiểm tra:**
+  - RED trước: 6 file test không nạp được vì thiếu module. Sau khi viết mã, `npm test` → 11 file, **93 test qua** (42 trước đó + 51 mới: `learningApi` 12, `MarkdownContent` 12, `HomePage` 6, `CoursePage` 7, `LessonPage` 11, `App` thêm 3); `npm run lint` exit 0; `npm run build` thành công. Lệnh đếm của `docs/TESTING.md` ra 93, khớp Vitest.
+  - Kiểm chứng test bảo mật: cố ý đổi danh sách ảnh cho phép thành `/.*/` thì 2 test ảnh đỏ, rồi hoàn lại.
+  - **Chạy thật trên Chrome** (ứng dụng Spring Boot ở máy cổng 8081 + frontend đã build + MySQL của Docker Compose): trang chủ hiện 3 khóa; mở thẳng `/khoa-hoc/tin-hoc-10` (F5 trên trang con) hiện đúng 2 bài; mở bài khi chưa đăng nhập hiện "Bạn cần đăng nhập để đọc bài học này."; sau khi đăng nhập bằng tài khoản học sinh thử, **đọc đủ 6 bài mẫu**, mỗi bài đúng một `h1`, không còn ký hiệu Markdown thô; bảng ở bài `thong-tin-va-du-lieu` hiển thị thành bảng; giao diện tối đúng; console không có thông báo nào. Đã tắt ứng dụng và xóa bản chép tạm `target/classes/static`.
+- **Chưa kiểm / còn dở:**
+  - Ảnh trong bài chưa xem trên trình duyệt (chỉ có test; bài mẫu chưa có ảnh, và tải ảnh lên cần đăng nhập Admin).
+  - Nút "Đăng nhập" ở trang bài trỏ tới `/dang-nhap`, hiện là trang 404 vì giao diện đăng nhập thuộc CP5.3; do đó người dùng thật chưa đọc được bài trên trình duyệt cho tới CP5.3.
+  - Chưa deploy, chưa commit, chưa mở Pull Request; chưa kiểm cỡ màn hình điện thoại.
+  - `eslint-disable` cho `react-hooks/exhaustive-deps` trong `useLoad.ts` là chủ ý (`load` được tạo lại mỗi lần render); xóa dòng này thì oxlint cảnh báo.
+- **Lỗi gặp và cách sửa:**
+  - Thử đọc bài bằng iframe để kiểm 6 bài trong một lượt thì `contentDocument` là `null`: Spring Security mặc định gửi `X-Frame-Options: DENY`. Đổi sang mở từng bài thật; đây cũng xác nhận ứng dụng không cho nhúng vào trang khác.
+  - Lỡ xóa dòng `eslint-disable` vì tưởng thừa, oxlint báo cảnh báo `exhaustive-deps`; khôi phục.
+- **Dữ liệu thử:** tài khoản `kiemtra-5-2@example.com` (học sinh) tạo trong database **ở máy** để đọc bài; không có trên production.
+- **Học được:** test jsdom xanh chưa chứng minh trang đẹp và đúng; phải mở trình duyệt thật. Test an toàn nên được "làm hỏng thử" để biết nó có đỏ thật không.
+- **Tiếp theo:** CP5.3: giao diện đăng ký, đăng nhập, đăng xuất, thanh điều hướng theo `/api/me`; **cần chốt trước** việc đổi mật khẩu có hủy các session khác không (đụng auth, chưa có quyết định trong `DECISIONS.md`).
+
 ## 2026-11-09 — CP5.1: nền frontend (routing, API client, component test)
 - **Nhánh:** `feat/frontend-learning`; **chưa commit** khi viết mục này.
 - **Đã làm:**

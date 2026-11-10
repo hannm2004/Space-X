@@ -1,0 +1,133 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiError, apiRequest } from './client'
+import { fetchCourses, fetchLesson, fetchLessons } from './learningApi'
+
+vi.mock('./client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./client')>()
+  return { ...actual, apiRequest: vi.fn() }
+})
+
+const apiRequestMock = vi.mocked(apiRequest)
+
+beforeEach(() => {
+  apiRequestMock.mockReset()
+})
+
+describe('fetchCourses', () => {
+  it('gọi GET /api/courses và trả về danh sách khóa', async () => {
+    apiRequestMock.mockResolvedValue([
+      { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Khóa lớp 10' },
+      { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null },
+    ])
+
+    const courses = await fetchCourses()
+
+    expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/courses')
+    expect(courses).toEqual([
+      { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Khóa lớp 10' },
+      { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null },
+    ])
+  })
+
+  it('chưa có khóa nào thì trả về mảng rỗng', async () => {
+    apiRequestMock.mockResolvedValue([])
+
+    await expect(fetchCourses()).resolves.toEqual([])
+  })
+
+  it('ném lỗi khi phản hồi không phải mảng', async () => {
+    apiRequestMock.mockResolvedValue({ courses: [] })
+
+    await expect(fetchCourses()).rejects.toThrow('không đúng dạng')
+  })
+
+  it('ném lỗi khi một khóa thiếu trường bắt buộc hoặc sai kiểu', async () => {
+    apiRequestMock.mockResolvedValue([{ id: 1, slug: 'tin-hoc-10' }])
+    await expect(fetchCourses()).rejects.toThrow('không đúng dạng')
+
+    apiRequestMock.mockResolvedValue([{ id: '1', slug: 'a', title: 'A', description: null }])
+    await expect(fetchCourses()).rejects.toThrow('không đúng dạng')
+  })
+
+  it('giữ nguyên ApiError của máy chủ để giao diện biết mã lỗi', async () => {
+    apiRequestMock.mockRejectedValue(new ApiError(502, 'Máy chủ trả mã lỗi 502'))
+
+    await expect(fetchCourses()).rejects.toMatchObject({ status: 502 })
+  })
+})
+
+describe('fetchLessons', () => {
+  it('gọi đúng đường dẫn của khóa và trả về danh sách bài', async () => {
+    apiRequestMock.mockResolvedValue([
+      { id: 1, slug: 'thong-tin-va-du-lieu', title: 'Thông tin và dữ liệu', summary: 'Tóm tắt' },
+      { id: 2, slug: 'mang-may-tinh', title: 'Mạng máy tính', summary: null },
+    ])
+
+    const lessons = await fetchLessons('tin-hoc-10')
+
+    expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/courses/tin-hoc-10/lessons')
+    expect(lessons).toHaveLength(2)
+    expect(lessons[1]).toEqual({ id: 2, slug: 'mang-may-tinh', title: 'Mạng máy tính', summary: null })
+  })
+
+  it('mã hóa slug trong đường dẫn để ký tự lạ không đổi đích của yêu cầu', async () => {
+    apiRequestMock.mockResolvedValue([])
+
+    await fetchLessons('a b/../admin')
+
+    expect(apiRequestMock).toHaveBeenCalledWith(
+      'GET',
+      '/api/courses/a%20b%2F..%2Fadmin/lessons',
+    )
+  })
+
+  it('ném lỗi khi một bài sai dạng', async () => {
+    apiRequestMock.mockResolvedValue([{ id: 1, slug: 'a', summary: 'thiếu title' }])
+
+    await expect(fetchLessons('tin-hoc-10')).rejects.toThrow('không đúng dạng')
+  })
+})
+
+describe('fetchLesson', () => {
+  it('gọi GET /api/lessons/{slug} và trả về nội dung Markdown', async () => {
+    apiRequestMock.mockResolvedValue({
+      id: 5,
+      slug: 'thong-tin-va-du-lieu',
+      title: 'Thông tin và dữ liệu',
+      summary: 'Tóm tắt',
+      contentMd: '# Thông tin và dữ liệu\n\nNội dung',
+    })
+
+    const lesson = await fetchLesson('thong-tin-va-du-lieu')
+
+    expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/lessons/thong-tin-va-du-lieu')
+    expect(lesson.contentMd).toBe('# Thông tin và dữ liệu\n\nNội dung')
+    expect(lesson.summary).toBe('Tóm tắt')
+  })
+
+  it('mã hóa slug trong đường dẫn', async () => {
+    apiRequestMock.mockResolvedValue({
+      id: 1,
+      slug: 'x',
+      title: 'X',
+      summary: null,
+      contentMd: '',
+    })
+
+    await fetchLesson('../me')
+
+    expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/lessons/..%2Fme')
+  })
+
+  it('ném lỗi khi thiếu contentMd', async () => {
+    apiRequestMock.mockResolvedValue({ id: 1, slug: 'x', title: 'X', summary: null })
+
+    await expect(fetchLesson('x')).rejects.toThrow('không đúng dạng')
+  })
+
+  it('chưa đăng nhập: giữ nguyên ApiError 401 để giao diện mời đăng nhập', async () => {
+    apiRequestMock.mockRejectedValue(new ApiError(401, 'Bạn cần đăng nhập'))
+
+    await expect(fetchLesson('x')).rejects.toMatchObject({ status: 401 })
+  })
+})
