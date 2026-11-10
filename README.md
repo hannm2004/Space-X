@@ -2,7 +2,7 @@
 
 Website học **Tin học lớp 10, 11, 12** (Chương trình GDPT 2018) bằng tiếng Việt cho học sinh THPT: học theo khóa và bài, lưu tiến độ học, chatbot trả lời có trích dẫn bài học, AI Agent gợi ý bài nên đọc.
 
-> **Trạng thái (2026-11-09):** xong Tuần 4 về mặt mã (các việc 4.1 đến 4.6 đã gộp qua Pull Request #19 đến #24, CI xanh). **Backend** đã có tài khoản (đăng ký, đăng nhập, đăng xuất, thông tin cá nhân, đổi mật khẩu), phân quyền `LEARNER`/`ADMIN`, CSRF, API đọc khóa học và bài học, API Admin quản lý khóa học, bài học và ảnh bài học, cùng dữ liệu mẫu 3 khóa / 6 bài và script nạp. Test: 367 backend (260 không cần Docker + 107 tích hợp trên MySQL thật) và 42 frontend. Đã deploy lên Render: https://space-x-47f1.onrender.com (kiểm tra ngày 2026-11-09: `GET /api/courses` trả 200 với 3 khóa mẫu, mỗi khóa 2 bài đã đăng, sau khi nạp dữ liệu mẫu bằng script). Gói Free tự ngủ khi lâu không có truy cập nên lần mở đầu có thể chậm 1–2 phút. **Chưa có:** giao diện đăng nhập, đọc bài và quản trị (frontend mới có khung: routing, API client tự gắn CSRF, trang chủ và trang 404; chưa có trang đọc bài), đăng nhập Google, tìm kiếm, tiến độ học, chatbot, AI Agent. Tiến trình từng buổi làm việc: [current-state.md](current-state.md).
+> **Trạng thái (2026-11-09):** xong Tuần 4 về mặt mã (các việc 4.1 đến 4.6 đã gộp qua Pull Request #19 đến #24, CI xanh). **Backend** đã có tài khoản (đăng ký, đăng nhập, đăng xuất, thông tin cá nhân, đổi mật khẩu), phân quyền `LEARNER`/`ADMIN`, CSRF, API đọc khóa học và bài học, API Admin quản lý khóa học, bài học và ảnh bài học, cùng dữ liệu mẫu 3 khóa / 6 bài và script nạp. Test: 367 backend (260 không cần Docker + 107 tích hợp trên MySQL thật) và 93 frontend. Đã deploy lên Render: https://space-x-47f1.onrender.com (kiểm tra ngày 2026-11-09: `GET /api/courses` trả 200 với 3 khóa mẫu, mỗi khóa 2 bài đã đăng, sau khi nạp dữ liệu mẫu bằng script). Gói Free tự ngủ khi lâu không có truy cập nên lần mở đầu có thể chậm 1–2 phút. **Chưa có:** giao diện đăng nhập và quản trị (frontend có routing, API client tự gắn CSRF, trang chủ kèm danh sách khóa, trang khóa, trang đọc bài và trang 404), đăng nhập Google, tìm kiếm, tiến độ học, chatbot, AI Agent. Tiến trình từng buổi làm việc: [current-state.md](current-state.md).
 
 ## Tính năng
 
@@ -14,8 +14,8 @@ Nhãn trạng thái: `Planned` / `In progress` / `Implemented` / `Tested` / `Dep
 | | Đăng nhập bằng Google | Khách | Planned |
 | | Xem/sửa thông tin cá nhân, đổi mật khẩu | Học sinh, Admin | Tested (chỉ API; chưa có giao diện) |
 | | Giao diện sáng/tối (lần đầu theo hệ điều hành, nhớ lựa chọn) | Mọi người | Implemented (logic có 6 test; nút bấm kiểm bằng mắt) |
-| Học tập | Xem danh sách khóa học và bài | Khách, Học sinh | Tested (chỉ API; chưa có giao diện) |
-| | Đọc bài học | Học sinh | Tested (chỉ API; chưa có giao diện) |
+| Học tập | Xem danh sách khóa học và bài | Khách, Học sinh | Tested (API và giao diện; giao diện đã xem thật trên trình duyệt ở máy, chưa deploy) |
+| | Đọc bài học (Markdown, bảng, ảnh của hệ thống) | Học sinh | Tested (API và giao diện; đọc bài cần đăng nhập mà giao diện đăng nhập chưa có; ảnh trong bài mới có test, chưa xem thật) |
 | | Tìm kiếm bài | Học sinh | Planned |
 | | Tiến độ học: hoàn thành bài, % theo khóa, học tiếp, học lại | Học sinh | Planned |
 | | Chatbot RAG trả lời kèm trích dẫn bài học | Học sinh | Planned |
@@ -47,7 +47,7 @@ Ngoài phạm vi bản đầu: đăng nhập Facebook và thanh toán gói Premi
 | 2 | Khung Spring Boot + React, nút sáng/tối, Dockerfile, CI, deploy `/api/health` | Done |
 | 3 | Database + Flyway, xử lý lỗi thống nhất, test tích hợp; tài khoản (đăng ký, đăng nhập, đăng xuất), phân quyền, thông tin cá nhân, đổi mật khẩu | Done |
 | 4 | API khóa học và bài học, Admin quản lý khóa, bài và ảnh, dữ liệu mẫu | Done |
-| 5 | Giao diện đọc bài và đăng ký/đăng nhập (React), tìm kiếm, tiến độ học tập, quản lý người dùng | In progress (CP5.0, CP5.1 xong) |
+| 5 | Giao diện đọc bài và đăng ký/đăng nhập (React), tìm kiếm, tiến độ học tập, quản lý người dùng | In progress (CP5.0 đến CP5.2 xong) |
 | 6 | Admin Dashboard, đăng nhập Google, hoàn thiện giao diện; deploy bản chưa có AI | Planned |
 | 7 | Chia đoạn, truy xuất, chatbot RAG | Planned |
 | 8 | AI Agent, giới hạn vòng gọi, test prompt injection | Planned |
