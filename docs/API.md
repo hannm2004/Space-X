@@ -94,7 +94,7 @@ Người dùng hiện tại luôn lấy từ session. `userId` gửi lên (đư�
 - `PUT /api/me/password` nhận `{ "currentPassword", "newPassword", "confirmNewPassword" }` → `204`, không có thân.
   - Mật khẩu mới theo luật đăng ký (D25): tối thiểu 8 ký tự, tối đa 72 byte UTF-8, không cắt khoảng trắng; `confirmNewPassword` phải khớp; **phải khác** mật khẩu hiện tại. Sai luật → `400` kèm danh sách trường lỗi (không phản hồi lại mật khẩu).
   - `currentPassword` sai → `400` (`detail`: "Mật khẩu hiện tại không đúng"). Tài khoản không có mật khẩu (đăng nhập bằng Google) → `400`.
-  - Đổi mật khẩu **không** hủy các session đang đăng nhập khác của chính người dùng (chưa làm, ghi nhận để xem lại).
+  - Đổi mật khẩu thành công thì **hủy mọi session khác** của chính tài khoản đó (D28), giữ session đang dùng để đổi. Thiết bị khác nhận `401` ở yêu cầu kế tiếp. Đổi thất bại (`400`) không hủy session nào; session của người dùng khác không bị ảnh hưởng.
 
 ## Khóa học và bài học
 
