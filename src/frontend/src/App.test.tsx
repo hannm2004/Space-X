@@ -1,11 +1,20 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { fetchHealth } from './api'
+import { fetchCurrentUser, logout } from './authApi'
+import { ApiError } from './client'
 import { fetchCourses, fetchLesson, fetchLessons } from './learningApi'
 
 vi.mock('./api', () => ({ fetchHealth: vi.fn() }))
+vi.mock('./authApi', () => ({
+  fetchCurrentUser: vi.fn(),
+  login: vi.fn(),
+  register: vi.fn(),
+  logout: vi.fn(),
+  changePassword: vi.fn(),
+}))
 vi.mock('./learningApi', () => ({
   fetchCourses: vi.fn(),
   fetchLessons: vi.fn(),
@@ -13,6 +22,10 @@ vi.mock('./learningApi', () => ({
 }))
 
 beforeEach(() => {
+  vi.mocked(fetchCurrentUser).mockReset()
+  vi.mocked(fetchCurrentUser).mockResolvedValue(null)
+  vi.mocked(logout).mockReset()
+  vi.mocked(logout).mockResolvedValue(undefined)
   vi.mocked(fetchHealth).mockResolvedValue('UP')
   vi.mocked(fetchCourses).mockResolvedValue([
     { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: null },
@@ -90,5 +103,89 @@ describe('App — định tuyến', () => {
     const brand = screen.getByRole('link', { name: 'Space-X' })
     expect(brand.getAttribute('href')).toBe('/')
     expect(screen.getByRole('button', { name: 'Chuyển sang giao diện tối' })).not.toBeNull()
+  })
+
+  it('/dang-nhap, /dang-ky hiện đúng trang', async () => {
+    renderAt('/dang-nhap')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Đăng nhập' })).not.toBeNull()
+
+    cleanup()
+    renderAt('/dang-ky')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Đăng ký' })).not.toBeNull()
+  })
+})
+
+describe('App — thanh điều hướng theo trạng thái đăng nhập', () => {
+  const USER = { displayName: 'Nguyễn Văn A', email: 'a@example.com', role: 'LEARNER' as const }
+
+  it('chưa biết trạng thái (đang hỏi /api/me) thì chưa hiện liên kết tài khoản nào, tránh nháy', () => {
+    vi.mocked(fetchCurrentUser).mockReturnValue(new Promise(() => {}))
+
+    renderAt('/khong-co-trang-nay')
+
+    expect(screen.queryByRole('link', { name: 'Đăng nhập' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Đăng xuất' })).toBeNull()
+  })
+
+  it('chưa đăng nhập thì hiện "Đăng nhập" và "Đăng ký", không có "Đăng xuất"', async () => {
+    renderAt('/khong-co-trang-nay')
+
+    const header = await screen.findByRole('banner')
+    expect(await within(header).findByRole('link', { name: 'Đăng nhập' })).not.toBeNull()
+    expect(within(header).getByRole('link', { name: 'Đăng ký' })).not.toBeNull()
+    expect(within(header).queryByRole('button', { name: 'Đăng xuất' })).toBeNull()
+  })
+
+  it('đã đăng nhập thì hiện tên, "Đổi mật khẩu" và "Đăng xuất", không còn "Đăng nhập"', async () => {
+    vi.mocked(fetchCurrentUser).mockResolvedValue(USER)
+
+    renderAt('/khong-co-trang-nay')
+
+    const header = await screen.findByRole('banner')
+    expect(await within(header).findByText('Nguyễn Văn A')).not.toBeNull()
+    expect(within(header).getByRole('link', { name: 'Đổi mật khẩu' }).getAttribute('href')).toBe(
+      '/doi-mat-khau',
+    )
+    expect(within(header).getByRole('button', { name: 'Đăng xuất' })).not.toBeNull()
+    expect(within(header).queryByRole('link', { name: 'Đăng nhập' })).toBeNull()
+  })
+
+  it('bấm "Đăng xuất" gọi API rồi trở về trạng thái chưa đăng nhập và trang chủ', async () => {
+    vi.mocked(fetchCurrentUser).mockResolvedValue(USER)
+    renderAt('/doi-mat-khau')
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Đăng xuất' }))
+
+    expect(await screen.findByRole('link', { name: 'Đăng nhập' })).not.toBeNull()
+    expect(logout).toHaveBeenCalledTimes(1)
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Học Tin học 10, 11, 12' }),
+    ).not.toBeNull()
+    expect(screen.queryByRole('heading', { level: 1, name: 'Đăng nhập' })).toBeNull()
+  })
+
+  it('đăng xuất lỗi (mất kết nối) thì vẫn giữ trạng thái đăng nhập và báo lỗi', async () => {
+    vi.mocked(fetchCurrentUser).mockResolvedValue(USER)
+    vi.mocked(logout).mockRejectedValue(new ApiError(0, 'Không kết nối được tới máy chủ'))
+    renderAt('/khong-co-trang-nay')
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Đăng xuất' }))
+
+    expect((await screen.findByRole('alert')).textContent).toContain('Không đăng xuất được')
+    expect(screen.getByRole('button', { name: 'Đăng xuất' })).not.toBeNull()
+  })
+
+  it('/doi-mat-khau khi chưa đăng nhập chuyển sang trang đăng nhập', async () => {
+    renderAt('/doi-mat-khau')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Đăng nhập' })).not.toBeNull()
+  })
+
+  it('/doi-mat-khau khi đã đăng nhập hiện trang đổi mật khẩu', async () => {
+    vi.mocked(fetchCurrentUser).mockResolvedValue(USER)
+
+    renderAt('/doi-mat-khau')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Đổi mật khẩu' })).not.toBeNull()
   })
 })
