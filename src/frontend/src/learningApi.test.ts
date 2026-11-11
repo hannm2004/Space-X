@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError, apiRequest } from './client'
-import { fetchCourses, fetchLesson, fetchLessons } from './learningApi'
+import { fetchCourses, fetchLesson, fetchLessons, searchLessons } from './learningApi'
 
 vi.mock('./client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./client')>()
@@ -129,5 +129,58 @@ describe('fetchLesson', () => {
     apiRequestMock.mockRejectedValue(new ApiError(401, 'Bạn cần đăng nhập'))
 
     await expect(fetchLesson('x')).rejects.toMatchObject({ status: 401 })
+  })
+})
+
+describe('searchLessons', () => {
+  const PAGE = {
+    items: [{ id: 11, slug: 'thong-tin-va-du-lieu', title: 'Thông tin và dữ liệu', summary: null }],
+    page: 0,
+    size: 20,
+    totalItems: 1,
+  }
+
+  it('gọi GET /api/lessons với từ khóa, trang và kích thước trang, rồi trả về trang kết quả', async () => {
+    apiRequestMock.mockResolvedValue(PAGE)
+
+    const result = await searchLessons('thông tin', 0)
+
+    expect(apiRequestMock).toHaveBeenCalledWith(
+      'GET',
+      '/api/lessons?q=th%C3%B4ng+tin&page=0&size=20',
+    )
+    expect(result).toEqual(PAGE)
+  })
+
+  it('mã hóa ký tự đặc biệt của từ khóa, không để chen thêm tham số', async () => {
+    apiRequestMock.mockResolvedValue(PAGE)
+
+    await searchLessons('a&page=9#x', 2)
+
+    expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/lessons?q=a%26page%3D9%23x&page=2&size=20')
+  })
+
+  it('ném lỗi khi "items" không phải mảng', async () => {
+    apiRequestMock.mockResolvedValue({ ...PAGE, items: 'x' })
+
+    await expect(searchLessons('mạng', 0)).rejects.toThrow('không đúng dạng')
+  })
+
+  it('ném lỗi khi thiếu tổng số bài hoặc tổng số sai kiểu', async () => {
+    apiRequestMock.mockResolvedValue({ ...PAGE, totalItems: '1' })
+
+    await expect(searchLessons('mạng', 0)).rejects.toThrow('không đúng dạng')
+  })
+
+  it('ném lỗi khi một bài trong kết quả thiếu slug', async () => {
+    apiRequestMock.mockResolvedValue({ ...PAGE, items: [{ id: 1, title: 'X', summary: null }] })
+
+    await expect(searchLessons('mạng', 0)).rejects.toThrow('không đúng dạng')
+  })
+
+  it('chưa đăng nhập: giữ nguyên ApiError 401 để giao diện mời đăng nhập', async () => {
+    apiRequestMock.mockRejectedValue(new ApiError(401, 'Bạn cần đăng nhập'))
+
+    await expect(searchLessons('mạng', 0)).rejects.toMatchObject({ status: 401 })
   })
 })
