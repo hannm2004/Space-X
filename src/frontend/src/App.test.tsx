@@ -125,12 +125,25 @@ describe('App — định tuyến', () => {
     expect(searchLessons).toHaveBeenCalledWith('thông tin', 0)
   })
 
-  it('/tim-kiem hiện trang tìm kiếm và thanh đầu trang có liên kết "Tìm bài"', async () => {
+  it('/tim-kiem hiện trang tìm kiếm và thanh đầu trang có nút kính lúp dẫn tới /tim-kiem', async () => {
     renderAt('/tim-kiem')
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Tìm bài học' })).not.toBeNull()
     const header = screen.getByRole('banner')
-    expect(within(header).getByRole('link', { name: 'Tìm bài' }).getAttribute('href')).toBe('/tim-kiem')
+    const search = within(header).getByRole('link', { name: 'Tìm bài học' })
+    expect(search.getAttribute('href')).toBe('/tim-kiem')
+    expect(search.getAttribute('title')).toBe('Tìm bài học')
+    // Kính lúp chỉ để trang trí: tên của liên kết đã nằm ở aria-label.
+    expect(search.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true')
+    expect(within(header).queryByText('Tìm bài')).toBeNull()
+  })
+
+  it('nút kính lúp có ở mọi trang, không chỉ trang tìm kiếm', async () => {
+    renderAt('/dang-nhap')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Đăng nhập' })).not.toBeNull()
+    const header = screen.getByRole('banner')
+    expect(within(header).getByRole('link', { name: 'Tìm bài học' }).getAttribute('href')).toBe('/tim-kiem')
   })
 
   it('/dang-nhap, /dang-ky hiện đúng trang', async () => {
