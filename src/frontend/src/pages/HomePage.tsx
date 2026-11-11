@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 import HealthStatus from '../HealthStatus'
 import LoadError from '../LoadError'
 import { fetchCourses } from '../learningApi'
+import SearchForm from '../SearchForm'
 import { useLoad } from '../useLoad'
 
 function CourseList() {
@@ -42,6 +43,13 @@ export default function HomePage() {
       <p className="mt-3 text-slate-600 dark:text-slate-400">
         Bài học Tin học THPT bằng tiếng Việt, kèm chatbot và AI Agent trả lời có trích dẫn nguồn.
       </p>
+
+      <section aria-labelledby="search-title" className="mt-8">
+        <h2 id="search-title" className="sr-only">
+          Tìm bài học
+        </h2>
+        <SearchForm />
+      </section>
 
       <section aria-labelledby="courses-title" className="mt-8">
         <h2 id="courses-title" className="text-xl font-semibold tracking-tight">

@@ -8,6 +8,7 @@ import LessonPage from './pages/LessonPage'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
 import RegisterPage from './pages/RegisterPage'
+import SearchPage from './pages/SearchPage'
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path="khoa-hoc/:courseSlug" element={<CoursePage />} />
           <Route path="bai/:lessonSlug" element={<LessonPage />} />
+          <Route path="tim-kiem" element={<SearchPage />} />
           <Route path="dang-nhap" element={<LoginPage />} />
           <Route path="dang-ky" element={<RegisterPage />} />
           <Route path="doi-mat-khau" element={<ChangePasswordPage />} />
