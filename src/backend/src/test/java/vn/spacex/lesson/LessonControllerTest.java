@@ -7,11 +7,17 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import vn.spacex.common.api.PageResponse;
 import vn.spacex.common.error.GlobalExceptionHandler;
 import vn.spacex.common.security.SecurityConfig;
 
+import java.util.List;
+
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -78,5 +84,86 @@ class LessonControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.detail").value("Không tìm thấy bài học"));
+    }
+
+    @Test
+    void chuaDangNhapTimKiemBi401VaKhongGoiService() throws Exception {
+        mockMvc.perform(get("/api/lessons").param("q", "thông tin"))
+                .andExpect(status().isUnauthorized());
+
+        verify(lessonService, never()).search(anyString(), anyInt(), anyInt());
+    }
+
+    @Test
+    void timKiemTraVeDungHinhDangPhanTrangVaMoiBaiChiCoBonTruong() throws Exception {
+        when(lessonService.search("thông tin", 0, 20)).thenReturn(new PageResponse<>(
+                List.of(new LessonSummaryResponse(11L, "thong-tin-va-du-lieu", "Thông tin và dữ liệu", "Tóm tắt")),
+                0, 20, 1));
+
+        mockMvc.perform(get("/api/lessons").param("q", "thông tin").with(user("hocsinh")))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.totalItems").value(1))
+                .andExpect(jsonPath("$.items", hasSize(1)))
+                .andExpect(jsonPath("$.items[0].*", hasSize(4)))
+                .andExpect(jsonPath("$.items[0].slug").value("thong-tin-va-du-lieu"))
+                .andExpect(jsonPath("$.items[0].contentMd").doesNotExist())
+                .andExpect(jsonPath("$.items[0].status").doesNotExist());
+    }
+
+    @Test
+    void timKiemChuyenTrangVaKichThuocTrangVaoService() throws Exception {
+        when(lessonService.search("thuật toán", 2, 5)).thenReturn(new PageResponse<>(List.of(), 2, 5, 0));
+
+        mockMvc.perform(get("/api/lessons").param("q", "thuật toán").param("page", "2").param("size", "5")
+                        .with(user("hocsinh")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(2))
+                .andExpect(jsonPath("$.items", hasSize(0)));
+
+        verify(lessonService).search("thuật toán", 2, 5);
+    }
+
+    @Test
+    void thieuTuKhoaHoacTuKhoaRongBi400VaKhongGoiService() throws Exception {
+        mockMvc.perform(get("/api/lessons").with(user("hocsinh"))).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/lessons").param("q", "").with(user("hocsinh"))).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/lessons").param("q", "   ").with(user("hocsinh")))
+                .andExpect(status().isBadRequest());
+
+        verify(lessonService, never()).search(anyString(), anyInt(), anyInt());
+    }
+
+    @Test
+    void tuKhoaDai200KyTuQuaDuocNhungDai201KyTuBi400() throws Exception {
+        when(lessonService.search(eq("a".repeat(200)), anyInt(), anyInt()))
+                .thenReturn(new PageResponse<>(List.of(), 0, 20, 0));
+
+        mockMvc.perform(get("/api/lessons").param("q", "a".repeat(200)).with(user("hocsinh")))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/lessons").param("q", "a".repeat(201)).with(user("hocsinh")))
+                .andExpect(status().isBadRequest());
+
+        verify(lessonService, never()).search(eq("a".repeat(201)), anyInt(), anyInt());
+    }
+
+    @Test
+    void kichThuocTrangNgoaiKhoang1Den50HoacTrangAmBi400() throws Exception {
+        when(lessonService.search(anyString(), anyInt(), anyInt())).thenReturn(new PageResponse<>(List.of(), 0, 50, 0));
+
+        mockMvc.perform(get("/api/lessons").param("q", "tin").param("size", "50").with(user("hocsinh")))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/lessons").param("q", "tin").param("size", "51").with(user("hocsinh")))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/lessons").param("q", "tin").param("size", "0").with(user("hocsinh")))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/lessons").param("q", "tin").param("page", "-1").with(user("hocsinh")))
+                .andExpect(status().isBadRequest());
+
+        verify(lessonService, never()).search(anyString(), eq(0), eq(51));
+        verify(lessonService, never()).search(anyString(), eq(0), eq(0));
+        verify(lessonService, never()).search(anyString(), eq(-1), anyInt());
     }
 }

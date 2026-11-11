@@ -64,12 +64,17 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <header className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-6 sm:px-6">
-        <Link
-          to="/"
-          className="rounded text-xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-        >
-          Space-X
-        </Link>
+        <div className="flex items-baseline gap-5">
+          <Link
+            to="/"
+            className="rounded text-xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          >
+            Space-X
+          </Link>
+          <Link to="/tim-kiem" className={`${LINK} text-sm`}>
+            Tìm bài
+          </Link>
+        </div>
         <div className="flex items-center gap-4">
           <AccountNav />
           <ThemeToggle />

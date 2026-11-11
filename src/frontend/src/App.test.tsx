@@ -5,7 +5,7 @@ import App from './App'
 import { fetchHealth } from './api'
 import { fetchCurrentUser, logout } from './authApi'
 import { ApiError } from './client'
-import { fetchCourses, fetchLesson, fetchLessons } from './learningApi'
+import { fetchCourses, fetchLesson, fetchLessons, searchLessons } from './learningApi'
 
 vi.mock('./api', () => ({ fetchHealth: vi.fn() }))
 vi.mock('./authApi', () => ({
@@ -19,6 +19,7 @@ vi.mock('./learningApi', () => ({
   fetchCourses: vi.fn(),
   fetchLessons: vi.fn(),
   fetchLesson: vi.fn(),
+  searchLessons: vi.fn(),
 }))
 
 beforeEach(() => {
@@ -103,6 +104,33 @@ describe('App — định tuyến', () => {
     const brand = screen.getByRole('link', { name: 'Space-X' })
     expect(brand.getAttribute('href')).toBe('/')
     expect(screen.getByRole('button', { name: 'Chuyển sang giao diện tối' })).not.toBeNull()
+  })
+
+  it('tìm bài từ trang chủ: nhập từ khóa, bấm Tìm, sang trang kết quả và thấy bài khớp', async () => {
+    vi.mocked(searchLessons).mockResolvedValue({
+      items: [{ id: 1, slug: 'thong-tin-va-du-lieu', title: 'Thông tin và dữ liệu', summary: null }],
+      page: 0,
+      size: 20,
+      totalItems: 1,
+    })
+    renderAt('/')
+
+    fireEvent.change(await screen.findByRole('searchbox', { name: 'Từ khóa' }), {
+      target: { value: 'thông tin' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Tìm' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Tìm bài học' })).not.toBeNull()
+    expect(await screen.findByText('Tìm thấy 1 bài')).not.toBeNull()
+    expect(searchLessons).toHaveBeenCalledWith('thông tin', 0)
+  })
+
+  it('/tim-kiem hiện trang tìm kiếm và thanh đầu trang có liên kết "Tìm bài"', async () => {
+    renderAt('/tim-kiem')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Tìm bài học' })).not.toBeNull()
+    const header = screen.getByRole('banner')
+    expect(within(header).getByRole('link', { name: 'Tìm bài' }).getAttribute('href')).toBe('/tim-kiem')
   })
 
   it('/dang-nhap, /dang-ky hiện đúng trang', async () => {
