@@ -103,8 +103,20 @@ Người dùng hiện tại luôn lấy từ session. `userId` gửi lên (đư�
 | GET | `/api/courses` | Công khai | Danh sách khóa học, sắp theo `sort_order` rồi `id`. Mỗi khóa: `id`, `slug`, `title`, `description` (`null` nếu để trống). Chưa có khóa nào → `[]` |
 | GET | `/api/courses/{slug}/lessons` | Công khai | Danh sách bài Đã đăng của khóa, sắp theo `sort_order` rồi `id`. Mỗi bài: `id`, `slug`, `title`, `summary`; không có nội dung và không có trạng thái. Bài Nháp không bao giờ có mặt. Khóa chưa có bài đã đăng → `[]`; khóa không tồn tại → `404` |
 | GET | `/api/lessons/{slug}` | Đăng nhập | Nội dung một bài Đã đăng: `id`, `slug`, `title`, `summary`, `contentMd` (Markdown). Không có trạng thái, mã khóa hay người tạo. Bài không tồn tại và bài Nháp trả **cùng một** `404` (`detail`: "Không tìm thấy bài học") nên không dò được bài nháp. Chưa đăng nhập → `401` |
-| GET | `/api/lessons?q=từ khóa` | Đăng nhập | Tìm bài Đã đăng, phân trang |
+| GET | `/api/lessons?q=từ khóa&page=0&size=20` | Đăng nhập | Tìm bài Đã đăng bằng FULLTEXT (D29), phân trang. Xem "Tìm bài" bên dưới |
 | GET | `/api/images/{id}` | Đăng nhập | Ảnh thuộc bài mà người gọi được xem: học sinh chỉ xem ảnh của bài Đã đăng, Admin xem cả ảnh của bài Nháp. Trả chính ảnh (không phải JSON); không có ảnh hoặc ảnh của bài Nháp (với học sinh) → cùng một `404`. Xem "Ảnh bài học" bên dưới |
+
+### Tìm bài — `GET /api/lessons?q=` (D29, việc 5.4)
+
+- `q` bắt buộc, **1–200 ký tự** và không toàn khoảng trắng (thiếu, rỗng hoặc dài hơn → `400`); backend cắt khoảng trắng đầu/cuối. `page` ≥ 0 (mặc định 0), `size` 1–50 (mặc định 20); sai → `400`. Chưa đăng nhập → `401`.
+- Trả `{ items, page, size, totalItems }`; mỗi phần tử `id`, `slug`, `title`, `summary` (như danh sách bài của khóa, **không** có nội dung hay trạng thái). Không khớp bài nào → `200` với `items: []` và `totalItems: 0` (không phải lỗi). Trang vượt quá số trang → `items: []` nhưng `totalItems` vẫn đúng.
+- Chỉ bài **Đã đăng**; bài Nháp không bao giờ có mặt và không được đếm vào `totalItems`.
+- Cách tìm: chỉ mục `FULLTEXT` (`V3`) trên `title`, `summary`, `content_md` của MySQL, chế độ `NATURAL LANGUAGE`. Kết quả xếp theo độ liên quan giảm dần, rồi `id`. Từ khóa được bind tham số, không ghép vào câu SQL.
+- Hành vi cần biết (đã kiểm bằng test trên MySQL thật):
+  - **Nhiều từ nghĩa là "ít nhất một từ"**, không phải "đủ mọi từ"; bài chứa nhiều từ hơn xếp trước.
+  - **Không phân biệt dấu** (collation `utf8mb4_0900_ai_ci`): gõ không dấu vẫn tìm được, nhưng các từ chỉ khác dấu là một từ, ví dụ "nổi" khớp cả "nội".
+  - InnoDB **bỏ qua từ ngắn hơn 3 ký tự** (và danh sách stopword tiếng Anh): từ khóa chỉ gồm từ ngắn không ra kết quả (vẫn `200`, rỗng).
+  - Các ký tự `+ - * " ( ) < > ~ @ % _` trong từ khóa không có nghĩa đặc biệt.
 
 ## Tiến độ học tập
 

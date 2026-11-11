@@ -16,6 +16,27 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-10 — CP5.4: tìm kiếm bài bằng FULLTEXT
+- **Nhánh:** `feat/lesson-search` (tạo từ `main` sau PR #28); **chưa commit**.
+- **Quyết định:** D29 (người dùng chọn FULLTEXT thay vì `LIKE`). Ghi trong `docs/DECISIONS.md` (chỉ ở máy) cùng kết quả kiểm thật.
+- **Đã làm (backend):**
+  - Migration `V3`: `FULLTEXT KEY ft_lessons_title_summary_content (title, summary, content_md)` cho `lessons`.
+  - `LessonRepository.searchPublished`: native query `MATCH ... AGAINST (:q IN NATURAL LANGUAGE MODE)`, chỉ `PUBLISHED`, xếp theo độ liên quan rồi `id`; chỉ chọn các cột entity ánh xạ nên không tải `content_md`. `LessonService.search` cắt khoảng trắng. `GET /api/lessons?q=&page=&size=` (đăng nhập; `q` 1–200 ký tự; `size` 1–50), trả `{ items, page, size, totalItems }`, mỗi bài `id, slug, title, summary`.
+- **Đã làm (giao diện):** `searchLessons` trong `learningApi.ts`, `SearchForm` (dùng ở trang chủ và trang kết quả), trang `/tim-kiem` (đang tìm, kết quả, không có bài, 401 mời đăng nhập rồi quay lại đúng trang tìm, lỗi có nút Thử lại, phân trang bằng liên kết), liên kết "Tìm bài" ở header.
+- **Kiểm tra:**
+  - Backend: RED là lỗi biên dịch (chưa có `search`/`searchPublished`); `.\mvnw test` toàn bộ → `Tests run: 399, Failures: 0, Errors: 0`, `BUILD SUCCESS` (375 + 24: `LessonControllerTest` 6, `LessonServiceTest` 2, `LessonSearchIntegrationTest` 16). Lệnh đếm của `docs/TESTING.md` ra 399 (273 + 126), khớp Maven.
+  - Frontend: RED trước khi viết mã; `npm test` → 18 file, **181 test qua** (156 + 25); `npm run lint` không cảnh báo; `npm run build` thành công.
+  - Kiểm chứng test bảo mật: tạm đổi điều kiện `PUBLISHED` thành `IN ('PUBLISHED','DRAFT')` thì 2 test về bài nháp đỏ (`totalItems expected:<1> but was:<2>`, `expected:<0> but was:<1>`), rồi hoàn lại.
+  - **Chưa kiểm:** giao diện tìm kiếm trên trình duyệt thật; chưa chạy ứng dụng thật với dữ liệu mẫu; chưa deploy; chưa kiểm cỡ màn hình điện thoại; chưa đo thời gian dựng chỉ mục trên bảng lớn.
+- **Phát hiện khi kiểm trên MySQL thật:**
+  - Test đầu tiên đỏ: tìm "nổi bọt" ra cả bài có chữ "Nội dung". Do collation `utf8mb4_0900_ai_ci` không phân biệt dấu nên "nổi" và "nội" là một từ. Giữ hành vi (đổi lại, gõ không dấu vẫn tìm được), đổi dữ liệu mẫu của test đó và thêm test ghi lại hành vi.
+  - Nhiều từ nghĩa là "ít nhất một từ"; bài chứa nhiều từ hơn xếp trước.
+  - Từ ngắn hơn 3 ký tự (ví dụ `ab`) bị bỏ qua, trả danh sách rỗng, không lỗi.
+  - Thêm chỉ mục khiến InnoDB dựng lại bảng (Flyway cảnh báo `rebuilding table to add column FTS_DOC_ID`); với 6 bài thì không đáng kể.
+- **Lỗi gặp và cách sửa:** test `timThayBaiTheoNoiDung...` đỏ vì từ đồng âm khác dấu (xem trên); sửa dữ liệu test, không sửa hành vi.
+- **Học được:** FULLTEXT tiếng Việt có giới hạn riêng (độ dài từ tối thiểu, collation không dấu) nên phải kiểm trên MySQL thật chứ không đoán; chế độ tự nhiên an toàn hơn BOOLEAN vì toán tử trong từ khóa không có nghĩa. Muốn biết test bảo mật có tác dụng phải làm hỏng thử để thấy nó đỏ.
+- **Tiếp theo:** commit và push nhánh, mở Pull Request, chờ CI; thử giao diện tìm kiếm trên trình duyệt; sau đó CP5.5 (tiến độ học tập).
+
 ## 2026-11-10 — CP5.3: giao diện tài khoản và hủy session khi đổi mật khẩu
 - **Nhánh:** `feat/password-revoke-sessions` (backend, 3 commit, chưa push) và `feat/frontend-auth` (giao diện, tạo từ nhánh trước; **chưa commit**).
 - **Quyết định:** D28 (người dùng chọn): đổi mật khẩu hủy mọi session khác, giữ session đang dùng. Ghi trong `docs/DECISIONS.md` (chỉ ở máy).
