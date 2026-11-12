@@ -16,6 +16,34 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-12 — CP5.5: tiến độ học (backend và giao diện)
+- **Nhánh:** `feat/progress` (backend; Pull Request #32, đã gộp vào `main` ở `3eca18d`; người dùng báo CI xanh và deploy thành công) và `feat/progress-ui` (giao diện, nhánh này; tạo từ `main` sau PR #32).
+- **Đã làm:**
+  - Backend (`vn.spacex.progress`): `GET /api/me/progress` (% và "Học tiếp" từng khóa), `PUT /api/me/progress/lessons/{lessonId}` (ghi `IN_PROGRESS`/`COMPLETED`, trả trạng thái thật sau khi ghi), `DELETE /api/me/progress/courses/{courseId}` ("Học lại"). Bảng `lesson_progress` đã có từ `V1` nên không có migration. Thêm bean `Clock` để test dùng đồng hồ cố định.
+  - Quy tắc: `COMPLETED` không bị hạ về `IN_PROGRESS`, `completedAt` giữ từ lần đầu; % làm tròn xuống và chỉ tính bài Đã đăng; bài nháp và bài không tồn tại cùng 404; người dùng chỉ lấy từ session. `record` cố ý không đặt `@Transactional` để bắt được lỗi `UNIQUE` khi hai yêu cầu đầu tiên đến cùng lúc rồi đọc lại và cập nhật (không trả 500).
+  - Frontend: hàm gọi API (`fetchProgress`, `recordProgress`, `restartCourse`) kiểm dạng dữ liệu; `ProgressBar`; `LessonProgressControl` (nút "Hoàn thành bài" ở cuối trang bài, theo trạng thái máy chủ trả về); `CourseProgressPanel` ở trang khóa (thanh %, "Học tiếp", "Học lại" có hộp xác nhận); thanh % trên thẻ khóa ở trang chủ; hook `useMyProgress` (khách không gọi API tiến độ).
+  - Tài liệu: `docs/API.md` (hình dạng phản hồi), `docs/TESTING.md`, `README.md`.
+- **Kiểm tra:**
+  - Test trước (RED) rồi code (GREEN) cho cả hai nhánh. Backend `./mvnw test`: **439 test qua** (trước đó 399; +19 service, +12 controller, +9 tích hợp MySQL thật). Frontend `npm test`: **250 test qua, 23 file** (trước đó 210, 19 file); `tsc -b`, `npm run lint`, `npm run build` sạch. Lệnh đếm của `docs/TESTING.md` ra đúng 439 và 250.
+  - Kiểm chứng test có tác dụng bằng cách tạm phá rồi hoàn lại: đọc tiến độ của mọi người → test cô lập đỏ; xóa không lọc theo người dùng → test học lại đỏ; bỏ thử lại khi trùng khóa → test chạy song song đỏ; `view()` hạ bài về `IN_PROGRESS` → test không hạ đỏ; bỏ điều kiện "khách không gọi API" → 2 test đỏ.
+  - Kiểm tay backend bằng `curl` với hai học sinh A và B (khớp thiết kế: B không thấy tiến độ của A; A "học lại" thì tiến độ của B còn nguyên) và bằng `apiRequest` trong Chrome (cookie session và CSRF đúng).
+  - Kiểm tay giao diện trên Chrome (2026-11-12, `npm run dev` + backend + MySQL ở máy): khách không thấy thanh tiến độ; đăng nhập bằng form thật thì thẻ khóa hiện "0/2 bài hoàn thành"; "Học tiếp" vào đúng bài; bấm "Hoàn thành bài" thì đổi thành "✓ Bạn đã hoàn thành bài này."; trang khóa hiện 50%, "Học tiếp" chuyển sang bài 2 và có nút "Học lại"; "Học lại" hỏi xác nhận rồi về 0%; giao diện tối và sáng, cửa sổ 500 px không có thanh cuộn ngang.
+  - **Chưa kiểm:** độ rộng thật 375 px của điện thoại, Firefox/Safari, trình đọc màn hình; bản deploy trên Render (tôi chưa đăng nhập được ở đó nên chưa tự xác nhận endpoint tiến độ trên production); CI chưa chạy cho `feat/progress-ui`.
+- **Lỗi gặp và cách sửa:**
+  - 13 test service lỗi `UnfinishedStubbing`: tôi gọi hàm dựng `Lesson` (có `when` bên trong) ngay trong `thenReturn(...)` của một `when` khác. Sửa trong test bằng lớp con của `Lesson` thay cho mock; code production không đổi.
+  - 2 test controller kiểm "không lặp lại giá trị người gửi" bằng cả thân phản hồi nên thấy chữ `abc` ở trường `instance` (chính đường dẫn người gọi gửi). `detail` đã là câu cố định nên code đúng; sửa test sang kiểm đúng `detail`.
+  - Test "học lại" bắt được lỗi thật trong giao diện: sau khi xóa xong, hộp xác nhận vẫn mở vì `CourseProgressPanel` vẫn được gắn trong lúc tiến độ tải lại. Sửa: tự đóng hộp xác nhận khi xóa thành công. Đã thấy đúng khi kiểm tay trên Chrome.
+- **Học được:**
+  - `@Transactional` ở cả phương thức làm một lỗi `UNIQUE` đánh dấu transaction hỏng nên không thử lại được; bỏ nó để mỗi lời gọi repository có transaction riêng và bắt được ngoại lệ.
+  - Máy chủ trả trạng thái thật sau khi ghi, giao diện dựa vào đó thay vì tự đoán (mở lại bài đã xong vẫn nhận `COMPLETED`).
+  - Hook phải gọi trước các `return` sớm (`useMyProgress` ở đầu `CoursePage`); component vẫn được gắn khi trả `null` thì state bên trong không tự reset.
+  - Một ngoại lệ mặc định của Spring (`Failed to read request` khi `status` sai) là câu tiếng Anh, nên giao diện dùng câu cố định của riêng nó thay vì in `error.message`.
+- **Nợ và việc để dành:**
+  - `GlobalExceptionHandler` chưa có câu tiếng Việt cố định cho thân JSON sai dạng (đang là `Failed to read request`); có từ trước CP5.5, chưa sửa.
+  - Người dùng nêu 3 điểm về tìm kiếm (khách chưa đăng nhập có tìm được không, tìm theo trường nào, kết quả có hiện khóa/chủ đề không) rồi chọn làm sau: hiện tìm kiếm cần đăng nhập (D19, D29), chưa có trường chủ đề, kết quả chưa hiện tên khóa. Chưa quyết định.
+  - Trong DB ở máy có thêm tài khoản thử `kiemtay.b@example.com` bên cạnh `kiemtay.header@example.com` (không vào Git).
+- **Tiếp theo:** mở Pull Request `feat/progress-ui` vào `main`, chờ CI xanh rồi gộp, kiểm trên bản deploy; sau đó CP5.6 (Admin quản lý người dùng, nhánh `feat/admin-users`).
+
 ## 2026-11-11 — Ô tìm có gợi ý ở thanh đầu trang
 - **Nhánh:** `feat/search-header` (tạo từ `main` sau PR #29). Ba commit đầu là nút kính lúp dẫn sang `/tim-kiem`; phần ô tìm có gợi ý bên dưới nằm ở các commit sau đó.
 - **Yêu cầu của người dùng:** ô tìm nằm trong header; bấm vào thì hiện chỗ nhập; gõ đến đâu gợi ý đến đó; Enter thì sang trang kết quả.

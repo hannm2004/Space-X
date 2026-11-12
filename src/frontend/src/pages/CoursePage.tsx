@@ -1,9 +1,11 @@
 import { Link, useParams } from 'react-router'
 import { ApiError } from '../client'
+import CourseProgressPanel from '../CourseProgressPanel'
 import LoadError from '../LoadError'
 import { fetchCourses, fetchLessons } from '../learningApi'
 import type { LessonLinkState } from '../lessonLinkState'
 import { useLoad } from '../useLoad'
+import { useMyProgress } from '../useMyProgress'
 
 export default function CoursePage() {
   const { courseSlug = '' } = useParams()
@@ -11,6 +13,8 @@ export default function CoursePage() {
     const [courses, lessons] = await Promise.all([fetchCourses(), fetchLessons(courseSlug)])
     return { course: courses.find((c) => c.slug === courseSlug) ?? null, lessons }
   }, courseSlug)
+  // Hook phải gọi trước các return sớm bên dưới. Tiến độ tải riêng: lỗi tiến độ không làm mất danh sách bài.
+  const progress = useMyProgress()
 
   if (state.kind === 'loading') {
     return <p className="text-slate-600 dark:text-slate-400">Đang tải khóa học...</p>
@@ -42,6 +46,13 @@ export default function CoursePage() {
       {course?.description && (
         <p className="mt-3 text-slate-600 dark:text-slate-400">{course.description}</p>
       )}
+
+      <CourseProgressPanel
+        progress={progress.state}
+        courseSlug={courseSlug}
+        linkState={linkState}
+        onChanged={progress.reload}
+      />
 
       {lessons.length === 0 ? (
         <p className="mt-8 text-slate-600 dark:text-slate-400">Khóa học này chưa có bài học nào.</p>
