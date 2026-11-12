@@ -1,6 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError, apiRequest } from './client'
-import { fetchCourses, fetchLesson, fetchLessons, searchLessons } from './learningApi'
+import {
+  fetchCourses,
+  fetchLesson,
+  fetchLessons,
+  fetchProgress,
+  recordProgress,
+  restartCourse,
+  searchLessons,
+} from './learningApi'
 
 vi.mock('./client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./client')>()
@@ -190,5 +198,109 @@ describe('searchLessons', () => {
     apiRequestMock.mockRejectedValue(new ApiError(401, 'Bạn cần đăng nhập'))
 
     await expect(searchLessons('mạng', 0)).rejects.toMatchObject({ status: 401 })
+  })
+})
+
+const KHOA_10 = {
+  courseId: 3,
+  courseSlug: 'tin-hoc-10',
+  courseTitle: 'Tin học 10',
+  completedLessons: 1,
+  totalLessons: 3,
+  percent: 33,
+  continueLesson: { id: 12, slug: 'mang-may-tinh', title: 'Mạng máy tính' },
+}
+
+describe('fetchProgress', () => {
+  it('gọi GET /api/me/progress và trả về tiến độ từng khóa, kể cả khóa không còn bài để học tiếp', async () => {
+    const xongHet = { ...KHOA_10, courseId: 4, completedLessons: 3, percent: 100, continueLesson: null }
+    apiRequestMock.mockResolvedValue([KHOA_10, xongHet])
+
+    const progress = await fetchProgress()
+
+    expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/me/progress')
+    expect(progress).toEqual([KHOA_10, xongHet])
+  })
+
+  it('ném lỗi khi phản hồi không phải mảng', async () => {
+    apiRequestMock.mockResolvedValue({ courses: [] })
+
+    await expect(fetchProgress()).rejects.toThrow('không đúng dạng')
+  })
+
+  it('ném lỗi khi một khóa thiếu trường hoặc sai kiểu', async () => {
+    apiRequestMock.mockResolvedValue([{ ...KHOA_10, percent: '33' }])
+    await expect(fetchProgress()).rejects.toThrow('không đúng dạng')
+
+    const { totalLessons: _bo, ...thieu } = KHOA_10
+    apiRequestMock.mockResolvedValue([thieu])
+    await expect(fetchProgress()).rejects.toThrow('không đúng dạng')
+  })
+
+  it('ném lỗi khi "học tiếp" sai dạng (không phải đối tượng hoặc null)', async () => {
+    apiRequestMock.mockResolvedValue([{ ...KHOA_10, continueLesson: 'mang-may-tinh' }])
+    await expect(fetchProgress()).rejects.toThrow('không đúng dạng')
+
+    apiRequestMock.mockResolvedValue([{ ...KHOA_10, continueLesson: { id: 12, slug: 'mang-may-tinh' } }])
+    await expect(fetchProgress()).rejects.toThrow('không đúng dạng')
+  })
+
+  it('giữ nguyên ApiError 401 để giao diện biết chưa đăng nhập', async () => {
+    apiRequestMock.mockRejectedValue(new ApiError(401, 'Bạn cần đăng nhập'))
+
+    await expect(fetchProgress()).rejects.toMatchObject({ status: 401 })
+  })
+})
+
+describe('recordProgress', () => {
+  it('gọi PUT đúng đường dẫn của bài kèm trạng thái và trả về trạng thái thật máy chủ đã ghi', async () => {
+    apiRequestMock.mockResolvedValue({ lessonId: 11, status: 'COMPLETED' })
+
+    const result = await recordProgress(11, 'COMPLETED')
+
+    expect(apiRequestMock).toHaveBeenCalledWith('PUT', '/api/me/progress/lessons/11', { status: 'COMPLETED' })
+    expect(result).toEqual({ lessonId: 11, status: 'COMPLETED' })
+  })
+
+  it('mở bài đã hoàn thành: gửi IN_PROGRESS nhưng nhận lại COMPLETED thì trả đúng COMPLETED', async () => {
+    apiRequestMock.mockResolvedValue({ lessonId: 11, status: 'COMPLETED' })
+
+    const result = await recordProgress(11, 'IN_PROGRESS')
+
+    expect(apiRequestMock).toHaveBeenCalledWith('PUT', '/api/me/progress/lessons/11', { status: 'IN_PROGRESS' })
+    expect(result.status).toBe('COMPLETED')
+  })
+
+  it('ném lỗi khi máy chủ trả trạng thái lạ hoặc sai dạng', async () => {
+    apiRequestMock.mockResolvedValue({ lessonId: 11, status: 'DONE' })
+    await expect(recordProgress(11, 'COMPLETED')).rejects.toThrow('không đúng dạng')
+
+    apiRequestMock.mockResolvedValue({ lessonId: '11', status: 'COMPLETED' })
+    await expect(recordProgress(11, 'COMPLETED')).rejects.toThrow('không đúng dạng')
+
+    apiRequestMock.mockResolvedValue(undefined)
+    await expect(recordProgress(11, 'COMPLETED')).rejects.toThrow('không đúng dạng')
+  })
+
+  it('giữ nguyên ApiError 404 khi bài không tồn tại hoặc chưa đăng', async () => {
+    apiRequestMock.mockRejectedValue(new ApiError(404, 'Không tìm thấy bài học'))
+
+    await expect(recordProgress(99, 'COMPLETED')).rejects.toMatchObject({ status: 404 })
+  })
+})
+
+describe('restartCourse', () => {
+  it('gọi DELETE đúng đường dẫn của khóa và không trả dữ liệu', async () => {
+    apiRequestMock.mockResolvedValue(undefined)
+
+    await expect(restartCourse(3)).resolves.toBeUndefined()
+
+    expect(apiRequestMock).toHaveBeenCalledWith('DELETE', '/api/me/progress/courses/3')
+  })
+
+  it('giữ nguyên ApiError khi khóa không tồn tại', async () => {
+    apiRequestMock.mockRejectedValue(new ApiError(404, 'Không tìm thấy khóa học'))
+
+    await expect(restartCourse(99)).rejects.toMatchObject({ status: 404 })
   })
 })

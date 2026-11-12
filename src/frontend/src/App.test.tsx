@@ -5,7 +5,7 @@ import App from './App'
 import { fetchHealth } from './api'
 import { fetchCurrentUser, logout } from './authApi'
 import { ApiError } from './client'
-import { fetchCourses, fetchLesson, fetchLessons, searchLessons } from './learningApi'
+import { fetchCourses, fetchLesson, fetchLessons, fetchProgress, recordProgress, searchLessons } from './learningApi'
 
 vi.mock('./api', () => ({ fetchHealth: vi.fn() }))
 vi.mock('./authApi', () => ({
@@ -20,6 +20,8 @@ vi.mock('./learningApi', () => ({
   fetchLessons: vi.fn(),
   fetchLesson: vi.fn(),
   searchLessons: vi.fn(),
+  fetchProgress: vi.fn(),
+  recordProgress: vi.fn(),
 }))
 
 beforeEach(() => {
@@ -41,6 +43,8 @@ beforeEach(() => {
     summary: null,
     contentMd: 'Nội dung bài',
   })
+  vi.mocked(fetchProgress).mockResolvedValue([])
+  vi.mocked(recordProgress).mockResolvedValue({ lessonId: 1, status: 'IN_PROGRESS' })
   vi.stubGlobal(
     'matchMedia',
     vi.fn().mockReturnValue({ matches: false }),

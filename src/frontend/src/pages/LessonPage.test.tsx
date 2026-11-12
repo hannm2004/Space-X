@@ -2,12 +2,13 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../client'
-import { fetchLesson } from '../learningApi'
+import { fetchLesson, recordProgress } from '../learningApi'
 import LessonPage from './LessonPage'
 
-vi.mock('../learningApi', () => ({ fetchLesson: vi.fn() }))
+vi.mock('../learningApi', () => ({ fetchLesson: vi.fn(), recordProgress: vi.fn() }))
 
 const fetchLessonMock = vi.mocked(fetchLesson)
+const recordProgressMock = vi.mocked(recordProgress)
 
 const LESSON = {
   id: 1,
@@ -29,6 +30,8 @@ function renderLesson(entry: string | { pathname: string; state: unknown } = '/b
 
 beforeEach(() => {
   fetchLessonMock.mockReset()
+  recordProgressMock.mockReset()
+  recordProgressMock.mockResolvedValue({ lessonId: 1, status: 'IN_PROGRESS' })
 })
 
 describe('LessonPage — đọc bài', () => {

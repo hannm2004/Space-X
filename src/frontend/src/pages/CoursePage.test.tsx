@@ -2,25 +2,37 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../client'
-import { fetchCourses, fetchLessons } from '../learningApi'
+import { fetchCourses, fetchLessons, fetchProgress, restartCourse } from '../learningApi'
+import { AuthContext, type AuthState } from '../useAuth'
 import CoursePage from './CoursePage'
 
-vi.mock('../learningApi', () => ({ fetchCourses: vi.fn(), fetchLessons: vi.fn() }))
+vi.mock('../learningApi', () => ({
+  fetchCourses: vi.fn(),
+  fetchLessons: vi.fn(),
+  fetchProgress: vi.fn(),
+  restartCourse: vi.fn(),
+}))
 
 const fetchCoursesMock = vi.mocked(fetchCourses)
 const fetchLessonsMock = vi.mocked(fetchLessons)
+const fetchProgressMock = vi.mocked(fetchProgress)
+const restartCourseMock = vi.mocked(restartCourse)
+
+const ANONYMOUS: AuthState = { status: 'anonymous' }
 
 const COURSES = [
   { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Khóa học lớp 10' },
   { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null },
 ]
 
-function renderCourse(path = '/khoa-hoc/tin-hoc-10') {
+function renderCourse(path = '/khoa-hoc/tin-hoc-10', auth: AuthState = ANONYMOUS) {
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route path="/khoa-hoc/:courseSlug" element={<CoursePage />} />
-      </Routes>
+      <AuthContext.Provider value={{ state: auth, signIn: vi.fn(), signOut: vi.fn() }}>
+        <Routes>
+          <Route path="/khoa-hoc/:courseSlug" element={<CoursePage />} />
+        </Routes>
+      </AuthContext.Provider>
     </MemoryRouter>,
   )
 }
@@ -28,7 +40,11 @@ function renderCourse(path = '/khoa-hoc/tin-hoc-10') {
 beforeEach(() => {
   fetchCoursesMock.mockReset()
   fetchLessonsMock.mockReset()
+  fetchProgressMock.mockReset()
+  restartCourseMock.mockReset()
   fetchCoursesMock.mockResolvedValue(COURSES)
+  fetchProgressMock.mockResolvedValue([])
+  restartCourseMock.mockResolvedValue(undefined)
 })
 
 describe('CoursePage', () => {
