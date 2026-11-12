@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, Outlet, useNavigate } from 'react-router'
+import HeaderSearch from './HeaderSearch'
 import ThemeToggle from './ThemeToggle'
 import { useAuth } from './useAuth'
 
@@ -59,32 +60,6 @@ function AccountNav() {
   )
 }
 
-// Nút kính lúp dẫn tới trang tìm kiếm. Cùng kiểu viền với nút đổi giao diện để hai nút đứng cạnh nhau cân đối.
-// Hình chỉ để trang trí (aria-hidden); tên cho trình đọc màn hình nằm ở aria-label, chữ khi rê chuột ở title.
-function SearchLink() {
-  return (
-    <Link
-      to="/tim-kiem"
-      aria-label="Tìm bài học"
-      title="Tìm bài học"
-      className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
-    >
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        className="h-5 w-5"
-      >
-        <circle cx="11" cy="11" r="7" />
-        <path d="m20 20-3.5-3.5" />
-      </svg>
-    </Link>
-  )
-}
-
 // Khung chung của mọi trang: thanh đầu trang và vùng nội dung của trang đang mở.
 export default function Layout() {
   return (
@@ -96,9 +71,9 @@ export default function Layout() {
         >
           Space-X
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-end gap-4">
           <AccountNav />
-          <SearchLink />
+          <HeaderSearch />
           <ThemeToggle />
         </div>
       </header>
