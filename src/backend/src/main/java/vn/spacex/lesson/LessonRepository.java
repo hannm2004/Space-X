@@ -7,10 +7,16 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface LessonRepository extends JpaRepository<Lesson, Long> {
 
     List<Lesson> findByCourseIdAndStatusOrderBySortOrderAscIdAsc(Long courseId, LessonStatus status);
+
+    // Tiến độ học (CP5.5): kiểm tra bài đã đăng và tính tổng bài mỗi khóa. Entity Lesson không có content_md nên nhẹ.
+    Optional<Lesson> findByIdAndStatus(Long id, LessonStatus status);
+
+    List<Lesson> findByStatusOrderBySortOrderAscIdAsc(LessonStatus status);
 
     // Tìm bài Đã đăng bằng FULLTEXT (D29, migration V3). Chế độ tự nhiên: toán tử như + - * " trong từ khóa không có nghĩa.
     // Chỉ chọn các cột entity Lesson ánh xạ nên không tải content_md. Thứ tự (độ liên quan giảm dần, rồi id) nằm trong
