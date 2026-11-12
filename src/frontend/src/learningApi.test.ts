@@ -160,6 +160,14 @@ describe('searchLessons', () => {
     expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/lessons?q=a%26page%3D9%23x&page=2&size=20')
   })
 
+  it('nhận kích thước trang tùy chọn (gợi ý ở thanh đầu trang chỉ lấy vài bài)', async () => {
+    apiRequestMock.mockResolvedValue({ ...PAGE, size: 5 })
+
+    await searchLessons('mạng', 0, 5)
+
+    expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/lessons?q=m%E1%BA%A1ng&page=0&size=5')
+  })
+
   it('ném lỗi khi "items" không phải mảng', async () => {
     apiRequestMock.mockResolvedValue({ ...PAGE, items: 'x' })
 

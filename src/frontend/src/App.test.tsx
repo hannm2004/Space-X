@@ -125,25 +125,45 @@ describe('App — định tuyến', () => {
     expect(searchLessons).toHaveBeenCalledWith('thông tin', 0)
   })
 
-  it('/tim-kiem hiện trang tìm kiếm và thanh đầu trang có nút kính lúp dẫn tới /tim-kiem', async () => {
+  it('/tim-kiem hiện trang tìm kiếm và thanh đầu trang có nút kính lúp mở ô tìm', async () => {
     renderAt('/tim-kiem')
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Tìm bài học' })).not.toBeNull()
     const header = screen.getByRole('banner')
-    const search = within(header).getByRole('link', { name: 'Tìm bài học' })
-    expect(search.getAttribute('href')).toBe('/tim-kiem')
+    const search = within(header).getByRole('button', { name: 'Tìm bài học' })
     expect(search.getAttribute('title')).toBe('Tìm bài học')
-    // Kính lúp chỉ để trang trí: tên của liên kết đã nằm ở aria-label.
+    // Kính lúp chỉ để trang trí: tên của nút đã nằm ở aria-label.
     expect(search.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true')
     expect(within(header).queryByText('Tìm bài')).toBeNull()
   })
 
-  it('nút kính lúp có ở mọi trang, không chỉ trang tìm kiếm', async () => {
+  it('nút kính lúp có ở mọi trang; bấm vào thì ô tìm hiện ngay trong thanh đầu trang', async () => {
     renderAt('/dang-nhap')
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Đăng nhập' })).not.toBeNull()
     const header = screen.getByRole('banner')
-    expect(within(header).getByRole('link', { name: 'Tìm bài học' }).getAttribute('href')).toBe('/tim-kiem')
+    fireEvent.click(within(header).getByRole('button', { name: 'Tìm bài học' }))
+
+    expect(within(header).getByRole('combobox', { name: 'Tìm bài học' })).not.toBeNull()
+  })
+
+  it('gõ ở thanh đầu trang rồi Enter thì sang trang kết quả với đúng từ khóa', async () => {
+    vi.mocked(searchLessons).mockResolvedValue({
+      items: [{ id: 1, slug: 'thong-tin-va-du-lieu', title: 'Thông tin và dữ liệu', summary: null }],
+      page: 0,
+      size: 20,
+      totalItems: 1,
+    })
+    renderAt('/dang-nhap')
+
+    const header = await screen.findByRole('banner')
+    fireEvent.click(within(header).getByRole('button', { name: 'Tìm bài học' }))
+    const input = within(header).getByRole('combobox', { name: 'Tìm bài học' })
+    fireEvent.change(input, { target: { value: 'thông tin' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    expect(await screen.findByText('Tìm thấy 1 bài')).not.toBeNull()
+    expect(searchLessons).toHaveBeenCalledWith('thông tin', 0)
   })
 
   it('/dang-nhap, /dang-ky hiện đúng trang', async () => {
