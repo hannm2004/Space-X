@@ -3,10 +3,15 @@ import HealthStatus from '../HealthStatus'
 import LoadError from '../LoadError'
 import { fetchCourses } from '../learningApi'
 import SearchForm from '../SearchForm'
+import ProgressBar from '../ProgressBar'
 import { useLoad } from '../useLoad'
+import { useMyProgress } from '../useMyProgress'
 
 function CourseList() {
   const { state, reload } = useLoad(fetchCourses, 'courses')
+  // Tiến độ chỉ là phần phụ: chưa đăng nhập, đang tải hoặc lỗi thì thẻ khóa hiện như cũ, không báo lỗi.
+  const progress = useMyProgress()
+  const myProgress = progress.state.kind === 'ok' ? (progress.state.data ?? []) : []
 
   if (state.kind === 'loading') {
     return <p className="mt-3 text-slate-600 dark:text-slate-400">Đang tải danh sách khóa học...</p>
@@ -19,19 +24,30 @@ function CourseList() {
   }
   return (
     <ul className="mt-4 grid gap-4 sm:grid-cols-3">
-      {state.data.map((course) => (
-        <li key={course.id}>
-          <Link
-            to={`/khoa-hoc/${encodeURIComponent(course.slug)}`}
-            className="block h-full rounded-xl border border-slate-200 bg-white p-5 hover:border-blue-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-400"
-          >
-            <h3 className="text-lg font-semibold">{course.title}</h3>
-            {course.description && (
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{course.description}</p>
-            )}
-          </Link>
-        </li>
-      ))}
+      {state.data.map((course) => {
+        const mine = myProgress.find((p) => p.courseSlug === course.slug)
+        return (
+          <li key={course.id}>
+            <Link
+              to={`/khoa-hoc/${encodeURIComponent(course.slug)}`}
+              className="block h-full rounded-xl border border-slate-200 bg-white p-5 hover:border-blue-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-400"
+            >
+              <h3 className="text-lg font-semibold">{course.title}</h3>
+              {course.description && (
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{course.description}</p>
+              )}
+              {mine && mine.totalLessons > 0 && (
+                <div className="mt-4">
+                  <ProgressBar percent={mine.percent} label={`Tiến độ ${course.title}`} />
+                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                    {mine.completedLessons}/{mine.totalLessons} bài hoàn thành
+                  </p>
+                </div>
+              )}
+            </Link>
+          </li>
+        )
+      })}
     </ul>
   )
 }

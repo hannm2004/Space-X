@@ -6,6 +6,21 @@ export type Lesson = LessonSummary & { contentMd: string }
 // Trang kết quả tìm kiếm: cùng hình dạng phân trang chung của API (docs/API.md); trang đếm từ 0.
 export type LessonSearchPage = { items: LessonSummary[]; page: number; size: number; totalItems: number }
 
+// Tiến độ học (docs/API.md): của chính người đang đăng nhập, userId không bao giờ đi qua trình duyệt.
+export type ProgressStatus = 'IN_PROGRESS' | 'COMPLETED'
+export type ContinueLesson = { id: number; slug: string; title: string }
+export type CourseProgress = {
+  courseId: number
+  courseSlug: string
+  courseTitle: string
+  completedLessons: number
+  totalLessons: number
+  percent: number
+  // null khi khóa chưa có bài đã đăng hoặc đã học xong hết.
+  continueLesson: ContinueLesson | null
+}
+export type LessonProgress = { lessonId: number; status: ProgressStatus }
+
 // Khớp giá trị mặc định của API; để rõ ràng ở đây thay vì dựa vào mặc định phía máy chủ.
 const SEARCH_PAGE_SIZE = 20
 
@@ -28,6 +43,11 @@ function asNullableString(value: unknown): string | null {
 
 function asNumber(value: unknown): number {
   if (typeof value !== 'number') throw new Error(BAD_SHAPE)
+  return value
+}
+
+function asProgressStatus(value: unknown): ProgressStatus {
+  if (value !== 'IN_PROGRESS' && value !== 'COMPLETED') throw new Error(BAD_SHAPE)
   return value
 }
 
@@ -71,6 +91,30 @@ function parseSearchPage(value: unknown): LessonSearchPage {
   }
 }
 
+function parseContinueLesson(value: unknown): ContinueLesson | null {
+  if (value === null) return null
+  const record = asRecord(value)
+  return { id: asNumber(record.id), slug: asString(record.slug), title: asString(record.title) }
+}
+
+function parseCourseProgress(value: unknown): CourseProgress {
+  const record = asRecord(value)
+  return {
+    courseId: asNumber(record.courseId),
+    courseSlug: asString(record.courseSlug),
+    courseTitle: asString(record.courseTitle),
+    completedLessons: asNumber(record.completedLessons),
+    totalLessons: asNumber(record.totalLessons),
+    percent: asNumber(record.percent),
+    continueLesson: parseContinueLesson(record.continueLesson),
+  }
+}
+
+function parseLessonProgress(value: unknown): LessonProgress {
+  const record = asRecord(value)
+  return { lessonId: asNumber(record.lessonId), status: asProgressStatus(record.status) }
+}
+
 export async function fetchCourses(): Promise<Course[]> {
   return asList(await apiRequest('GET', '/api/courses'), parseCourse)
 }
@@ -93,4 +137,19 @@ export async function searchLessons(
 ): Promise<LessonSearchPage> {
   const params = new URLSearchParams({ q: query, page: String(page), size: String(size) })
   return parseSearchPage(await apiRequest('GET', `/api/lessons?${params}`))
+}
+
+export async function fetchProgress(): Promise<CourseProgress[]> {
+  return asList(await apiRequest('GET', '/api/me/progress'), parseCourseProgress)
+}
+
+// Trả về trạng thái máy chủ thật sự đã ghi: gửi IN_PROGRESS cho bài đã COMPLETED vẫn nhận lại COMPLETED
+// (bài hoàn thành không bị hạ), nên trang bài dựa vào kết quả này chứ không tự đoán.
+export async function recordProgress(lessonId: number, status: ProgressStatus): Promise<LessonProgress> {
+  return parseLessonProgress(await apiRequest('PUT', `/api/me/progress/lessons/${lessonId}`, { status }))
+}
+
+// "Học lại": xóa tiến độ của chính mình trong khóa. Phản hồi 204 không có nội dung.
+export async function restartCourse(courseId: number): Promise<void> {
+  await apiRequest('DELETE', `/api/me/progress/courses/${courseId}`)
 }

@@ -1,5 +1,6 @@
 import { Link, useLocation, useParams } from 'react-router'
 import { ApiError } from '../client'
+import LessonProgressControl from '../LessonProgressControl'
 import LoadError from '../LoadError'
 import { fetchLesson } from '../learningApi'
 import { readLessonLinkState } from '../lessonLinkState'
@@ -73,6 +74,10 @@ export default function LessonPage() {
       )}
       <div className="mt-6">
         <MarkdownContent source={withoutLeadingTitle(lesson.contentMd, lesson.title)} />
+      </div>
+      {/* Bài chỉ tải được khi đã đăng nhập nên ở đây chắc chắn có tài khoản. key để sang bài khác thì gắn lại từ đầu. */}
+      <div className="mt-8 border-t border-slate-200 pt-6 dark:border-slate-800">
+        <LessonProgressControl key={lesson.id} lessonId={lesson.id} />
       </div>
     </article>
   )
