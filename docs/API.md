@@ -128,6 +128,26 @@ Người dùng hiện tại luôn lấy từ session. `userId` gửi lên (đư�
 
 Ghi nhận tiến độ dùng `PUT` riêng, không ghi ngầm trong `GET /api/lessons/{slug}`, vì `GET` phải an toàn (không làm thay đổi dữ liệu). `PUT` gọi nhiều lần cho cùng một kết quả (idempotent), và không hạ bài `COMPLETED` về `IN_PROGRESS`.
 
+Phản hồi (CP5.5, đã có test):
+
+`GET /api/me/progress` → `200`, mảng mỗi khóa một phần tử, theo `sort_order` của khóa:
+
+```json
+[{ "courseId": 7, "courseSlug": "tin-hoc-10", "courseTitle": "Tin học 10",
+   "completedLessons": 1, "totalLessons": 2, "percent": 50,
+   "continueLesson": { "id": 5, "slug": "mang-may-tinh-va-internet", "title": "Mạng máy tính và Internet" } }]
+```
+
+- Chỉ tính bài `PUBLISHED`: Admin ẩn một bài thì `totalLessons`, `completedLessons` và `percent` tự tính lại. `percent` làm tròn xuống nên chỉ bằng 100 khi hoàn thành hết; khóa chưa có bài đã đăng cho `0`.
+- `continueLesson` là bài `IN_PROGRESS` xem gần nhất; không có thì bài đầu tiên (theo `sort_order`) chưa hoàn thành; là `null` khi khóa chưa có bài đã đăng hoặc đã học xong hết.
+
+`PUT /api/me/progress/lessons/{lessonId}` với thân `{ "status": "IN_PROGRESS" | "COMPLETED" }` → `200` `{ "lessonId": 4, "status": "COMPLETED" }`. `status` trả về là trạng thái **thật sau khi ghi**: gửi `IN_PROGRESS` cho bài đã `COMPLETED` vẫn nhận lại `COMPLETED`, nên giao diện dựa vào kết quả này. `completedAt` giữ nguyên từ lần hoàn thành đầu.
+- `404` khi bài không tồn tại **hoặc chưa đăng** (cùng một thông báo, không dò được bài nháp); `400` khi `status` thiếu, sai hoặc viết thường, hoặc `lessonId` không phải số; `401` chưa đăng nhập; `403` thiếu CSRF.
+- Các trường khác trong thân (`userId`, `completedAt`...) bị bỏ qua: người dùng lấy từ session, thời điểm do máy chủ quyết định.
+- Hai yêu cầu đầu tiên đến cùng lúc (bấm đúp, hai tab) đều trả `200` và chỉ có một dòng (ràng buộc `UNIQUE(user_id, lesson_id)`).
+
+`DELETE /api/me/progress/courses/{courseId}` → `204` không có thân; `404` khi khóa không tồn tại. Chỉ xóa dòng của người gọi thuộc các bài trong khóa đó (kể cả bài nháp), không đụng tiến độ của người khác hay của khóa khác; gọi khi chưa học gì vẫn `204`.
+
 ## Trợ lý AI
 
 | Method | Đường dẫn | Quyền | Mô tả |

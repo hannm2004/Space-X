@@ -1,14 +1,14 @@
 # Danh mục test của Space-X
 
-Cập nhật: 2026-11-11 (đếm bằng lệnh ở mục "Cách đếm lại"). Mỗi khi thêm, xóa hoặc đổi tên test, cập nhật file này trong cùng nhánh. Số liệu phải đếm bằng lệnh, không cộng nhẩm.
+Cập nhật: 2026-11-12 (đếm bằng lệnh ở mục "Cách đếm lại"). Mỗi khi thêm, xóa hoặc đổi tên test, cập nhật file này trong cùng nhánh. Số liệu phải đếm bằng lệnh, không cộng nhẩm.
 
 ## Tổng quan
 
 | | Số test | Số lớp/file | Cần Docker? |
 |---|---|---|---|
-| Backend (JUnit 5 + Spring Test) | 273 | 28 lớp | Không |
-| Frontend (Vitest + Testing Library, môi trường jsdom) | 210 | 19 file | Không |
-| Test tích hợp với MySQL thật (Testcontainers) | 126 | 13 lớp | Có |
+| Backend (JUnit 5 + Spring Test) | 304 | 30 lớp | Không |
+| Frontend (Vitest + Testing Library, môi trường jsdom) | 250 | 23 file | Không |
+| Test tích hợp với MySQL thật (Testcontainers) | 135 | 14 lớp | Có |
 
 CI chạy toàn bộ test trên mỗi Pull Request. **Không test nào gọi API AI thật**: dùng nhà cung cấp giả.
 
@@ -61,7 +61,8 @@ Mỗi dòng phải có test thật trước khi tuần đó được coi là xon
 | Markdown của bài học không chạy được script (XSS) (CP5.2, `MarkdownContent.test.tsx`, 12 test): `<script>` nhúng không thành phần tử và không chạy; `<img onerror>`, `<iframe>`, `<style>` nhúng không dựng thành phần tử; liên kết `javascript:` và `data:` mất địa chỉ nguy hiểm; liên kết ra ngoài mở tab mới với `noopener noreferrer`; chỉ ảnh `/api/images/{id}` được hiển thị (có `alt`, tải lười), ảnh từ trang ngoài, `//host/x.png`, id không phải số và đường dẫn lách `/api/images/1/../../me` không tạo thẻ `img`. Đã làm hỏng danh sách ảnh cho phép để xác nhận hai test ảnh đỏ. Định dạng: tiêu đề hạ một bậc để trang chỉ có một `h1`, danh sách, trích dẫn, mã, bảng GFM (`remark-gfm`) | Unit (frontend) | 5 | Tested |
 | Giao diện đọc (CP5.2): `learningApi.test.ts` 12 test (đường dẫn đúng, slug được mã hóa, dữ liệu sai dạng bị từ chối, giữ nguyên `ApiError`); `HomePage.test.tsx` 6 test (đang tải, danh sách khóa có liên kết, slug lạ được mã hóa, rỗng, lỗi + Thử lại); `CoursePage.test.tsx` 7 test (tên khóa, mô tả, danh sách bài có tóm tắt, rỗng, 404, lỗi + Thử lại, lỗi khi tải danh sách khóa); `LessonPage.test.tsx` 11 test (nội dung Markdown, bỏ dòng `# Tên bài` trùng, giữ tiêu đề khác, không tóm tắt, liên kết quay lại đúng khóa, thông tin khóa sai dạng bị bỏ qua, **401 mời đăng nhập và không hiện nội dung**, 404 bài không có/bài nháp, lỗi + Thử lại); `App.test.tsx` thêm 3 test (route khóa, route bài, đi từ trang chủ vào khóa, vào bài rồi quay lại). Quyền đọc thật do backend quyết định (đã có `LessonControllerTest`), frontend chỉ phản ứng với 401/404 | Unit (frontend) | 5 | Tested |
 | Tìm kiếm trả đúng bài với bộ câu hỏi mẫu | Integration | 5 | Planned |
-| Tiến độ: chỉ của chính mình; `COMPLETED` không bị hạ về `IN_PROGRESS`; % chỉ tính bài Đã đăng; "Học lại" chỉ xóa đúng khóa đó | Unit + Integration | 5 | Planned |
+| Tiến độ học (CP5.5, `GET /api/me/progress`, `PUT .../lessons/{lessonId}`, `DELETE .../courses/{courseId}`), backend: chưa đăng nhập → 401, thiếu CSRF → 403, service không được gọi; `userId` gửi trong thân hoặc tham số bị bỏ qua, chỉ dùng id từ session; `status` thiếu/sai/rỗng/viết thường → 400; id không phải số → 400 với `detail` cố định; bài nháp và bài không tồn tại cùng 404; mở bài lần đầu tạo `IN_PROGRESS`, mở lại chỉ đổi `lastViewedAt`; **`COMPLETED` không bị hạ về `IN_PROGRESS`** và `completedAt` giữ từ lần đầu; % làm tròn xuống, chỉ tính bài Đã đăng (bài bị ẩn không được đếm, khóa chưa có bài → 0% không chia cho 0); "Học tiếp" là bài đang học xem gần nhất, không có thì bài đầu chưa xong, xong hết thì `null`; hai yêu cầu đầu tiên đến cùng lúc không trả 500 (UNIQUE chặn, đọc lại và cập nhật); trên MySQL thật: **hai học sinh cùng học một bài không thấy và không đổi được tiến độ của nhau**, "Học lại" chỉ xóa đúng người và đúng khóa, xóa bài kéo theo tiến độ (`CASCADE`), Admin ẩn bài thì % tự tính lại (đã kiểm chứng bằng cách tạm phá 3 chỗ: đọc tiến độ mọi người, xóa không lọc theo người, bỏ thử lại khi trùng khóa; mỗi lần đúng 1 test đỏ) | Unit + Slice + Integration | 5 | Tested (`ProgressServiceTest` 19, `ProgressControllerTest` 12, `ProgressIntegrationTest` 9) |
+| Tiến độ học, frontend (CP5.5): `fetchProgress`/`recordProgress`/`restartCourse` gọi đúng đường dẫn, từ chối dữ liệu sai dạng và trạng thái lạ, giữ nguyên `ApiError` (11 test); `ProgressBar` có vai trò `progressbar`, đưa giá trị về 0–100 (3 test); `LessonProgressControl`: mở bài ghi `IN_PROGRESS`, nút "Hoàn thành bài" theo trạng thái máy chủ trả về (bài đã xong thì không còn nút), bấm đúp chỉ gửi một lần, lỗi hiện câu cố định không in lỗi máy chủ (8 test); `LessonPage` gắn nút chỉ khi bài đã tải và gắn lại khi sang bài khác (3 test); `CoursePage`: khách không gọi API tiến độ, % và "Học tiếp" của đúng khóa, "Học lại" phải xác nhận và chỉ xóa sau khi xác nhận, lỗi giữ nguyên tiến độ (11 test); `HomePage`: thanh tiến độ trên thẻ khóa, lỗi tiến độ không chặn danh sách (4 test). Kiểm chứng: tạm bỏ điều kiện "khách không gọi API" thì 2 test đỏ; test "học lại" đã bắt được lỗi thật là hộp xác nhận không đóng sau khi xóa xong | Unit (frontend) | 5 | Tested (test jsdom; đã thử tay trên Chrome ngày 2026-11-12 với đăng nhập, hoàn thành bài, học lại, giao diện sáng/tối; **chưa thử điện thoại thật, chưa deploy**) |
 | Quản lý người dùng: không tự khóa mình, không khóa Admin cuối cùng (409); tài khoản bị khóa không đăng nhập được | Unit | 5 | Planned |
 | Dashboard đếm đúng | Integration | 6 | Planned |
 | Đăng nhập Google: email chưa xác minh bị từ chối; email đã có tài khoản Google thì đăng nhập vào tài khoản đó; email đã thuộc tài khoản mật khẩu bị từ chối, không tự liên kết (D25); tài khoản mới có vai trò `LEARNER` | Unit | 6 | Planned |
@@ -93,6 +94,6 @@ PowerShell, đứng ở thư mục gốc dự án:
 (Get-ChildItem src\frontend\src -Recurse -Include *.test.ts,*.test.tsx | Select-String '^\s*(it|test)\(' | Measure-Object).Count
 ```
 
-Nếu số khác bảng "Tổng quan", sửa bảng cho khớp (không sửa test cho khớp bảng). Lệnh đếm backend đếm cả test tích hợp: 399 = 273 test không cần Docker + 126 test tích hợp. Lệnh đếm frontend chỉ đếm dòng bắt đầu bằng `it(` hoặc `test(`, nên không dùng `it.each` (một dòng nhưng nhiều trường hợp) để số đếm khớp số Vitest báo.
+Nếu số khác bảng "Tổng quan", sửa bảng cho khớp (không sửa test cho khớp bảng). Lệnh đếm backend đếm cả test tích hợp: 439 = 304 test không cần Docker + 135 test tích hợp. Lệnh đếm frontend chỉ đếm dòng bắt đầu bằng `it(` hoặc `test(`, nên không dùng `it.each` (một dòng nhưng nhiều trường hợp) để số đếm khớp số Vitest báo.
 
 Chạy riêng test tích hợp (cần Docker Desktop đang chạy, lần đầu phải tải image `mysql:8.4`): `.\mvnw test -Dtest=*IntegrationTest`. Mỗi lớp tích hợp bật một container MySQL riêng nên mỗi lớp mất khoảng 35 giây.
