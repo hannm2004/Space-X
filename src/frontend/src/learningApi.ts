@@ -85,7 +85,12 @@ export async function fetchLesson(lessonSlug: string): Promise<Lesson> {
 }
 
 // Từ khóa đi qua URLSearchParams nên ký tự như & = # không chen thêm tham số.
-export async function searchLessons(query: string, page: number): Promise<LessonSearchPage> {
-  const params = new URLSearchParams({ q: query, page: String(page), size: String(SEARCH_PAGE_SIZE) })
+// `size` mặc định là cỡ trang kết quả; ô gợi ý ở thanh đầu trang chỉ xin vài bài.
+export async function searchLessons(
+  query: string,
+  page: number,
+  size: number = SEARCH_PAGE_SIZE,
+): Promise<LessonSearchPage> {
+  const params = new URLSearchParams({ q: query, page: String(page), size: String(size) })
   return parseSearchPage(await apiRequest('GET', `/api/lessons?${params}`))
 }

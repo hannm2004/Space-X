@@ -16,6 +16,35 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-11 — Ô tìm có gợi ý ở thanh đầu trang
+- **Nhánh:** `feat/search-header` (tạo từ `main` sau PR #29). Ba commit đầu là nút kính lúp dẫn sang `/tim-kiem`; phần ô tìm có gợi ý bên dưới nằm ở các commit sau đó.
+- **Yêu cầu của người dùng:** ô tìm nằm trong header; bấm vào thì hiện chỗ nhập; gõ đến đâu gợi ý đến đó; Enter thì sang trang kết quả.
+- **Đã làm (chỉ frontend, không đổi backend hay schema):**
+  - `HeaderSearch.tsx` thay `SearchLink` trong `Layout.tsx`. Lúc đầu là nút kính lúp; bấm thì hiện ô nhập (có focus). Ô nhập theo mẫu `combobox` của ARIA: danh sách gợi ý là `listbox`, dòng đang chọn báo qua `aria-activedescendant`.
+  - Gợi ý dùng lại `GET /api/lessons?q=&size=5` (chỉ bài Đã đăng, đúng như trang kết quả). `searchLessons` thêm tham số `size` tùy chọn, mặc định vẫn 20.
+  - Chờ 300 ms sau lần gõ cuối mới gọi API (debounce); từ khóa ngắn hơn 3 ký tự thì không gọi (API cũng bỏ qua từ ngắn, D29); kết quả của lần gõ cũ đến muộn bị bỏ.
+  - Bàn phím: mũi tên lên/xuống chọn (xoay vòng); Enter khi đang chọn thì vào thẳng bài, không chọn gì thì sang `/tim-kiem?q=`; Esc, bấm ra ngoài hoặc Tab ra ngoài thì đóng. Còn bài chưa hiện thì có dòng cuối "Xem tất cả N kết quả".
+  - Chưa đăng nhập (401) hiện "Bạn cần đăng nhập để tìm bài học."; lỗi khác hiện câu cố định, không in nội dung lỗi của máy chủ.
+  - Cập nhật số test và mô tả trong `README.md`, `docs/TESTING.md`.
+- **Kiểm tra:**
+  - Viết test trước. RED: 4 test đỏ (3 ở `App.test.tsx` đổi từ "liên kết" sang "nút mở ô tìm", 1 ở `learningApi.test.ts` cho `size`) và `HeaderSearch.test.tsx` không chạy được vì chưa có component.
+  - GREEN: `npm test` → 19 file, **210 test qua** (26 test mới ở `HeaderSearch.test.tsx`). Lệnh đếm của `docs/TESTING.md` cũng ra 210 và 19 file. `npm run lint` không cảnh báo; `tsc -b` và `npm run build` thành công.
+  - Kiểm chứng test có tác dụng: tạm bỏ việc loại kết quả cũ → test "kết quả cũ đến muộn" đỏ; tạm đặt debounce 0 → test "gõ liên tục chỉ gọi một lần" đỏ; sau đó hoàn lại, 25 test qua (lúc đó chưa thêm test Tab).
+  - **Kiểm tay trên trình duyệt thật (2026-11-12, Chrome, `npm run dev` + backend + MySQL ở máy, 3 khóa / 6 bài mẫu):**
+    - Chưa đăng nhập: gõ "thông tin" hiện "Bạn cần đăng nhập để tìm bài học."; Esc đóng ô, focus về kính lúp và có viền focus.
+    - Đã đăng nhập (tài khoản học sinh thử tạo ở DB máy): gõ "thông tin" hiện 5 gợi ý và dòng "Xem tất cả 6 kết quả"; mũi tên xuống hai lần chọn dòng thứ hai (nền xanh); Enter vào đúng `/bai/bao-ve-thong-tin-ca-nhan`, ô đóng, focus về kính lúp.
+    - Gõ "mạng máy" rồi Enter (không chọn gợi ý) sang `/tim-kiem?q=m%E1%BA%A1ng+m%C3%A1y`, trang kết quả hiện 6 bài.
+    - Giao diện tối, cửa sổ hẹp (Chrome giữ tối thiểu 500 px): danh sách gợi ý rộng 320 px, nằm trọn trong màn hình, trang không có thanh cuộn ngang; mũi tên lên từ ô đang có gợi ý chọn dòng cuối "Xem tất cả".
+    - Chưa kiểm: độ rộng thật 375 px của điện thoại, Safari/Firefox, trình đọc màn hình; Pull Request chưa mở; CI chưa chạy; chưa deploy.
+    - Nhận xét nhỏ (chưa sửa): Chrome gạch đỏ chính tả dưới chữ tiếng Việt trong ô tìm và hiện nút × mặc định của ô `type="search"`.
+- **Lỗi gặp và cách sửa:** không có.
+- **Học được:**
+  - Nút chỉ có hình thì phải có tên cho trình đọc màn hình (`aria-label`), hình trang trí phải `aria-hidden`.
+  - Debounce: đặt `setTimeout` trong `useEffect` và dọn bằng `clearTimeout` ở hàm cleanup; cờ `cancelled` cùng cleanup đó vừa hủy lần gọi đang chờ vừa bỏ kết quả đến muộn.
+  - Danh sách gợi ý phải bấm được mà ô nhập không mất focus: chặn `mousedown` của dòng gợi ý, chọn ở `click`.
+  - Test có đồng hồ giả (`vi.useFakeTimers`) phải tự tua thời gian (`advanceTimersByTimeAsync`), không dùng `findBy*`.
+- **Tiếp theo:** mở Pull Request `feat/search-header` vào `main`, chờ CI xanh rồi gộp; sau đó CP5.5 (tiến độ học, nhánh `feat/progress`).
+
 ## 2026-11-10 — CP5.4: tìm kiếm bài bằng FULLTEXT
 - **Nhánh:** `feat/lesson-search` (tạo từ `main` sau PR #28); **chưa commit**.
 - **Quyết định:** D29 (người dùng chọn FULLTEXT thay vì `LIKE`). Ghi trong `docs/DECISIONS.md` (chỉ ở máy) cùng kết quả kiểm thật.
