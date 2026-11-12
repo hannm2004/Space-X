@@ -2,7 +2,7 @@
 
 Website học **Tin học lớp 10, 11, 12** (Chương trình GDPT 2018) bằng tiếng Việt cho học sinh THPT: học theo khóa và bài, lưu tiến độ học, chatbot trả lời có trích dẫn bài học, AI Agent gợi ý bài nên đọc.
 
-> **Trạng thái (2026-11-09):** xong Tuần 4 về mặt mã (các việc 4.1 đến 4.6 đã gộp qua Pull Request #19 đến #24, CI xanh). **Backend** đã có tài khoản (đăng ký, đăng nhập, đăng xuất, thông tin cá nhân, đổi mật khẩu), phân quyền `LEARNER`/`ADMIN`, CSRF, API đọc khóa học và bài học, API Admin quản lý khóa học, bài học và ảnh bài học, cùng dữ liệu mẫu 3 khóa / 6 bài và script nạp. Test: 399 backend (273 không cần Docker + 126 tích hợp trên MySQL thật) và 182 frontend. Đã deploy lên Render: https://space-x-47f1.onrender.com (kiểm tra ngày 2026-11-09: `GET /api/courses` trả 200 với 3 khóa mẫu, mỗi khóa 2 bài đã đăng, sau khi nạp dữ liệu mẫu bằng script). Gói Free tự ngủ khi lâu không có truy cập nên lần mở đầu có thể chậm 1–2 phút. **Chưa có:** giao diện đăng nhập và quản trị (frontend có routing, API client tự gắn CSRF, trang chủ kèm danh sách khóa, trang khóa, trang đọc bài và trang 404), đăng nhập Google, tìm kiếm, tiến độ học, chatbot, AI Agent. Tiến trình từng buổi làm việc: [current-state.md](current-state.md).
+> **Trạng thái (2026-11-09):** xong Tuần 4 về mặt mã (các việc 4.1 đến 4.6 đã gộp qua Pull Request #19 đến #24, CI xanh). **Backend** đã có tài khoản (đăng ký, đăng nhập, đăng xuất, thông tin cá nhân, đổi mật khẩu), phân quyền `LEARNER`/`ADMIN`, CSRF, API đọc khóa học và bài học, API Admin quản lý khóa học, bài học và ảnh bài học, cùng dữ liệu mẫu 3 khóa / 6 bài và script nạp. Test: 399 backend (273 không cần Docker + 126 tích hợp trên MySQL thật) và 210 frontend. Đã deploy lên Render: https://space-x-47f1.onrender.com (kiểm tra ngày 2026-11-09: `GET /api/courses` trả 200 với 3 khóa mẫu, mỗi khóa 2 bài đã đăng, sau khi nạp dữ liệu mẫu bằng script). Gói Free tự ngủ khi lâu không có truy cập nên lần mở đầu có thể chậm 1–2 phút. **Chưa có:** giao diện đăng nhập và quản trị (frontend có routing, API client tự gắn CSRF, trang chủ kèm danh sách khóa, trang khóa, trang đọc bài và trang 404), đăng nhập Google, tìm kiếm, tiến độ học, chatbot, AI Agent. Tiến trình từng buổi làm việc: [current-state.md](current-state.md).
 
 ## Tính năng
 
@@ -16,7 +16,7 @@ Nhãn trạng thái: `Planned` / `In progress` / `Implemented` / `Tested` / `Dep
 | | Giao diện sáng/tối (lần đầu theo hệ điều hành, nhớ lựa chọn) | Mọi người | Implemented (logic có 6 test; nút bấm kiểm bằng mắt) |
 | Học tập | Xem danh sách khóa học và bài | Khách, Học sinh | Tested (API và giao diện; giao diện đã xem thật trên trình duyệt ở máy, chưa deploy) |
 | | Đọc bài học (Markdown, bảng, ảnh của hệ thống) | Học sinh | Tested (API và giao diện; đọc bài cần đăng nhập, có trang đăng nhập; ảnh trong bài mới có test, chưa xem thật) |
-| | Tìm kiếm bài | Học sinh | Tested (API FULLTEXT và giao diện; chưa thử trên trình duyệt thật, chưa deploy). Từ chỉ khác dấu được coi là một từ; từ ngắn hơn 3 ký tự bị bỏ qua |
+| | Tìm kiếm bài | Học sinh | Tested (API FULLTEXT và giao diện; ô tìm ở thanh đầu trang đã thử tay trên Chrome ngày 2026-11-12, chưa thử điện thoại thật, chưa deploy). Từ chỉ khác dấu được coi là một từ; từ ngắn hơn 3 ký tự bị bỏ qua |
 | | Tiến độ học: hoàn thành bài, % theo khóa, học tiếp, học lại | Học sinh | Planned |
 | | Chatbot RAG trả lời kèm trích dẫn bài học | Học sinh | Planned |
 | | AI Agent gọi công cụ chỉ đọc để gợi ý bài | Học sinh | Planned |
