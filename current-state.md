@@ -16,6 +16,27 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-13 — CP5.7: nghiệm thu Tuần 5 và kiểm luồng trên production
+- **Nhánh:** `feat/week5-acceptance` (tạo từ `main` sau PR #34; người dùng báo CI xanh, đã gộp và deploy thành công).
+- **Đã làm:**
+  - Chạy lại toàn bộ test, quét bí mật toàn lịch sử, đồng bộ tài liệu (`README.md`, `docs/TESTING.md`, `docs/PLAN.md` ở máy, mục này). Rà `CLAUDE.md`: không có số liệu hay trạng thái lỗi thời nên không sửa.
+  - Kiểm luồng trên production bằng script Python gọi API thật (không đưa lên repo vì đọc mật khẩu Admin từ `.env`), dùng một học sinh thử `ktra-57-*@example.test`.
+  - Thêm mục "Kiểm luồng trên production" vào `docs/TESTING.md`; cập nhật nhãn trạng thái trong `README.md` theo bằng chứng thật.
+- **Kiểm tra:**
+  - Backend `.\mvnw test`: **495 test qua**, `BUILD SUCCESS`. Cuối log có dòng `[ERROR] Surefire is going to kill self fork JVM. The exit has elapsed 30 seconds after System.exit(0)`: JVM thoát chậm 30 giây sau khi test xong (lần chạy 495 test trước đó không thấy dòng này); build vẫn thành công, chưa tìm nguyên nhân.
+  - Frontend: `npm test` **295 test qua, 25 file**; `npm run lint` sạch; `npm run build` thành công (`index-BA0Q7JcN.js`). Lệnh đếm của `docs/TESTING.md` ra 495 và 295.
+  - Gitleaks 8.24.3 (chạy bằng Docker, như CI) quét toàn bộ lịch sử: 107 commit, không có bí mật. `.env`, `nop-bai/`, `docs/PLAN.md`, `docs/DECISIONS.md` không bị Git theo dõi. `.env.example` chỉ có giá trị giữ chỗ.
+  - Production (https://space-x-47f1.onrender.com): `GET /api/health` 200; trang `/quan-tri/nguoi-dung` 200; file JS đã deploy chứa route `quan-tri/nguoi-dung` và trùng tên với bản build ở máy. Script API **48/48 đạt**: khách (401 với API cần đăng nhập); đăng ký, đăng ký trùng → 409, đăng nhập, cookie `SESSION` và `XSRF-TOKEN` có cờ `Secure`; đọc bài, tìm kiếm, tiến độ (hoàn thành → 50%, học lại → 0%); học sinh gọi API Admin → 403; Admin: danh sách, tìm kiếm, không lộ mã băm, phân trang sai → 400, tự khóa và tự đặt lại → 409, id không có → 404; khóa → session đang mở bị đăng xuất ngay, đăng nhập khi bị khóa cùng câu 401 với sai mật khẩu; mở khóa; đặt lại mật khẩu (mật khẩu tạm 16 ký tự hợp lệ, `Cache-Control: no-store`, session và mật khẩu cũ bị từ chối, mật khẩu tạm đăng nhập và đổi được). Cuối script tài khoản thử được khóa và Admin đăng xuất.
+  - **Chưa kiểm:** bấm giao diện admin trên production (phải nhập mật khẩu Admin thật vào trình duyệt), điện thoại thật, và API Admin khóa học / bài học / ảnh trên production.
+- **Lỗi gặp và cách sửa:**
+  - Script thứ hai (kiểm API Admin khóa học, bài học, ảnh trên production, tạo dữ liệu thử rồi xóa) bị hệ thống từ chối trước khi chạy vì đó là thao tác ghi bằng tài khoản Admin production. Không chạy lại, không lách; các mục này vẫn ghi là chưa kiểm ở `README.md`, `docs/TESTING.md`, `docs/PLAN.md` và chờ người dùng cho phép.
+  - Lần quét gitleaks đầu báo `failed to scan` (quét 0 byte) vì hai lệnh chạy song song làm thư mục hiện hành bị lệch; chạy lại tuần tự với đường dẫn đầy đủ thì quét được 107 commit.
+- **Học được:**
+  - Nhãn `Deployed` phải dựa trên bằng chứng truy cập thật: ở đây là script API và so tên file JS đã deploy, không phải suy ra từ việc CI xanh.
+  - Không có API xóa người dùng nên mỗi lần kiểm trên production để lại một tài khoản thử (đã khóa); cần nhớ trong danh sách nợ.
+  - Cookie `Secure` kiểm được bằng cờ trong cookie jar của script, không cần mở trình duyệt.
+- **Tiếp theo:** mở Pull Request `feat/week5-acceptance`, chờ CI xanh rồi gộp; quyết định có kiểm API Admin khóa học/bài học/ảnh trên production hay không; chuẩn bị nội dung bảo vệ Tuần 5; sau đó sang Tuần 6.
+
 ## 2026-11-13 — CP5.6: Admin quản lý người dùng (backend và giao diện)
 - **Nhánh:** `feat/admin-users` (tạo từ `main` sau PR #33).
 - **Đã làm:**
