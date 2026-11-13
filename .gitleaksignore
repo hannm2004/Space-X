@@ -1,0 +1,8 @@
+# Cảnh báo sai (false positive) của rule generic-api-key: các dòng này là mật khẩu tạm GIẢ dùng làm dữ liệu test
+# (cạnh từ khóa "temporaryPassword"), không phải bí mật thật. Giá trị đã được đổi trong commit sau nhưng gitleaks
+# quét cả lịch sử commit và repo không force push, nên bỏ qua đúng 5 vị trí này (fingerprint lấy từ log CI của PR #34).
+c3f0c67efba165f00bd306e05ad7d856477e0562:src/frontend/src/pages/AdminUsersPage.test.tsx:generic-api-key:381
+c3f0c67efba165f00bd306e05ad7d856477e0562:src/frontend/src/pages/AdminUsersPage.test.tsx:generic-api-key:396
+c3f0c67efba165f00bd306e05ad7d856477e0562:src/frontend/src/pages/AdminUsersPage.test.tsx:generic-api-key:410
+c3f0c67efba165f00bd306e05ad7d856477e0562:src/frontend/src/adminApi.test.ts:generic-api-key:138
+c3f0c67efba165f00bd306e05ad7d856477e0562:src/frontend/src/adminApi.test.ts:generic-api-key:143

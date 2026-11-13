@@ -78,6 +78,11 @@ public class User {
         this.passwordHash = passwordHash;
     }
 
+    // Chỉ Admin khóa/mở khóa (AdminUserService). Tài khoản bị khóa không đăng nhập được (AppUserDetails.isEnabled).
+    public void changeEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
     public Long getId() {
         return id;
     }

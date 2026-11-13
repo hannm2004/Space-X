@@ -28,6 +28,8 @@ import vn.spacex.image.UnsupportedImageTypeException;
 import vn.spacex.lesson.LessonNotFoundException;
 import vn.spacex.lesson.LessonSlugAlreadyExistsException;
 import vn.spacex.user.NoPasswordAccountException;
+import vn.spacex.user.UserActionNotAllowedException;
+import vn.spacex.user.UserNotFoundException;
 import vn.spacex.user.WrongCurrentPasswordException;
 
 import java.util.Comparator;
@@ -81,6 +83,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail xuLyTaiKhoanKhongCoMatKhau() {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
                 "Tài khoản đăng nhập bằng Google không có mật khẩu để đổi");
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    ProblemDetail xuLyKhongTimThayNguoiDung() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng");
+    }
+
+    // Thông báo là câu cố định do UserActionNotAllowedException tạo, không chứa dữ liệu người gửi nên trả thẳng cho Admin.
+    @ExceptionHandler(UserActionNotAllowedException.class)
+    ProblemDetail xuLyThaoTacKhongDuocPhep(UserActionNotAllowedException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     // Lỗi phân quyền ném từ trong controller (ví dụ @PreAuthorize sau này). Nếu không có handler này thì

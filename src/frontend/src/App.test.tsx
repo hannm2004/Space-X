@@ -215,6 +215,32 @@ describe('App — thanh điều hướng theo trạng thái đăng nhập', () =
     expect(within(header).queryByRole('link', { name: 'Đăng nhập' })).toBeNull()
   })
 
+  it('Admin thấy liên kết "Quản lý người dùng" trên thanh đầu trang', async () => {
+    vi.mocked(fetchCurrentUser).mockResolvedValue({ ...USER, role: 'ADMIN' })
+
+    renderAt('/khong-co-trang-nay')
+
+    const header = await screen.findByRole('banner')
+    expect(
+      (await within(header).findByRole('link', { name: 'Quản lý người dùng' })).getAttribute('href'),
+    ).toBe('/quan-tri/nguoi-dung')
+  })
+
+  it('học sinh và khách không thấy liên kết "Quản lý người dùng"', async () => {
+    vi.mocked(fetchCurrentUser).mockResolvedValue(USER)
+    renderAt('/khong-co-trang-nay')
+    const header = await screen.findByRole('banner')
+    await within(header).findByText('Nguyễn Văn A')
+    expect(within(header).queryByRole('link', { name: 'Quản lý người dùng' })).toBeNull()
+
+    cleanup()
+    vi.mocked(fetchCurrentUser).mockResolvedValue(null)
+    renderAt('/khong-co-trang-nay')
+    const guestHeader = await screen.findByRole('banner')
+    await within(guestHeader).findByRole('link', { name: 'Đăng nhập' })
+    expect(within(guestHeader).queryByRole('link', { name: 'Quản lý người dùng' })).toBeNull()
+  })
+
   it('bấm "Đăng xuất" gọi API rồi trở về trạng thái chưa đăng nhập và trang chủ', async () => {
     vi.mocked(fetchCurrentUser).mockResolvedValue(USER)
     renderAt('/doi-mat-khau')
