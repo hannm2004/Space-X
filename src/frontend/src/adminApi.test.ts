@@ -135,12 +135,12 @@ describe('setUserEnabled', () => {
 
 describe('resetUserPassword', () => {
   it('gọi POST đúng đường dẫn, không gửi thân, và trả về mật khẩu tạm', async () => {
-    apiRequestMock.mockResolvedValue({ id: 7, email: 'hs@example.com', temporaryPassword: 'Abcd2345Efgh6789' })
+    apiRequestMock.mockResolvedValue({ id: 7, email: 'hs@example.com', temporaryPassword: 'tam-thoi-gia-lap' })
 
     const result = await resetUserPassword(7)
 
     expect(apiRequestMock).toHaveBeenCalledWith('POST', '/api/admin/users/7/reset-password')
-    expect(result).toEqual({ id: 7, email: 'hs@example.com', temporaryPassword: 'Abcd2345Efgh6789' })
+    expect(result).toEqual({ id: 7, email: 'hs@example.com', temporaryPassword: 'tam-thoi-gia-lap' })
   })
 
   it('ném lỗi khi thiếu mật khẩu tạm trong phản hồi', async () => {

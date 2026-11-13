@@ -378,7 +378,7 @@ describe('AdminUsersPage — đặt lại mật khẩu', () => {
   })
 
   it('xác nhận thì hiện mật khẩu tạm một lần kèm lời dặn, và gọi API đúng id', async () => {
-    resetUserPasswordMock.mockResolvedValue({ id: 7, email: 'hs@example.com', temporaryPassword: 'Abcd2345Efgh6789' })
+    resetUserPasswordMock.mockResolvedValue({ id: 7, email: 'hs@example.com', temporaryPassword: 'tam-thoi-gia-lap' })
     renderPage()
     const hs = await rowOf('hs@example.com')
 
@@ -386,14 +386,14 @@ describe('AdminUsersPage — đặt lại mật khẩu', () => {
     fireEvent.click(hs.getByRole('button', { name: 'Xác nhận đặt lại' }))
 
     const status = await hs.findByRole('status')
-    expect(status.textContent).toContain('Abcd2345Efgh6789')
+    expect(status.textContent).toContain('tam-thoi-gia-lap')
     expect(status.textContent).toContain('chỉ hiện một lần')
     expect(resetUserPasswordMock).toHaveBeenCalledTimes(1)
     expect(resetUserPasswordMock).toHaveBeenCalledWith(7)
   })
 
   it('bấm Đóng thì mật khẩu tạm biến mất khỏi trang', async () => {
-    resetUserPasswordMock.mockResolvedValue({ id: 7, email: 'hs@example.com', temporaryPassword: 'Abcd2345Efgh6789' })
+    resetUserPasswordMock.mockResolvedValue({ id: 7, email: 'hs@example.com', temporaryPassword: 'tam-thoi-gia-lap' })
     renderPage()
     const hs = await rowOf('hs@example.com')
     fireEvent.click(hs.getByRole('button', { name: 'Đặt lại mật khẩu hs@example.com' }))
@@ -402,12 +402,12 @@ describe('AdminUsersPage — đặt lại mật khẩu', () => {
 
     fireEvent.click(hs.getByRole('button', { name: 'Đóng' }))
 
-    expect(document.body.textContent).not.toContain('Abcd2345Efgh6789')
+    expect(document.body.textContent).not.toContain('tam-thoi-gia-lap')
     expect(hs.queryByRole('status')).toBeNull()
   })
 
   it('đổi sang trang khác của danh sách thì mật khẩu tạm không còn trên trang', async () => {
-    resetUserPasswordMock.mockResolvedValue({ id: 7, email: 'hs@example.com', temporaryPassword: 'Abcd2345Efgh6789' })
+    resetUserPasswordMock.mockResolvedValue({ id: 7, email: 'hs@example.com', temporaryPassword: 'tam-thoi-gia-lap' })
     fetchAdminUsersMock.mockResolvedValue(userPage({ totalItems: 45 }))
     renderPage()
     const hs = await rowOf('hs@example.com')
@@ -418,7 +418,7 @@ describe('AdminUsersPage — đặt lại mật khẩu', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Trang sau' }))
 
     await screen.findByText('hs@example.com')
-    expect(document.body.textContent).not.toContain('Abcd2345Efgh6789')
+    expect(document.body.textContent).not.toContain('tam-thoi-gia-lap')
   })
 
   it('bấm xác nhận hai lần liên tiếp chỉ đặt lại một lần', async () => {
