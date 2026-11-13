@@ -27,13 +27,14 @@ Mẫu một mục:
   - API Admin khóa học/bài học/ảnh trên backend ở máy: **42/42 đạt** (chi tiết ở `docs/TESTING.md`, mục "Kiểm tương đương ở máy").
   - Giao diện cỡ điện thoại giả lập 375×667: đăng nhập, trang chủ, khóa, bài, tìm kiếm, trang Admin đều không tràn ngang; ảnh trong bài hiển thị đúng (ảnh 160×90 lưu trong MySQL), bảng và đoạn văn dài xuống dòng gọn.
   - Dọn dữ liệu thử: database ở máy về đúng 7 tài khoản và 3 khóa ban đầu; đã tắt backend và Vite.
-  - **Chưa kiểm:** API Admin khóa học/bài học/ảnh trên production (hai lần chạy script bị hệ thống chặn vì là thao tác ghi bằng tài khoản Admin production; không chạy lại, chờ người dùng cho phép), bấm giao diện trên production, điện thoại thật.
+  - API Admin khóa học/bài học/ảnh trên **production**: **38/38 đạt** sau khi người dùng cho phép và chỉ định dùng tài khoản Admin trong `.env` (hai lần chạy trước bị hệ thống chặn). Dữ liệu thử `ktra-prod-*` đã xóa hết: số khóa công khai trước và sau đều là 3, không còn bài thử. Chi tiết ở `docs/TESTING.md`.
+  - **Chưa kiểm:** bấm giao diện trên production, điện thoại thật, học sinh không đọc được bài nháp trên production (chỉ kiểm ở máy).
 - **Lỗi gặp và cách sửa:**
   - Lần đăng nhập giao diện đầu tiên thất bại vì kịch bản kiểm ở máy đã khóa lại học sinh thử ở bước dọn (đúng thiết kế); mở khóa trong database ở máy rồi đăng nhập lại được. Trang đăng nhập hiện đúng câu chung khi bị khóa.
   - Một lần gọi đăng nhập bằng `fetch` bị 403 vì dùng token CSRF cũ sau khi đăng xuất (ứng dụng thật tự lấy token mới); gọi `/api/health` lấy token mới rồi đăng nhập được. Không phải lỗi ứng dụng.
   - Dòng `Surefire is going to kill self fork JVM` ở cuối lần chạy 495 test của CP5.7 không xuất hiện ở lần chạy 44 test này; chưa rõ nguyên nhân (chỉ gặp khi chạy toàn bộ cùng nhiều lớp tích hợp), chưa đổi cấu hình.
-- **Học được:** phá thử một kiểm tra "không bao giờ được xảy ra" (ví dụ Admin cuối cùng) có thể làm đỏ cả test không liên quan trực tiếp, vì Mockito strict stubs báo stub thừa: đó cũng là tín hiệu đúng. Hệ thống từ chối thao tác ghi bằng tài khoản Admin production dù bạn đã nói kiểm toàn bộ; cách xử lý đúng là kiểm bản tương đương ở máy và ghi rõ phần chưa kiểm.
-- **Tiếp theo:** mở Pull Request nhánh này, chờ CI xanh rồi gộp; quyết định có cấp quyền kiểm API Admin nội dung trên production hay không; sau đó sang Tuần 6.
+- **Học được:** phá thử một kiểm tra "không bao giờ được xảy ra" (ví dụ Admin cuối cùng) có thể làm đỏ cả test không liên quan trực tiếp, vì Mockito strict stubs báo stub thừa: đó cũng là tín hiệu đúng. Hệ thống từ chối thao tác ghi bằng tài khoản Admin production dù bạn đã nói kiểm toàn bộ; cách xử lý đúng là kiểm bản tương đương ở máy và ghi rõ phần chưa kiểm; sau đó người dùng cho phép rõ ràng thì mới chạy trên production. Khi tự viết script kiểm, một dòng FAIL chưa chắc là lỗi ứng dụng: ở đây `POST` của khách không có token CSRF bị chặn `403` trước bước kiểm đăng nhập (`401`), nên phải kiểm lại với token hợp lệ trước khi kết luận.
+- **Tiếp theo:** mở Pull Request nhánh này, chờ CI xanh rồi gộp; sau đó sang Tuần 6.
 
 ## 2026-11-13 — CP5.7: nghiệm thu Tuần 5 và kiểm luồng trên production
 - **Nhánh:** `feat/week5-acceptance` (tạo từ `main` sau PR #34; người dùng báo CI xanh, đã gộp và deploy thành công).
