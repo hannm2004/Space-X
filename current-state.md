@@ -16,6 +16,25 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-13 — Hoàn thiện Tuần 5: phá thử backend, kiểm API Admin nội dung và giao diện điện thoại
+- **Nhánh:** `feat/week5-final-checks` (tạo từ `main` sau PR #35; người dùng báo PR #35 CI xanh, đã gộp và deploy thành công).
+- **Đã làm:** xử lý các khoản nợ còn lại của Tuần 5 ở mức làm được; chỉ sửa tài liệu, không đổi mã nguồn.
+  - Phá thử backend (khoản nợ "chưa kiểm chứng backend bằng cách tạm phá code" của CP5.6): 8 chỗ ở `AdminUserService`, `AdminUserController`, `TemporaryPasswordGenerator`.
+  - Kiểm API Admin khóa học, bài học, ảnh bằng script trên backend ở máy (MySQL thật, tài khoản thử).
+  - Xem giao diện ở cỡ điện thoại giả lập trên Chrome và xem ảnh trong bài trên giao diện (khoản nợ từ CP5.2).
+- **Kiểm tra:**
+  - Phá thử: bỏ kiểm tự khóa mình → `khongTuKhoaMinhVaTaiKhoanKhongDoi` đỏ; bỏ kiểm Admin cuối cùng → 2 test đỏ (`khongKhoaAdminCuoiCung...` và một `UnnecessaryStubbing`); cho đặt lại mật khẩu tài khoản Google → `taiKhoanGoogleKhongCoMatKhau...` đỏ; bỏ kiểm tự đặt lại → `khongTuDatLaiMatKhau...` đỏ; không thoát ký tự `LIKE` → `kyTuDacBietCuaLike...` đỏ; khóa xong không xóa session → test controller đỏ; đặt lại xong không xóa session → test controller đỏ; bỏ xáo trộn mật khẩu tạm → `viTriCuaChuHoa...` đỏ. Mỗi lần đúng test liên quan đỏ. Sau khi khôi phục, `git status` của backend sạch và 44 test của 4 lớp liên quan (service, controller, bộ sinh mật khẩu, `revokeAll`) qua.
+  - API Admin khóa học/bài học/ảnh trên backend ở máy: **42/42 đạt** (chi tiết ở `docs/TESTING.md`, mục "Kiểm tương đương ở máy").
+  - Giao diện cỡ điện thoại giả lập 375×667: đăng nhập, trang chủ, khóa, bài, tìm kiếm, trang Admin đều không tràn ngang; ảnh trong bài hiển thị đúng (ảnh 160×90 lưu trong MySQL), bảng và đoạn văn dài xuống dòng gọn.
+  - Dọn dữ liệu thử: database ở máy về đúng 7 tài khoản và 3 khóa ban đầu; đã tắt backend và Vite.
+  - **Chưa kiểm:** API Admin khóa học/bài học/ảnh trên production (hai lần chạy script bị hệ thống chặn vì là thao tác ghi bằng tài khoản Admin production; không chạy lại, chờ người dùng cho phép), bấm giao diện trên production, điện thoại thật.
+- **Lỗi gặp và cách sửa:**
+  - Lần đăng nhập giao diện đầu tiên thất bại vì kịch bản kiểm ở máy đã khóa lại học sinh thử ở bước dọn (đúng thiết kế); mở khóa trong database ở máy rồi đăng nhập lại được. Trang đăng nhập hiện đúng câu chung khi bị khóa.
+  - Một lần gọi đăng nhập bằng `fetch` bị 403 vì dùng token CSRF cũ sau khi đăng xuất (ứng dụng thật tự lấy token mới); gọi `/api/health` lấy token mới rồi đăng nhập được. Không phải lỗi ứng dụng.
+  - Dòng `Surefire is going to kill self fork JVM` ở cuối lần chạy 495 test của CP5.7 không xuất hiện ở lần chạy 44 test này; chưa rõ nguyên nhân (chỉ gặp khi chạy toàn bộ cùng nhiều lớp tích hợp), chưa đổi cấu hình.
+- **Học được:** phá thử một kiểm tra "không bao giờ được xảy ra" (ví dụ Admin cuối cùng) có thể làm đỏ cả test không liên quan trực tiếp, vì Mockito strict stubs báo stub thừa: đó cũng là tín hiệu đúng. Hệ thống từ chối thao tác ghi bằng tài khoản Admin production dù bạn đã nói kiểm toàn bộ; cách xử lý đúng là kiểm bản tương đương ở máy và ghi rõ phần chưa kiểm.
+- **Tiếp theo:** mở Pull Request nhánh này, chờ CI xanh rồi gộp; quyết định có cấp quyền kiểm API Admin nội dung trên production hay không; sau đó sang Tuần 6.
+
 ## 2026-11-13 — CP5.7: nghiệm thu Tuần 5 và kiểm luồng trên production
 - **Nhánh:** `feat/week5-acceptance` (tạo từ `main` sau PR #34; người dùng báo CI xanh, đã gộp và deploy thành công).
 - **Đã làm:**
