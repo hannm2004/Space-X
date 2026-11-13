@@ -2,7 +2,7 @@
 
 Website học **Tin học lớp 10, 11, 12** (Chương trình GDPT 2018) bằng tiếng Việt cho học sinh THPT: học theo khóa và bài, lưu tiến độ học, chatbot trả lời có trích dẫn bài học, AI Agent gợi ý bài nên đọc.
 
-> **Trạng thái (2026-11-09):** xong Tuần 4 về mặt mã (các việc 4.1 đến 4.6 đã gộp qua Pull Request #19 đến #24, CI xanh). **Backend** đã có tài khoản (đăng ký, đăng nhập, đăng xuất, thông tin cá nhân, đổi mật khẩu), phân quyền `LEARNER`/`ADMIN`, CSRF, API đọc khóa học và bài học, API Admin quản lý khóa học, bài học và ảnh bài học, cùng dữ liệu mẫu 3 khóa / 6 bài và script nạp. Test: 439 backend (304 không cần Docker + 135 tích hợp trên MySQL thật) và 250 frontend. Đã deploy lên Render: https://space-x-47f1.onrender.com (kiểm tra ngày 2026-11-09: `GET /api/courses` trả 200 với 3 khóa mẫu, mỗi khóa 2 bài đã đăng, sau khi nạp dữ liệu mẫu bằng script). Gói Free tự ngủ khi lâu không có truy cập nên lần mở đầu có thể chậm 1–2 phút. **Chưa có:** giao diện đăng nhập và quản trị (frontend có routing, API client tự gắn CSRF, trang chủ kèm danh sách khóa, trang khóa, trang đọc bài và trang 404), đăng nhập Google, chatbot, AI Agent. Tiến trình từng buổi làm việc: [current-state.md](current-state.md).
+> **Trạng thái (2026-11-13):** đang làm Tuần 5 (giao diện đọc, tài khoản, tìm kiếm, tiến độ học và quản lý người dùng đã có; nhánh `feat/admin-users` chờ Pull Request và CI). **Backend** có tài khoản (đăng ký, đăng nhập, đăng xuất, thông tin cá nhân, đổi mật khẩu), phân quyền `LEARNER`/`ADMIN`, CSRF, API đọc khóa học và bài học, tìm kiếm bài, tiến độ học, API Admin quản lý khóa học, bài học, ảnh bài học và **người dùng (khóa/mở khóa, đặt lại mật khẩu)**, cùng dữ liệu mẫu 3 khóa / 6 bài và script nạp. **Frontend** có trang chủ, khóa học, đọc bài, tìm kiếm, đăng ký/đăng nhập, đổi mật khẩu, tiến độ học và trang Admin quản lý người dùng. Test: 495 backend (345 không cần Docker + 150 tích hợp trên MySQL thật) và 295 frontend. Đã deploy lên Render: https://space-x-47f1.onrender.com (kiểm tra lần cuối ngày 2026-11-09: `GET /api/courses` trả 200 với 3 khóa mẫu; các tính năng làm sau ngày đó chưa được kiểm trên bản deploy). Gói Free tự ngủ khi lâu không có truy cập nên lần mở đầu có thể chậm 1–2 phút. **Chưa có:** giao diện quản lý khóa học/bài học/ảnh, Dashboard, đăng nhập Google, chatbot, AI Agent. Tiến trình từng buổi làm việc: [current-state.md](current-state.md).
 
 ## Tính năng
 
@@ -23,7 +23,7 @@ Nhãn trạng thái: `Planned` / `In progress` / `Implemented` / `Tested` / `Dep
 | Quản trị | Dashboard thống kê | Admin | Planned |
 | | Quản lý khóa học, bài học, ảnh bài học | Admin | Tested (chỉ API; chưa có giao diện; tạo khóa, tạo bài và đăng bài đã chạy thật trên bản deploy qua script nạp; ảnh chưa kiểm trên bản deploy) |
 | | Dữ liệu mẫu 3 khóa / 6 bài và script nạp qua API Admin | Admin | Deployed (đã nạp lên bản deploy ngày 2026-11-09; chạy lại lần hai không tạo trùng) |
-| | Quản lý người dùng: khóa/mở, đặt lại mật khẩu | Admin | Planned |
+| | Quản lý người dùng: danh sách, tìm, khóa/mở, đặt lại mật khẩu | Admin | Tested (API và giao diện; khóa hoặc đặt lại mật khẩu thì mọi session của người đó bị xóa; không tự khóa mình, không khóa Admin cuối cùng; đã thử tay trên Chrome ngày 2026-11-13 với backend và MySQL ở máy, chưa thử điện thoại thật, chưa deploy) |
 | | Dựng lại chỉ mục tìm kiếm | Admin | Planned |
 | Hệ thống | Kiểm tra sống `GET /api/health`, hiện trạng thái trên trang chủ | Mọi người | Deployed (Render) |
 

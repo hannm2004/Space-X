@@ -16,6 +16,30 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-13 — CP5.6: Admin quản lý người dùng (backend và giao diện)
+- **Nhánh:** `feat/admin-users` (tạo từ `main` sau PR #33).
+- **Đã làm:**
+  - Backend (`vn.spacex.user`): `GET /api/admin/users?q=&page=&size=` (tìm theo email hoặc tên, mới nhất trước, không có mã băm mật khẩu), `PATCH /api/admin/users/{id}/status` (khóa/mở khóa), `POST /api/admin/users/{id}/reset-password` (mật khẩu tạm trả một lần, `Cache-Control: no-store`). Không có migration (cột `enabled` đã có từ `V1`).
+  - Quy tắc: không tự khóa mình và không khóa Admin cuối cùng (409, hai câu khác nhau); không tự đặt lại mật khẩu của mình (409, dùng chức năng đổi mật khẩu); tài khoản Google không có mật khẩu nên không đặt lại được (409); mở khóa không bao giờ bị chặn; khóa hoặc đặt lại xong thì `OtherSessionsRevoker.revokeAll` xóa mọi session của người đó (khác đổi mật khẩu, nơi session hiện tại được giữ). Người thực hiện lấy từ session. Mật khẩu tạm 16 ký tự, `SecureRandom`, bỏ `0 O 1 l I`, luôn đủ hoa/thường/số.
+  - Tìm kiếm thoát `\`, `%`, `_` trước khi đưa vào `LIKE` để từ khóa không thành ký tự đại diện.
+  - Frontend: `adminApi.ts`, tách `parse.ts` (hàm kiểm dạng dữ liệu dùng chung với `learningApi.ts`), trang `/quan-tri/nguoi-dung` (`AdminUsersPage.tsx`): tìm, phân trang, khóa có xác nhận, mở khóa, đặt lại có xác nhận, mật khẩu tạm hiện một lần trong khung riêng và mất khi Đóng hoặc đổi trang; liên kết "Quản lý người dùng" trên thanh đầu trang chỉ hiện với Admin.
+  - Tài liệu: `docs/API.md` (mục "Người dùng (Admin)"), `docs/TESTING.md`, `README.md`.
+- **Kiểm tra:**
+  - Test trước rồi code. Backend `.\mvnw test`: **495 test qua** (trước đó 439: +16 service, +17 controller, +15 tích hợp MySQL thật, +5 bộ sinh mật khẩu, +3 `revokeAll`). Frontend `npm test`: **295 test qua, 25 file** (trước đó 250: +12 API, +31 trang, +2 thanh điều hướng); `npm run lint` sạch, `npm run build` thành công. Lệnh đếm của `docs/TESTING.md` ra đúng 495 và 295.
+  - Frontend đã kiểm chứng bằng cách tạm phá 3 chỗ rồi hoàn lại (bỏ kiểm vai trò → 2 test đỏ; nút Đóng không xóa mật khẩu → 1 đỏ; không nhận ra chính mình → 2 đỏ). **Backend chưa làm bước tạm phá này.**
+  - Kiểm tay trên Chrome (2026-11-13, `npm run dev` + `.\mvnw spring-boot:run` + MySQL ở máy, hai phiên trình duyệt tách biệt Admin và học sinh, dùng tài khoản `ktra-*@example.test` rồi xóa khỏi database): danh sách đúng thứ tự, dòng của mình có "(bạn)" và không có nút; tìm "KTRA-hs" ra đúng 2 người; khóa có hộp xác nhận, khóa xong thì học sinh bị đăng xuất ngay (`/api/me` → 401), đăng nhập lại khi bị khóa → 401 cùng câu chung; mở khóa thì đăng nhập lại được; đặt lại mật khẩu thì session cũ và mật khẩu cũ bị từ chối, mật khẩu tạm đăng nhập được, bấm Đóng thì mật khẩu biến mất khỏi trang; học sinh gõ thẳng địa chỉ chỉ thấy "Bạn không có quyền", gọi API Admin trực tiếp → 403; tài khoản Google chỉ có nút Khóa, API trả 409; tự khóa và tự đặt lại → 409, id không có → 404, thân thiếu `enabled` → 400. Giao diện sáng/tối và bề ngang hẹp cỡ điện thoại đều gọn, console không có lỗi JavaScript.
+  - **Chưa kiểm:** điện thoại thật, Render (cookie `Secure`), CI trên GitHub (chờ mở Pull Request), trường hợp "Admin cuối cùng" bằng giao diện (chỉ có test backend; qua giao diện không đạt được vì người gọi luôn là một Admin đang hoạt động khác).
+- **Lỗi gặp và cách sửa:**
+  - Một test controller của mình sai: khẳng định thân phản hồi không chứa "99" nhưng trường `instance` của `problem+json` chứa đường dẫn `/api/admin/users/99/status`. Sửa test (chỉ kiểm `detail` là câu cố định), không sửa code.
+  - Khi kiểm tay, đăng ký tên có dấu bằng `curl` từ Git Bash làm tên thành "H?c Sinh": do bảng mã của `curl`, không phải lỗi ứng dụng. Đăng ký lại từ trình duyệt thì tên có dấu đúng ("Nguyễn Thị Hương").
+  - Dọn dữ liệu thử lần đầu báo lỗi vì bảng session tên `SPRING_SESSION` viết hoa (MySQL trên Linux phân biệt hoa thường); chạy lại với đúng tên.
+- **Học được:**
+  - Khóa tài khoản chưa đủ: `enabled` được chép vào session lúc đăng nhập nên session cũ vẫn dùng được; phải xóa session của người bị khóa.
+  - Hai Admin khóa nhau cùng lúc vẫn có thể cùng qua kiểm tra "Admin cuối cùng" vì chưa có khóa dòng; ghi vào `docs/API.md` như giới hạn đã biết.
+  - Mật khẩu tạm chỉ nên nằm trong trạng thái của dòng đang hiển thị nó (không vào địa chỉ, `localStorage`), để đổi trang hoặc bấm Đóng là mất.
+  - `it.each` làm lệch lệnh đếm test của dự án; dùng một test lặp qua các trường hợp.
+- **Tiếp theo:** mở Pull Request `feat/admin-users` vào `main`, chờ CI xanh rồi gộp; sau đó CP5.7 (hoàn thiện và nghiệm thu Tuần 5).
+
 ## 2026-11-12 — CP5.5: tiến độ học (backend và giao diện)
 - **Nhánh:** `feat/progress` (backend; Pull Request #32, đã gộp vào `main` ở `3eca18d`; người dùng báo CI xanh và deploy thành công) và `feat/progress-ui` (giao diện, nhánh này; tạo từ `main` sau PR #32).
 - **Đã làm:**

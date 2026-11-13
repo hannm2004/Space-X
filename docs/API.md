@@ -1,6 +1,6 @@
 # Danh sách API Space-X
 
-Trạng thái (cập nhật 2026-11-08): đã có mã nguồn và test (`Tested`) cho `GET /api/health`, nhóm **Tài khoản** (đăng ký, đăng nhập, đăng xuất, `/api/me`, đổi mật khẩu; riêng đăng nhập Google chưa làm), ba `GET` của **Khóa học và bài học** (`/api/courses`, `/api/courses/{slug}/lessons` công khai; `/api/lessons/{slug}` cần đăng nhập) ba endpoint **Admin khóa học** (`POST/PUT/DELETE /api/admin/courses`) sáu endpoint **Admin bài học** (`/api/admin/lessons`) và nhóm **Ảnh bài học** (tải lên, liệt kê, xóa, xem). Mọi endpoint còn lại là thiết kế, `Planned`. Khi làm, mỗi endpoint chuyển nhãn `Planned` → `Implemented` → `Tested`.
+Trạng thái (cập nhật 2026-11-13; nhóm Admin người dùng `/api/admin/users` đã `Tested`, xem mục "Người dùng (Admin)"): đã có mã nguồn và test (`Tested`) cho `GET /api/health`, nhóm **Tài khoản** (đăng ký, đăng nhập, đăng xuất, `/api/me`, đổi mật khẩu; riêng đăng nhập Google chưa làm), ba `GET` của **Khóa học và bài học** (`/api/courses`, `/api/courses/{slug}/lessons` công khai; `/api/lessons/{slug}` cần đăng nhập) ba endpoint **Admin khóa học** (`POST/PUT/DELETE /api/admin/courses`) sáu endpoint **Admin bài học** (`/api/admin/lessons`) và nhóm **Ảnh bài học** (tải lên, liệt kê, xóa, xem). Mọi endpoint còn lại là thiết kế, `Planned`. Khi làm, mỗi endpoint chuyển nhãn `Planned` → `Implemented` → `Tested`.
 
 ## Quy ước chung
 
@@ -204,9 +204,9 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 | GET | `/api/admin/lessons/{id}/images` | Danh sách ảnh của bài (không kèm dữ liệu ảnh). `200`; `404` không có bài |
 | POST | `/api/admin/lessons/{id}/images` | Tải ảnh lên (`multipart/form-data`, phần tên `file`; PNG/JPEG/WebP; tối đa 1 MB); trả `{ "id", "url" }` để chèn vào Markdown. `201`; `400` thiếu phần `file`; `404` không có bài; `413` quá 1 MB; `415` không phải ảnh hợp lệ |
 | DELETE | `/api/admin/images/{id}` | Xóa ảnh. `204`; `404` |
-| GET | `/api/admin/users` | Danh sách người dùng, tìm theo email/tên, phân trang |
-| PATCH | `/api/admin/users/{id}/status` | Khóa/mở: `{ "enabled": false }`. Không tự khóa mình, không khóa Admin cuối cùng (409) |
-| POST | `/api/admin/users/{id}/reset-password` | Đặt mật khẩu tạm và trả về **một lần** để Admin báo cho học sinh; không ghi mật khẩu vào log |
+| GET | `/api/admin/users` | Danh sách người dùng, tìm theo email/tên (`?q=`), phân trang. Xem "Người dùng (Admin)" bên dưới |
+| PATCH | `/api/admin/users/{id}/status` | Khóa/mở: `{ "enabled": false }`. `200` kèm người dùng; `400`; `404`; `409` tự khóa mình hoặc khóa Admin cuối cùng. Khóa xong thì mọi session của người đó bị xóa |
+| POST | `/api/admin/users/{id}/reset-password` | Đặt mật khẩu tạm và trả về **một lần** để Admin báo cho học sinh; không ghi mật khẩu vào log. `200`; `404`; `409` tự đặt lại cho mình hoặc tài khoản Google. Mọi session của người đó bị xóa |
 | POST | `/api/admin/knowledge/reindex` | Dựng lại toàn bộ đoạn tri thức từ các bài Đã đăng |
 
 ### Khóa học (Admin) — `POST`, `PUT /api/admin/courses`
@@ -241,6 +241,15 @@ Tạo và sửa dùng cùng một body:
 - Đăng bài (`PATCH .../status` sang `PUBLISHED`) là cách duy nhất để học sinh thấy bài; ẩn bài (`DRAFT`) làm bài biến mất khỏi danh sách công khai và `GET /api/lessons/{slug}` trả `404`. Giá trị `status` ngoài hai trị trên hoặc thiếu → `400`.
 - Xóa bài kéo theo ảnh, tiến độ học và đoạn tri thức của bài (`ON DELETE CASCADE`); người dùng và khóa học không bị ảnh hưởng. Khóa chỉ xóa được sau khi hết bài (xem mục khóa học).
 - Mọi endpoint, kể cả `GET`, chỉ `ADMIN` gọi được: khách → `401`, học sinh → `403` (bài nháp không lộ cho học sinh); ghi mà thiếu CSRF token → `403`.
+
+### Người dùng (Admin) — `/api/admin/users`
+
+- `GET /api/admin/users?q=&page=0&size=20`: trả `{ items, page, size, totalItems }`, mỗi phần tử gồm `id`, `email`, `displayName`, `role`, `authProvider`, `enabled`, `createdAt`; **không có** mã băm mật khẩu. Sắp theo `id` giảm dần (mới đăng ký đứng đầu). `q` tìm một phần email hoặc tên, không phân biệt hoa thường và dấu (collation của MySQL), tối đa 100 ký tự; `%` và `_` được hiểu là chữ thường. `page` ≥ 0, `size` từ 1 đến 50; ngoài khoảng đó hoặc sai kiểu → `400`.
+- `PATCH /api/admin/users/{id}/status`, thân `{ "enabled": true|false }` (thiếu trường hoặc sai kiểu → `400`): trả người dùng sau khi đổi. Khóa lại tài khoản đã khóa (hoặc mở tài khoản đang mở) không phải lỗi. Hai lý do `409` có câu riêng: "Không thể tự khóa tài khoản của chính mình" và "Không thể khóa Admin cuối cùng còn hoạt động". Mở khóa không bao giờ bị chặn.
+- `POST /api/admin/users/{id}/reset-password`: trả `{ id, email, temporaryPassword }`, kèm `Cache-Control: no-store`. Mật khẩu tạm gồm 16 ký tự (chữ hoa, chữ thường, số; bỏ `0 O 1 l I` cho dễ đọc), sinh bằng `SecureRandom`; database chỉ lưu mã băm BCrypt. Đặt lại cho tài khoản đang bị khóa vẫn được và không tự mở khóa. `409` khi tự đặt lại cho mình (dùng `PUT /api/me/password`) hoặc tài khoản Google (không có mật khẩu).
+- Người thực hiện lấy từ session, không nhận từ thân yêu cầu. Chỉ `ADMIN` gọi được: khách → `401`, học sinh → `403`; ghi mà thiếu CSRF token → `403`. `id` không phải số → `400`; không có người dùng → `404` "Không tìm thấy người dùng".
+- Sau khi khóa hoặc đặt lại mật khẩu thành công, backend xóa **mọi** session của người bị tác động (khác với đổi mật khẩu, nơi session hiện tại được giữ), nên họ phải đăng nhập lại.
+- **Giới hạn đã biết:** hai Admin khóa nhau cùng một lúc có thể cùng qua kiểm tra "Admin cuối cùng" vì chưa có khóa dòng trong database; chấp nhận ở quy mô đồ án.
 
 ### Ảnh bài học — `/api/admin/lessons/{id}/images`, `/api/admin/images/{id}`, `/api/images/{id}`
 
