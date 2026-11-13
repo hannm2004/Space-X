@@ -53,4 +53,36 @@ class OtherSessionsRevokerTest {
         verify(repository).findByPrincipalName(EMAIL);
         verify(repository, never()).findByPrincipalName("b@example.com");
     }
+
+    // Admin khóa tài khoản hoặc đặt lại mật khẩu: người bị tác động không có "session hiện tại" nào ở đây, mọi thiết bị đều bị đăng xuất.
+    @Test
+    void revokeAllXoaMoiSessionCuaEmail() {
+        when(repository.findByPrincipalName(EMAIL)).thenReturn(Map.of(
+                "may-1", mock(Session.class),
+                "may-2", mock(Session.class)));
+
+        revoker.revokeAll(EMAIL);
+
+        verify(repository).deleteById("may-1");
+        verify(repository).deleteById("may-2");
+    }
+
+    @Test
+    void revokeAllKhongCoSessionNaoThiKhongXoaGi() {
+        when(repository.findByPrincipalName(EMAIL)).thenReturn(Map.of());
+
+        revoker.revokeAll(EMAIL);
+
+        verify(repository, never()).deleteById(anyString());
+    }
+
+    @Test
+    void revokeAllChiDungEmailDuocTruyenVaoKhongDungSessionCuaNguoiKhac() {
+        when(repository.findByPrincipalName(EMAIL)).thenReturn(Map.of("may-1", mock(Session.class)));
+
+        revoker.revokeAll(EMAIL);
+
+        verify(repository).findByPrincipalName(EMAIL);
+        verify(repository, never()).findByPrincipalName("b@example.com");
+    }
 }
