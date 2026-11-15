@@ -1,6 +1,6 @@
 # Thiết kế cơ sở dữ liệu Space-X
 
-Trạng thái: **đã có migration `V1__create_tables.sql` (6 bảng), đã kiểm trên MySQL 8.4 bằng Testcontainers; chưa chạy trên Aiven** (cập nhật 2026-10-30). Schema thật tạo bằng Flyway; khi viết hoặc sửa migration phải cập nhật file này trong cùng nhánh.
+Trạng thái (cập nhật 2026-11-15): **đã có 3 migration** — `V1__create_tables.sql` (6 bảng), `V2__create_spring_session_tables.sql` (bảng session) và `V3__add_lessons_fulltext_index.sql` (chỉ mục FULLTEXT cho `lessons`) — đã kiểm trên MySQL 8.4 bằng Testcontainers. `V1` chạy trên Aiven từ 2026-10-31; ứng dụng trên Render khởi động được và tìm kiếm FULLTEXT chạy đúng trên production ngày 2026-11-13 nên `V2`, `V3` cũng đã áp dụng ở đó. Schema thật tạo bằng Flyway; khi viết hoặc sửa migration phải cập nhật file này trong cùng nhánh.
 Hệ quản trị: MySQL 8.4, `utf8mb4`, collation `utf8mb4_0900_ai_ci` (so sánh không phân biệt hoa/thường và dấu).
 
 ## 1. Sơ đồ ERD
@@ -107,7 +107,7 @@ Bảng lưu session (Spring Session JDBC, từ việc 3.6) và bảng lịch s�
 |---|---|---|
 | `users` | `UNIQUE(email)`, `UNIQUE(auth_provider, provider_id)` | Đăng nhập, chống trùng tài khoản. MySQL cho phép nhiều dòng NULL trong chỉ mục UNIQUE nên tài khoản `LOCAL` (provider_id NULL) không xung đột |
 | `courses` | `UNIQUE(slug)` | Tra theo URL |
-| `lessons` | `UNIQUE(slug)`, `(course_id, status, sort_order)` | Danh sách bài theo khóa |
+| `lessons` | `UNIQUE(slug)`, `(course_id, status, sort_order)`, `FULLTEXT ft_lessons_title_summary_content (title, summary, content_md)` (`V3`) | Danh sách bài theo khóa; tìm bài `GET /api/lessons?q=` (D29). Độ liên quan tính chung cho cả ba cột |
 | `lesson_progress` | `UNIQUE(user_id, lesson_id)` | Chống trùng; cột đầu là `user_id` nên cũng dùng được khi lấy tiến độ của một học sinh |
 | `knowledge_chunks` | `UNIQUE(lesson_id, chunk_index)`, `FULLTEXT(heading, content)` | Dựng lại đoạn, tìm kiếm |
 
@@ -152,10 +152,16 @@ Bảng lưu session (Spring Session JDBC, từ việc 3.6) và bảng lịch s�
 - `knowledge_chunks.heading` là `NOT NULL`: đoạn không có tiêu đề mục (phần mở đầu bài) sẽ dùng tiêu đề bài khi chia đoạn ở Tuần 7.
 - Số lượng ảnh, loại ảnh, dung lượng 1 MB chưa có ràng buộc ở database (kiểm ở backend theo nội dung file, như đã thiết kế).
 
+## 6c. Ghi chú về migration V2 và V3
+
+- `V2` tạo `SPRING_SESSION` và `SPRING_SESSION_ATTRIBUTES` cho Spring Session JDBC (xem mục 5, phần Tài khoản).
+- `V3` (D29) thêm chỉ mục FULLTEXT cho `lessons`. Thêm chỉ mục lên bảng đã có dữ liệu khiến InnoDB dựng lại bảng (Flyway cảnh báo "rebuilding table to add column FTS_DOC_ID"); bình thường với bảng nhỏ, cần để ý nếu bảng lớn. InnoDB bỏ qua từ ngắn hơn 3 ký tự và từ trong danh sách stopword tiếng Anh; collation `_ai_ci` làm các từ chỉ khác dấu thành một từ.
+- Bảng `lesson_progress` (tiến độ học) và cột `users.enabled` (khóa tài khoản) đã có từ `V1`, nên CP5.5 và CP5.6 không cần migration mới.
+
 ## 7. Quyết định để lại cho các tuần sau
 
 | Vấn đề | Lựa chọn | Chốt ở |
 |---|---|---|
 | Lưu session ở đâu | (a) bộ nhớ: mất hết khi Render cho ứng dụng ngủ, người dùng bị đăng xuất; (b) Spring Session JDBC lưu vào MySQL. **Chọn (b)**: ở việc 3.4 dùng session trong bộ nhớ (chấp nhận mất session khi khởi động lại), chuyển sang Spring Session JDBC ở việc 3.6 cùng migration `V2` tạo bảng session (D24, D25) | Chốt (việc 3.6) |
-| Nội dung Markdown có chứa HTML không | Không cho HTML thô để tránh XSS; frontend chỉ render Markdown đã lọc | Tuần 4 |
+| Nội dung Markdown có chứa HTML không | Không cho HTML thô để tránh XSS; frontend chỉ render Markdown đã lọc | Chốt (CP5.2: `react-markdown` không bật HTML thô, chỉ cho ảnh `/api/images/{id}`; `MarkdownContent.test.tsx` 12 test) |
 | Dung lượng | Aiven free có 1 GB đĩa; ảnh giới hạn 1 MB mỗi ảnh, theo dõi tổng dung lượng | Tuần 4 |

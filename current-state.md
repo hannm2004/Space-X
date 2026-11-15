@@ -16,6 +16,25 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-15 — Đồng bộ tài liệu sau Tuần 5
+- **Nhánh:** `feat/week5-docs-sync` (tạo từ `main` ở `13f43e9`, sau khi PR #35, #36, #37 đã gộp).
+- **Đã làm:** chỉ sửa tài liệu, không đổi mã nguồn. Rà từng file tài liệu với mã và nhật ký rồi sửa những chỗ lỗi thời:
+  - `README.md`: đoạn trạng thái (không còn ghi "đang nghiệm thu CP5.7", ghi Tuần 5 đã gộp qua PR #34 đến #37); lộ trình Tuần 5 từ "In progress (CP5.0 đến CP5.5)" thành `Done` kèm khoản nợ; các dòng bảng tính năng "chưa deploy" / "chưa kiểm trên bản deploy" sửa theo kết quả kiểm production ngày 2026-11-13 (API khóa học/bài/ảnh Admin 38/38 đạt trên production).
+  - `docs/TESTING.md`: ngày cập nhật; ba dòng ma trận còn `Planned` dù đã có test ở dòng khác (xóa khóa còn bài, ảnh sai loại/quá 1 MB, quản lý người dùng) chuyển sang `Tested` kèm tên lớp test; dòng "bộ câu hỏi mẫu" giữ `Planned` nhưng ghi rõ phần đã có và phần còn thiếu; dòng tiến độ học bỏ chữ "chưa deploy".
+  - `docs/API.md`: đoạn trạng thái đầu file liệt kê đủ các nhóm đã `Tested` (thêm tìm bài, tiến độ học, Admin người dùng) và các nhóm còn `Planned`.
+  - `docs/DATABASE_DESIGN.md`: đoạn trạng thái (đã có `V1` đến `V3`, đã chạy trên Aiven); thêm chỉ mục FULLTEXT `ft_lessons_title_summary_content` của `lessons` (`V3`) vào bảng chỉ mục; thêm mục "6c" ghi chú `V2`, `V3`; quyết định "Markdown có HTML không" chuyển sang `Chốt` (CP5.2).
+  - `src/frontend/README.md`: thay bản mẫu của Vite bằng mô tả đúng dự án (lệnh, cấu trúc `src/`, quy ước).
+  - Tài liệu chỉ ở máy: `docs/PLAN.md` cập nhật trạng thái Tuần 5 và danh sách nợ.
+  - Không sửa: `CLAUDE.md` (không có số liệu lỗi thời), `.github/pull_request_template.md`, `docs/DECISIONS.md` (D30 vẫn là quyết định mới nhất), `docs/PROJECT_SCOPE.md`.
+- **Kiểm tra:**
+  - Đếm test bằng lệnh của `docs/TESTING.md` (2026-11-15): backend **495** (345 không cần Docker, 150 tích hợp; 48 file, trong đó 15 lớp tích hợp), frontend **295** test, **25** file; khớp bảng "Tổng quan".
+  - Thư mục migration có đúng `V1`, `V2`, `V3`. Đã đối chiếu `localStorage` trong mã frontend: chỉ `ThemeToggle.tsx` ghi vào, khớp câu trong `src/frontend/README.md`.
+  - **Chưa chạy lại** `.\mvnw test` và `npm test` trong buổi này (không đổi mã); số 495 và 295 là số đếm dòng test, số lần chạy thật gần nhất là ngày 2026-11-13.
+  - **Chưa kiểm:** CI trên nhánh này (chưa đẩy khi viết mục này), bấm giao diện trên production, điện thoại thật.
+- **Lỗi gặp và cách sửa:** vài lần sửa file tài liệu bị hook của công cụ chặn ở lần gọi đầu (đòi nêu lý do trước khi sửa file lần đầu); nêu lý do rồi sửa lại được, không ảnh hưởng nội dung.
+- **Học được:** nhãn trạng thái trong ma trận test dễ bị bỏ sót khi một dòng chi tiết được viết sau dòng `Planned` chung chung; mỗi khi đóng một tuần nên đối chiếu lại các dòng `Planned` còn sót của tuần đó.
+- **Tiếp theo:** mở Pull Request nhánh này, chờ CI xanh rồi gộp; sau đó làm file nội dung bảo vệ Tuần 5 (để ở `nop-bai/`, không đưa lên repo); rồi sang Tuần 6 (Admin Dashboard, đăng nhập Google).
+
 ## 2026-11-13 — Hoàn thiện Tuần 5: phá thử backend, kiểm API Admin nội dung và giao diện điện thoại
 - **Nhánh:** `feat/week5-final-checks` (tạo từ `main` sau PR #35; người dùng báo PR #35 CI xanh, đã gộp và deploy thành công).
 - **Đã làm:** xử lý các khoản nợ còn lại của Tuần 5 ở mức làm được; chỉ sửa tài liệu, không đổi mã nguồn.
