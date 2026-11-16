@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fetchAdminUsers, resetUserPassword, setUserEnabled } from './adminApi'
+import { fetchAdminDashboard, fetchAdminUsers, resetUserPassword, setUserEnabled } from './adminApi'
 import { ApiError, apiRequest } from './client'
 
 vi.mock('./client', async (importOriginal) => {
@@ -153,5 +153,59 @@ describe('resetUserPassword', () => {
     apiRequestMock.mockRejectedValue(new ApiError(409, 'Tài khoản Google không có mật khẩu để đặt lại'))
 
     await expect(resetUserPassword(7)).rejects.toMatchObject({ status: 409 })
+  })
+})
+
+const DASHBOARD_JSON = {
+  users: { total: 12, newLast7Days: 3 },
+  lessons: { total: 7, draft: 2, published: 5 },
+  courses: [{ courseId: 1, slug: 'tin-hoc-10', title: 'Tin học 10', draft: 1, published: 3 }],
+  learning: { activeLearners: 4, completedLessons: 9 },
+}
+
+describe('fetchAdminDashboard', () => {
+  it('gọi GET /api/admin/dashboard và trả về số liệu đúng kiểu', async () => {
+    apiRequestMock.mockResolvedValue(DASHBOARD_JSON)
+
+    const result = await fetchAdminDashboard()
+
+    expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/admin/dashboard')
+    expect(result).toEqual(DASHBOARD_JSON)
+  })
+
+  it('khóa chưa có bài vẫn được nhận (danh sách khóa có thể rỗng)', async () => {
+    apiRequestMock.mockResolvedValue({ ...DASHBOARD_JSON, courses: [] })
+
+    expect((await fetchAdminDashboard()).courses).toEqual([])
+  })
+
+  it('báo lỗi dạng khi thiếu khối users', async () => {
+    apiRequestMock.mockResolvedValue({ ...DASHBOARD_JSON, users: undefined })
+
+    await expect(fetchAdminDashboard()).rejects.toThrow('không đúng dạng')
+  })
+
+  it('báo lỗi dạng khi một số là chuỗi', async () => {
+    apiRequestMock.mockResolvedValue({ ...DASHBOARD_JSON, lessons: { total: '7', draft: 2, published: 5 } })
+
+    await expect(fetchAdminDashboard()).rejects.toThrow('không đúng dạng')
+  })
+
+  it('báo lỗi dạng khi courses không phải mảng', async () => {
+    apiRequestMock.mockResolvedValue({ ...DASHBOARD_JSON, courses: 'x' })
+
+    await expect(fetchAdminDashboard()).rejects.toThrow('không đúng dạng')
+  })
+
+  it('báo lỗi dạng khi toàn bộ phản hồi không phải object', async () => {
+    apiRequestMock.mockResolvedValue('không phải số liệu')
+
+    await expect(fetchAdminDashboard()).rejects.toThrow('không đúng dạng')
+  })
+
+  it('chuyển tiếp lỗi 403 của máy chủ', async () => {
+    apiRequestMock.mockRejectedValue(new ApiError(403, 'Bạn không có quyền thực hiện thao tác này'))
+
+    await expect(fetchAdminDashboard()).rejects.toMatchObject({ status: 403 })
   })
 })

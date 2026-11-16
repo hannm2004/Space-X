@@ -18,6 +18,14 @@ export type AdminUserPage = { items: AdminUser[]; page: number; size: number; to
 // Mật khẩu tạm chỉ có trong phản hồi này, một lần duy nhất.
 export type TemporaryPassword = { id: number; email: string; temporaryPassword: string }
 
+// Số liệu tổng hợp của trang Tổng quan (GET /api/admin/dashboard). Chỉ có số, không có thông tin của ai.
+export type AdminDashboard = {
+  users: { total: number; newLast7Days: number }
+  lessons: { total: number; draft: number; published: number }
+  courses: { courseId: number; slug: string; title: string; draft: number; published: number }[]
+  learning: { activeLearners: number; completedLessons: number }
+}
+
 const USER_PAGE_SIZE = 20
 
 function asRole(value: unknown): Role {
@@ -60,6 +68,39 @@ function parseTemporaryPassword(value: unknown): TemporaryPassword {
     email: asString(record.email),
     temporaryPassword: asString(record.temporaryPassword),
   }
+}
+
+function parseAdminDashboard(value: unknown): AdminDashboard {
+  const record = asRecord(value)
+  const users = asRecord(record.users)
+  const lessons = asRecord(record.lessons)
+  const learning = asRecord(record.learning)
+  return {
+    users: { total: asNumber(users.total), newLast7Days: asNumber(users.newLast7Days) },
+    lessons: {
+      total: asNumber(lessons.total),
+      draft: asNumber(lessons.draft),
+      published: asNumber(lessons.published),
+    },
+    courses: asList(record.courses, (item) => {
+      const course = asRecord(item)
+      return {
+        courseId: asNumber(course.courseId),
+        slug: asString(course.slug),
+        title: asString(course.title),
+        draft: asNumber(course.draft),
+        published: asNumber(course.published),
+      }
+    }),
+    learning: {
+      activeLearners: asNumber(learning.activeLearners),
+      completedLessons: asNumber(learning.completedLessons),
+    },
+  }
+}
+
+export async function fetchAdminDashboard(): Promise<AdminDashboard> {
+  return parseAdminDashboard(await apiRequest('GET', '/api/admin/dashboard'))
 }
 
 // Từ khóa đi qua URLSearchParams nên ký tự như & = # không chen thêm tham số; từ khóa trống thì bỏ tham số q.
