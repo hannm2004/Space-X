@@ -209,6 +209,22 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 | POST | `/api/admin/users/{id}/reset-password` | Đặt mật khẩu tạm và trả về **một lần** để Admin báo cho học sinh; không ghi mật khẩu vào log. `200`; `404`; `409` tự đặt lại cho mình hoặc tài khoản Google. Mọi session của người đó bị xóa |
 | POST | `/api/admin/knowledge/reindex` | Dựng lại toàn bộ đoạn tri thức từ các bài Đã đăng |
 
+### Tổng quan (Admin) — `GET /api/admin/dashboard`
+
+```json
+{
+  "users": { "total": 12, "newLast7Days": 3 },
+  "lessons": { "total": 7, "draft": 2, "published": 5 },
+  "courses": [{ "courseId": 1, "slug": "tin-hoc-10", "title": "Tin học 10", "draft": 1, "published": 3 }],
+  "learning": { "activeLearners": 4, "completedLessons": 9 }
+}
+```
+
+- Chỉ có số tổng hợp, không có email hay tên của ai. `401` chưa đăng nhập, `403` không phải `ADMIN`; chỉ cho `GET`.
+- `users.total`: mọi tài khoản (kể cả Admin và tài khoản bị khóa). `users.newLast7Days`: tài khoản tạo từ đúng 7 ngày trước giờ gọi trở đi.
+- `lessons`: đếm cả bài Nháp. `courses`: mỗi khóa một dòng theo thứ tự hiển thị (`sort_order`, rồi `id`), kể cả khóa chưa có bài (hai số bằng 0).
+- `learning.activeLearners`: số **học sinh** (`LEARNER`) có ít nhất một dòng tiến độ, tức đã mở hoặc đã hoàn thành một bài. `learning.completedLessons`: số dòng tiến độ `COMPLETED` của học sinh. Quản trị viên đọc thử bài không được tính.
+
 ### Khóa học (Admin) — `POST`, `PUT /api/admin/courses`
 
 ```json
