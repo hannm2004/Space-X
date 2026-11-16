@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router'
 import { AuthProvider } from './AuthContext'
 import Layout from './Layout'
+import AdminDashboardPage from './pages/AdminDashboardPage'
 import AdminUsersPage from './pages/AdminUsersPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
 import CoursePage from './pages/CoursePage'
@@ -23,6 +24,7 @@ function App() {
           <Route path="dang-nhap" element={<LoginPage />} />
           <Route path="dang-ky" element={<RegisterPage />} />
           <Route path="doi-mat-khau" element={<ChangePasswordPage />} />
+          <Route path="quan-tri" element={<AdminDashboardPage />} />
           <Route path="quan-tri/nguoi-dung" element={<AdminUsersPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

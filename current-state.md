@@ -16,6 +16,26 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-16 — Tuần 6, CP6.1: Admin Dashboard
+- **Nhánh:** `feat/admin-dashboard` (tạo từ `main` ở `98efee7`, chưa commit).
+- **Đã làm:**
+  - Chia Tuần 6 thành CP6.1 đến CP6.5 trong `docs/PLAN.md` (chỉ ở máy). Đã duyệt dependency `spring-boot-starter-oauth2-client` và cách báo lỗi khi email Google trùng tài khoản mật khẩu (về `/dang-nhap` kèm thông báo); việc này làm ở CP6.2.
+  - Backend: `GET /api/admin/dashboard` (gói `vn.spacex.dashboard`: `DashboardController`, `DashboardService`, `DashboardResponse`). Thêm hàm đếm vào `UserRepository`, `LessonRepository` (kèm `LessonCountByCourse`), `LessonProgressRepository`. Chỉ trả số tổng hợp; số học sinh và số lượt hoàn thành chỉ tính vai trò `LEARNER`; khóa chưa có bài vẫn có dòng 0/0.
+  - Frontend: `fetchAdminDashboard` trong `adminApi.ts`, trang `/quan-tri` ("Tổng quan"), liên kết "Tổng quan" trên thanh điều hướng của Admin.
+  - Tài liệu: `docs/API.md` (mục "Tổng quan (Admin)"), `docs/TESTING.md` (số liệu và dòng ma trận).
+- **Kiểm tra:**
+  - Viết test trước: lỗi biên dịch vì chưa có lớp (RED). Sau khi viết code: `DashboardServiceTest` 6, `DashboardControllerTest` 5, `DashboardIntegrationTest` 3 (MySQL 8.4 thật) đều qua.
+  - Backend: `.\mvnw test` đầy đủ **509 test, 0 fail, 0 lỗi, `BUILD SUCCESS`** (356 không cần Docker + 153 tích hợp trên MySQL 8.4 thật). Lần chạy đầu bị dừng giữa chừng vì máy hết bộ nhớ (36/51 lớp, không lớp nào lỗi); sau khi trống bộ nhớ chạy lại thì xong.
+  - Frontend: `npm test` 310 test qua (26 file), `npm run lint` không lỗi, `npm run build` thành công.
+  - Đếm bằng lệnh của `docs/TESTING.md`: backend 509 (356 + 153 tích hợp), frontend 310.
+  - **Chưa kiểm:** trang Dashboard trên trình duyệt thật, deploy.
+- **Lỗi gặp và cách sửa:**
+  - Test frontend bắt được lỗi trong component: `aria-labelledby` dùng id chứa dấu cách ("Người dùng") nên vùng không có tên. Đổi sang `useId()`.
+  - Tôi viết `it.each` trong test, trái quy ước đếm test của `docs/TESTING.md`; đổi thành các `it` riêng.
+  - Có 1 file báo cáo Surefire cũ (lớp `SpacexApplicationTests` đã bị xóa từ trước) làm tổng hợp báo nhầm 1 error; chỉ tính báo cáo mới.
+- **Học được:** thuộc tính `id` dùng cho `aria-labelledby` không được có dấu cách; chạy test tích hợp (mỗi lớp một container MySQL) tốn nhiều bộ nhớ trên máy 8 GB đang mở nhiều chương trình, nên chạy riêng từng nhóm.
+- **Tiếp theo:** xem trang `/quan-tri` trên Chrome; mở Pull Request, chờ CI xanh rồi gộp; sau đó CP6.2 (đăng nhập Google) ở nhánh `feat/google-login`.
+
 ## 2026-11-15 — Đồng bộ tài liệu sau Tuần 5
 - **Nhánh:** `feat/week5-docs-sync` (tạo từ `main` ở `13f43e9`, sau khi PR #35, #36, #37 đã gộp).
 - **Đã làm:** chỉ sửa tài liệu, không đổi mã nguồn. Rà từng file tài liệu với mã và nhật ký rồi sửa những chỗ lỗi thời:

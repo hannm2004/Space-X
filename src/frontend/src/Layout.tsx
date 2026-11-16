@@ -46,9 +46,14 @@ function AccountNav() {
     <nav aria-label="Tài khoản" className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
       <span className="max-w-40 truncate font-medium">{state.user.displayName}</span>
       {state.user.role === 'ADMIN' && (
-        <Link to="/quan-tri/nguoi-dung" className={LINK}>
-          Quản lý người dùng
-        </Link>
+        <>
+          <Link to="/quan-tri" className={LINK}>
+            Tổng quan
+          </Link>
+          <Link to="/quan-tri/nguoi-dung" className={LINK}>
+            Quản lý người dùng
+          </Link>
+        </>
       )}
       <Link to="/doi-mat-khau" className={LINK}>
         Đổi mật khẩu
