@@ -35,6 +35,16 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
             nativeQuery = true)
     Page<Lesson> searchPublished(@Param("q") String q, Pageable pageable);
 
+    // Dashboard của Admin: đếm toàn bộ bài, kể cả bài nháp.
+    long countByStatus(LessonStatus status);
+
+    // Một truy vấn cho mọi khóa (thay vì mỗi khóa một truy vấn). Khóa chưa có bài không có dòng nào ở đây.
+    @Query("""
+            select l.courseId as courseId, l.status as status, count(l) as total
+            from Lesson l
+            group by l.courseId, l.status""")
+    List<LessonCountByCourse> countLessonsByCourseAndStatus();
+
     // Tính cả bài DRAFT: khóa ngoại RESTRICT cũng chặn xóa khóa còn bài nháp.
     boolean existsByCourseId(Long courseId);
 
