@@ -44,7 +44,9 @@ function AccountNav() {
 
   return (
     <nav aria-label="Tài khoản" className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-      <span className="max-w-40 truncate font-medium">{state.user.displayName}</span>
+      <Link to="/ho-so" className={`${LINK} max-w-40 truncate font-medium`}>
+        {state.user.displayName}
+      </Link>
       {state.user.role === 'ADMIN' && (
         <>
           <Link to="/quan-tri" className={LINK}>
@@ -55,9 +57,6 @@ function AccountNav() {
           </Link>
         </>
       )}
-      <Link to="/doi-mat-khau" className={LINK}>
-        Đổi mật khẩu
-      </Link>
       <button type="button" onClick={handleLogout} className={LINK}>
         Đăng xuất
       </button>

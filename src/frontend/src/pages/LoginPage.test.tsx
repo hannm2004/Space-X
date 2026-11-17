@@ -175,17 +175,26 @@ describe('LoginPage — đăng nhập bằng Google (UC03)', () => {
     expect(logo?.getAttribute('aria-hidden')).toBe('true')
   })
 
-  it.each([
-    ['google-huy', 'Bạn đã hủy đăng nhập bằng Google'],
-    ['google-chua-xac-minh', 'chưa được xác minh'],
-    ['google-email-mat-khau', 'đăng nhập bằng email và mật khẩu'],
-    ['google-bi-khoa', 'đã bị khóa'],
-    ['google-that-bai', 'Không đăng nhập được bằng Google'],
-  ])('?loi=%s thì hiện đúng thông báo', async (code, expected) => {
+  // Viết từng test riêng (không dùng it.each) để lệnh đếm trong docs/TESTING.md khớp số Vitest báo.
+  async function expectGoogleError(code: string, expected: string) {
     renderLogin(`/dang-nhap?loi=${code}`)
 
     expect((await screen.findByRole('alert')).textContent).toContain(expected)
-  })
+  }
+
+  it('?loi=google-huy thì hiện đúng thông báo', () =>
+    expectGoogleError('google-huy', 'Bạn đã hủy đăng nhập bằng Google'))
+
+  it('?loi=google-chua-xac-minh thì hiện đúng thông báo', () =>
+    expectGoogleError('google-chua-xac-minh', 'chưa được xác minh'))
+
+  it('?loi=google-email-mat-khau thì hiện đúng thông báo', () =>
+    expectGoogleError('google-email-mat-khau', 'đăng nhập bằng email và mật khẩu'))
+
+  it('?loi=google-bi-khoa thì hiện đúng thông báo', () => expectGoogleError('google-bi-khoa', 'đã bị khóa'))
+
+  it('?loi=google-that-bai thì hiện đúng thông báo', () =>
+    expectGoogleError('google-that-bai', 'Không đăng nhập được bằng Google'))
 
   it('?loi= lạ (không nằm trong danh sách) thì không hiện gì, không chép nguyên giá trị lên màn hình', async () => {
     renderLogin('/dang-nhap?loi=<b>xin-chao</b>')

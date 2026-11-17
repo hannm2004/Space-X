@@ -21,7 +21,7 @@ const SIGNED_IN: AuthState = {
 function renderHome(auth: AuthState = ANONYMOUS) {
   return render(
     <MemoryRouter>
-      <AuthContext.Provider value={{ state: auth, signIn: vi.fn(), signOut: vi.fn() }}>
+      <AuthContext.Provider value={{ state: auth, signIn: vi.fn(), signOut: vi.fn(), updateUser: vi.fn() }}>
         <HomePage />
       </AuthContext.Provider>
     </MemoryRouter>,

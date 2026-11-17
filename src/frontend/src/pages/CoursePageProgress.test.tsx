@@ -32,7 +32,7 @@ const HAI_BAI = [
 function renderCourse(auth: AuthState) {
   return render(
     <MemoryRouter initialEntries={['/khoa-hoc/tin-hoc-10']}>
-      <AuthContext.Provider value={{ state: auth, signIn: vi.fn(), signOut: vi.fn() }}>
+      <AuthContext.Provider value={{ state: auth, signIn: vi.fn(), signOut: vi.fn(), updateUser: vi.fn() }}>
         <Routes>
           <Route path="/khoa-hoc/:courseSlug" element={<CoursePage />} />
         </Routes>
