@@ -62,6 +62,20 @@ public class User {
         return user;
     }
 
+    // Tài khoản tạo bằng Google (UC03): không có mật khẩu (password_hash NULL), providerId là mã `sub` cố định của
+    // Google. Vai trò vẫn luôn là LEARNER, người dùng không chọn được.
+    public static User newGoogleLearner(String email, String displayName, String providerId) {
+        User user = new User();
+        user.email = email;
+        user.passwordHash = null;
+        user.displayName = displayName;
+        user.role = Role.LEARNER;
+        user.authProvider = AuthProvider.GOOGLE;
+        user.providerId = providerId;
+        user.enabled = true;
+        return user;
+    }
+
     // Chỉ AdminBootstrap gọi (D26). Vẫn không có setter role, nên dữ liệu từ trình duyệt không chọn được role.
     public static User newLocalAdmin(String email, String passwordHash, String displayName) {
         User user = newLocalLearner(email, passwordHash, displayName);

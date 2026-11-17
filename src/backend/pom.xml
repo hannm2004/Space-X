@@ -41,6 +41,13 @@
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 
+		<!-- Đăng nhập bằng Google (UC03): luồng OAuth2/OpenID Connect do Spring Security thực hiện (state, kiểm tra
+		     chữ ký ID token), không tự viết. Chỉ bật khi có GOOGLE_CLIENT_ID (xem GoogleLoginConfig). -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-client</artifactId>
+		</dependency>
+
 		<!-- @Valid, @Email, @Size...: kiểm tra dữ liệu gửi lên ở backend. -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
