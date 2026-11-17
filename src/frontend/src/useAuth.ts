@@ -10,6 +10,8 @@ export type AuthValue = {
   state: AuthState
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
+  // Cập nhật người dùng hiện tại sau khi máy chủ đã đồng ý đổi thông tin (ví dụ tên hiển thị), để thanh đầu trang đổi theo.
+  updateUser: (user: CurrentUser) => void
 }
 
 export const AuthContext = createContext<AuthValue | null>(null)

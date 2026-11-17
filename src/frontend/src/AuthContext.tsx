@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { fetchCurrentUser, login as loginRequest, logout as logoutRequest } from './authApi'
+import { fetchCurrentUser, login as loginRequest, logout as logoutRequest, type CurrentUser } from './authApi'
 import { AuthContext, type AuthState } from './useAuth'
 
 // Giữ "ai đang đăng nhập" cho cả ứng dụng. Nguồn sự thật là session ở máy chủ: mở trang thì hỏi /api/me một lần.
@@ -32,5 +32,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ status: 'anonymous' })
   }
 
-  return <AuthContext.Provider value={{ state, signIn, signOut }}>{children}</AuthContext.Provider>
+  // Chỉ gọi sau khi máy chủ đã lưu thay đổi; nếu đã đăng xuất giữa chừng thì bỏ qua để không "đăng nhập lại" ngầm.
+  function updateUser(user: CurrentUser) {
+    setState((current) => (current.status === 'authenticated' ? { status: 'authenticated', user } : current))
+  }
+
+  return <AuthContext.Provider value={{ state, signIn, signOut, updateUser }}>{children}</AuthContext.Provider>
 }

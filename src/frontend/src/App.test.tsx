@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { fetchHealth } from './api'
-import { fetchCurrentUser, logout } from './authApi'
+import { fetchCurrentUser, fetchProfile, logout } from './authApi'
 import { ApiError } from './client'
 import { fetchCourses, fetchLesson, fetchLessons, fetchProgress, recordProgress, searchLessons } from './learningApi'
 
@@ -14,6 +14,8 @@ vi.mock('./authApi', () => ({
   register: vi.fn(),
   logout: vi.fn(),
   changePassword: vi.fn(),
+  fetchProfile: vi.fn(),
+  updateDisplayName: vi.fn(),
 }))
 vi.mock('./learningApi', () => ({
   fetchCourses: vi.fn(),
@@ -201,18 +203,25 @@ describe('App — thanh điều hướng theo trạng thái đăng nhập', () =
     expect(within(header).queryByRole('button', { name: 'Đăng xuất' })).toBeNull()
   })
 
-  it('đã đăng nhập thì hiện tên, "Đổi mật khẩu" và "Đăng xuất", không còn "Đăng nhập"', async () => {
+  it('đã đăng nhập thì tên là liên kết sang hồ sơ, có "Đăng xuất", không còn "Đăng nhập"', async () => {
     vi.mocked(fetchCurrentUser).mockResolvedValue(USER)
 
     renderAt('/khong-co-trang-nay')
 
     const header = await screen.findByRole('banner')
-    expect(await within(header).findByText('Nguyễn Văn A')).not.toBeNull()
-    expect(within(header).getByRole('link', { name: 'Đổi mật khẩu' }).getAttribute('href')).toBe(
-      '/doi-mat-khau',
-    )
+    expect((await within(header).findByRole('link', { name: 'Nguyễn Văn A' })).getAttribute('href')).toBe('/ho-so')
     expect(within(header).getByRole('button', { name: 'Đăng xuất' })).not.toBeNull()
     expect(within(header).queryByRole('link', { name: 'Đăng nhập' })).toBeNull()
+  })
+
+  it('"Đổi mật khẩu" không còn ở thanh đầu trang (nằm trong trang Hồ sơ, chỉ cho tài khoản có mật khẩu)', async () => {
+    vi.mocked(fetchCurrentUser).mockResolvedValue(USER)
+
+    renderAt('/khong-co-trang-nay')
+
+    const header = await screen.findByRole('banner')
+    await within(header).findByRole('link', { name: 'Nguyễn Văn A' })
+    expect(within(header).queryByRole('link', { name: 'Đổi mật khẩu' })).toBeNull()
   })
 
   it('Admin thấy liên kết "Quản lý người dùng" trên thanh đầu trang', async () => {
@@ -278,5 +287,20 @@ describe('App — thanh điều hướng theo trạng thái đăng nhập', () =
     renderAt('/doi-mat-khau')
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Đổi mật khẩu' })).not.toBeNull()
+  })
+
+  it('/ho-so khi chưa đăng nhập chuyển sang trang đăng nhập', async () => {
+    renderAt('/ho-so')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Đăng nhập' })).not.toBeNull()
+  })
+
+  it('/ho-so khi đã đăng nhập hiện trang hồ sơ cá nhân', async () => {
+    vi.mocked(fetchCurrentUser).mockResolvedValue(USER)
+    vi.mocked(fetchProfile).mockResolvedValue({ ...USER, authProvider: 'LOCAL', createdAt: '2026-11-01T09:30:00' })
+
+    renderAt('/ho-so')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Hồ sơ cá nhân' })).not.toBeNull()
   })
 })

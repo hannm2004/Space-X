@@ -1,6 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError, apiRequest } from './client'
-import { changePassword, fetchCurrentUser, login, logout, register } from './authApi'
+import {
+  changePassword,
+  fetchCurrentUser,
+  fetchProfile,
+  login,
+  logout,
+  register,
+  updateDisplayName,
+} from './authApi'
 
 vi.mock('./client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./client')>()
@@ -129,6 +137,90 @@ describe('logout', () => {
     await logout()
 
     expect(apiRequestMock).toHaveBeenCalledWith('POST', '/api/auth/logout')
+  })
+})
+
+const PROFILE_JSON = {
+  displayName: 'Nguyễn Văn A',
+  email: 'a@example.com',
+  role: 'LEARNER',
+  authProvider: 'LOCAL',
+  createdAt: '2026-11-01T09:30:00',
+}
+
+describe('fetchProfile', () => {
+  it('gọi GET /api/me và trả về đủ tên, email, vai trò, cách đăng nhập, ngày tham gia', async () => {
+    apiRequestMock.mockResolvedValue(PROFILE_JSON)
+
+    const profile = await fetchProfile()
+
+    expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/me')
+    expect(profile).toEqual(PROFILE_JSON)
+  })
+
+  it('chấp nhận tài khoản Google', async () => {
+    apiRequestMock.mockResolvedValue({ ...PROFILE_JSON, authProvider: 'GOOGLE' })
+
+    await expect(fetchProfile()).resolves.toMatchObject({ authProvider: 'GOOGLE' })
+  })
+
+  it('401 thì ném lại lỗi (khác fetchCurrentUser, trang hồ sơ tự chuyển sang đăng nhập)', async () => {
+    apiRequestMock.mockRejectedValue(new ApiError(401, 'Chưa đăng nhập'))
+
+    await expect(fetchProfile()).rejects.toMatchObject({ status: 401 })
+  })
+
+  it('ném lỗi khi cách đăng nhập lạ', async () => {
+    apiRequestMock.mockResolvedValue({ ...PROFILE_JSON, authProvider: 'FACEBOOK' })
+
+    await expect(fetchProfile()).rejects.toThrow()
+  })
+
+  it('ném lỗi khi thiếu cách đăng nhập', async () => {
+    apiRequestMock.mockResolvedValue({ ...PROFILE_JSON, authProvider: undefined })
+
+    await expect(fetchProfile()).rejects.toThrow()
+  })
+
+  it('ném lỗi khi ngày tham gia không phải chuỗi', async () => {
+    apiRequestMock.mockResolvedValue({ ...PROFILE_JSON, createdAt: 123 })
+
+    await expect(fetchProfile()).rejects.toThrow()
+  })
+
+  it('ném lỗi khi vai trò lạ', async () => {
+    apiRequestMock.mockResolvedValue({ ...PROFILE_JSON, role: 'ROOT' })
+
+    await expect(fetchProfile()).rejects.toThrow()
+  })
+
+  it('ném lỗi khi phản hồi không phải đối tượng', async () => {
+    apiRequestMock.mockResolvedValue('oops')
+
+    await expect(fetchProfile()).rejects.toThrow()
+  })
+})
+
+describe('updateDisplayName', () => {
+  it('gọi PUT /api/me chỉ với tên hiển thị và trả về hồ sơ mới', async () => {
+    apiRequestMock.mockResolvedValue({ ...PROFILE_JSON, displayName: 'Trần Thị B' })
+
+    const profile = await updateDisplayName('Trần Thị B')
+
+    expect(apiRequestMock).toHaveBeenCalledWith('PUT', '/api/me', { displayName: 'Trần Thị B' })
+    expect(profile.displayName).toBe('Trần Thị B')
+  })
+
+  it('dữ liệu sai (400) thì ném lại lỗi để trang hiện thông báo', async () => {
+    apiRequestMock.mockRejectedValue(new ApiError(400, 'Dữ liệu không hợp lệ'))
+
+    await expect(updateDisplayName('')).rejects.toMatchObject({ status: 400 })
+  })
+
+  it('ném lỗi khi phản hồi thành công nhưng sai dạng', async () => {
+    apiRequestMock.mockResolvedValue({ ok: true })
+
+    await expect(updateDisplayName('A')).rejects.toThrow()
   })
 })
 
