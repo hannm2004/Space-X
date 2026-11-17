@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router'
 import { register } from '../authApi'
 import { errorMessages } from '../formErrors'
 import { ErrorAlert, SubmitButton, TextField } from '../FormParts'
+import GoogleSignIn from '../GoogleSignIn'
 import { useAuth } from '../useAuth'
 
 export default function RegisterPage() {
@@ -79,6 +80,7 @@ export default function RegisterPage() {
         />
         <SubmitButton pending={submitting} label="Đăng ký" pendingLabel="Đang đăng ký..." />
       </form>
+      <GoogleSignIn label="Đăng ký bằng Google" />
       <p className="mt-6 text-slate-600 dark:text-slate-400">
         Đã có tài khoản?{' '}
         <Link to="/dang-nhap" className="text-blue-700 underline dark:text-blue-400">

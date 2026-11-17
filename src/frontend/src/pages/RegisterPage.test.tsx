@@ -51,6 +51,32 @@ beforeEach(() => {
   fetchCurrentUserMock.mockResolvedValue(null)
 })
 
+describe('RegisterPage — đăng ký bằng Google (UC03)', () => {
+  it('có liên kết "Đăng ký bằng Google" trỏ tới đường dẫn của máy chủ (tải trang đầy đủ, không qua React Router)', async () => {
+    renderRegister()
+
+    const link = await screen.findByRole('link', { name: 'Đăng ký bằng Google' })
+    expect(link.getAttribute('href')).toBe('/oauth2/authorization/google')
+  })
+
+  it('nút có logo Google, đánh dấu trang trí nên tên của liên kết vẫn chỉ là chữ', async () => {
+    renderRegister()
+
+    const link = await screen.findByRole('link', { name: 'Đăng ký bằng Google' })
+    const logo = link.querySelector('svg')
+    expect(logo).not.toBeNull()
+    expect(logo?.getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('bấm nút Google không gửi form đăng ký', async () => {
+    renderRegister()
+
+    fireEvent.click(await screen.findByRole('link', { name: 'Đăng ký bằng Google' }))
+
+    expect(registerMock).not.toHaveBeenCalled()
+  })
+})
+
 describe('RegisterPage — đăng ký', () => {
   it('hiện 4 ô nhập, nút đăng ký và liên kết sang đăng nhập', async () => {
     renderRegister()
