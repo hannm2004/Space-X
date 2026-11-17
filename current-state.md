@@ -16,6 +16,51 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-17 — Tuần 6, CP6.3 (một phần): nút đăng nhập Google và chạy thử thật
+- **Nhánh:** `feat/google-login` (cùng nhánh với mục CP6.2 bên dưới, commit chung).
+- **Đã làm:**
+  - `LoginPage.tsx`: thêm liên kết "Đăng nhập bằng Google" (thẻ `<a href="/oauth2/authorization/google">`, không dùng `<Link>` vì là yêu cầu chuyển hướng do máy chủ xử lý), kèm logo "G" bốn màu bằng SVG viết thẳng (`aria-hidden`, không thêm thư viện hay ảnh).
+  - `LoginPage.tsx`: đọc `?loi=<mã>` và hiện thông báo tiếng Việt cho 5 mã (`google-huy`, `google-chua-xac-minh`, `google-email-mat-khau`, `google-bi-khoa`, `google-that-bai`). Chỉ nhận mã trong bảng; giá trị lạ trên địa chỉ không được chép lên màn hình.
+  - `vite.config.ts`: thêm proxy `/oauth2` và `/login/oauth2` (kèm `changeOrigin: true` để Spring dựng `redirect_uri` là cổng 8080 đã đăng ký ở Google). Cập nhật một dòng trong `src/frontend/README.md`.
+  - `GoogleLoginFailureHandler`: thêm `log.warn` chỉ ghi loại lỗi và mã lỗi OAuth2, không ghi secret hay token, để biết vì sao `google-that-bai`.
+- **Kiểm tra:**
+  - Test frontend viết trước: 6 test mới đỏ, sau khi sửa code xanh; thêm 1 test logo (đỏ rồi xanh). `LoginPage.test.tsx` 19 test, cùng `App.test.tsx` là 39 test, đều qua. Toàn bộ frontend trước khi thêm logo: 26 file, 317 test qua. `tsc -b` không báo lỗi, `npm run lint` (oxlint) không in cảnh báo.
+  - Proxy: gọi `GET localhost:5173/oauth2/authorization/google` trả 302 sang `accounts.google.com` với `redirect_uri=http://localhost:8080/login/oauth2/code/google`; `GET localhost:5173/api/health` vẫn 200.
+  - **Đăng nhập Google thật trên máy: thành công**, được chuyển về `localhost:8080/` (ở máy cổng 8080 chỉ có trang giả cho test, giao diện thật chỉ nằm chung cổng khi build Docker).
+  - Backend: `GoogleLoginDisabledTest`, `GoogleLoginConfigTest`, `GoogleLoginHandlersTest`, `GoogleAccountServiceTest` qua (chạy riêng bốn lớp).
+  - **Chưa chạy đủ:** 161 test tích hợp toàn bộ sau thay đổi này; **chưa kiểm** bằng mắt giao diện chế độ tối, Render.
+- **Lỗi gặp và cách sửa:**
+  - Console báo `401` ở `/api/me` khi chưa đăng nhập: bình thường, `AuthContext` hỏi `/api/me` một lần và `authApi.ts` coi 401 là "chưa đăng nhập".
+  - Bị đưa về `/dang-nhap?loi=google-that-bai` một lần; mã này cố ý giấu lý do. Chưa xác định nguyên nhân của lần đó (chạy lại backend rồi thử lại thì thành công). Đã thêm `log.warn` ở trên để lần sau đọc được.
+  - Giao diện chưa có nút Google; và bấm nút trên cổng 5173 sẽ không tới backend vì Vite chỉ proxy `/api`: đã thêm proxy như trên.
+  - `GoogleLoginDisabledTest` fail ở máy (thấy `Location` tới Google dù "không có client-id"): `application.properties` nạp `../../.env`, mà `.env` có `GOOGLE_CLIENT_ID`. Lần chạy lại đầu không gồm lớp này nên tưởng đã hết lỗi. Sửa bằng `@TestPropertySource(properties = "app.google.client-id=")` cho lớp đó; trên CI không có `.env` nên không lộ ra.
+  - Máy chỉ còn khoảng 0,3 GB RAM trống nên hai tiến trình nền (backend, Vite) bị dừng một lần; chạy lại backend với `-Xmx384m`.
+- **Học được:**
+  - Cookie không phân biệt cổng, chỉ phân biệt host, nên phiên đăng nhập đặt ở `localhost:8080` dùng được ở `localhost:5173`.
+  - Test phải tự đặt mọi cấu hình nó phụ thuộc; để test đọc nhầm `.env` của máy là loại lỗi chỉ lộ ở máy này mà CI không thấy.
+  - Mã lỗi trên địa chỉ phải đối chiếu với bảng cho trước, không in lại giá trị người dùng gửi lên.
+- **Tiếp theo:** chạy đủ `.\mvnw test` (kể cả 161 test tích hợp) khi máy trống bộ nhớ; mở Pull Request, chờ CI xanh rồi gộp; sau đó phần còn lại của CP6.3 là trang Hồ sơ.
+
+## 2026-11-16 — Tuần 6, CP6.2: đăng nhập Google (backend)
+- **Nhánh:** `feat/google-login` (tạo từ `main` ở `a812ee5`, sau khi PR #39 gộp; chưa commit).
+- **Đã làm:**
+  - Thêm dependency `spring-boot-starter-oauth2-client` (đã duyệt). Ghi D31 vào `docs/DECISIONS.md` (chỉ ở máy): chỉ nhận email Google đã xác minh; tra tài khoản theo mã `sub`; email thuộc tài khoản mật khẩu thì không đăng nhập, không tạo, không liên kết, chuyển về `/dang-nhap?loi=<mã>`.
+  - Mã mới trong `vn.spacex.auth`: `GoogleAccountService` (luật tài khoản), `GoogleLoginSuccessHandler` (đổi người dùng OIDC thành `AppUserDetails`, lưu session), `GoogleLoginFailureHandler`, `GoogleLoginConfig` (chỉ bật khi có `GOOGLE_CLIENT_ID`), `GoogleProfile`, `GoogleLoginRejectedException`. Thêm `User.newGoogleLearner`, `UserRepository.findByAuthProviderAndProviderId`; `SecurityConfig` gắn `oauth2Login` khi tính năng bật.
+  - Cấu hình: `app.google.client-id` và `app.google.client-secret` trong `application.properties` (mặc định rỗng = tắt), tên biến `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` trong `.env.example`.
+  - Tài liệu: `docs/API.md` (mục đăng nhập Google và bảng mã lỗi), `docs/TESTING.md`, `docs/DATABASE_DESIGN.md`.
+- **Kiểm tra:**
+  - Viết test trước. Lần chạy đầu: 46/47 qua, lỗi duy nhất do cách viết test của tôi (gọi lại `when(...)` trên hàm đã cài ném lỗi); đổi sang `doThrow`.
+  - `GoogleAccountServiceTest` 14, `GoogleLoginHandlersTest` 8, `GoogleLoginConfigTest` 6 (hai lớp: bật và tắt), `GoogleLoginIntegrationTest` 8 (MySQL 8.4 thật) đều qua.
+  - Backend không cần Docker: 384 test, 39 lớp, 0 lỗi. Đếm bằng lệnh của `docs/TESTING.md`: 545 backend (384 + 161 tích hợp).
+  - **Chưa chạy đủ:** 161 test tích hợp sau thay đổi này (chỉ chạy riêng `GoogleLoginIntegrationTest`).
+  - **Chưa kiểm:** đăng nhập với Google thật (cần Client ID), nút trên giao diện (CP6.3), Render.
+- **Lỗi gặp và cách sửa:** test tích hợp đầu tiên truy vấn bảng `spring_session` chữ thường, trong khi `V2` tạo `SPRING_SESSION` chữ hoa; MySQL trên Linux phân biệt hoa thường tên bảng, nên sửa lại trong test.
+- **Học được:**
+  - Bộ lọc OAuth2 lưu đăng nhập Google vào session trước khi gọi `successHandler`, nên khi ứng dụng từ chối phải tự hủy session và xóa `SecurityContext`.
+  - Dùng bean có điều kiện (`@ConditionalOnExpression`) để một tính năng tắt hẳn khi thiếu cấu hình, thay vì để ứng dụng không khởi động.
+  - Tra tài khoản Google theo `sub` bất biến, không theo email.
+- **Tiếp theo:** chạy `.\mvnw test` đầy đủ khi máy trống bộ nhớ; commit, mở Pull Request, chờ CI xanh rồi gộp; sau đó CP6.3 (nút Google và trang Hồ sơ).
+
 ## 2026-11-16 — Tuần 6, CP6.1: Admin Dashboard
 - **Nhánh:** `feat/admin-dashboard` (tạo từ `main` ở `98efee7`, chưa commit).
 - **Đã làm:**

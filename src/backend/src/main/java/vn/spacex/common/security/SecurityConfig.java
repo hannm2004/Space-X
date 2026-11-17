@@ -1,6 +1,7 @@
 package vn.spacex.common.security;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -16,6 +17,8 @@ import org.springframework.security.web.authentication.logout.HttpStatusReturnin
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
+import vn.spacex.auth.GoogleLoginConfig;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
@@ -26,7 +29,9 @@ public class SecurityConfig {
     public static final String FORBIDDEN_DETAIL = "Bạn không có quyền thực hiện thao tác này";
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                            ObjectProvider<GoogleLoginConfig.GoogleLoginHandlers> googleLogin)
+            throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/health", "/api/auth/register", "/api/auth/login").permitAll()
@@ -55,6 +60,17 @@ public class SecurityConfig {
                         // token CSRF, không phải session, nên lộ cho JavaScript trên cùng trang là chấp nhận được.
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(csrfTokenRequestHandler()));
+        // Đăng nhập Google (UC03): chỉ bật khi có GOOGLE_CLIENT_ID. Luồng OAuth2 gồm các yêu cầu GET tới /oauth2/... và
+        // /login/oauth2/code/google (không cần CSRF token vì có tham số state do Spring kiểm). Kết quả do hai handler
+        // xử lý: thành công thì lưu AppUserDetails vào session như đăng nhập mật khẩu, thất bại thì về /dang-nhap?loi=.
+        // loginPage đặt về trang của React để Spring không tự sinh trang đăng nhập HTML mặc định.
+        GoogleLoginConfig.GoogleLoginHandlers google = googleLogin.getIfAvailable();
+        if (google != null) {
+            http.oauth2Login(oauth -> oauth
+                    .loginPage("/dang-nhap")
+                    .successHandler(google.success())
+                    .failureHandler(google.failure()));
+        }
         return http.build();
     }
 

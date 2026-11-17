@@ -125,7 +125,7 @@ Bảng lưu session (Spring Session JDBC, từ việc 3.6) và bảng lịch s�
 - Chatbot chỉ đọc chữ, nên phần mô tả ảnh trong ngoặc vuông phải viết rõ nghĩa.
 
 **Tài khoản**
-- Đăng nhập Google: chỉ chấp nhận email Google báo đã xác minh. **Không tự liên kết** với tài khoản mật khẩu (D25). Email chưa có thì tạo mới với `auth_provider = GOOGLE`, `role = LEARNER`, `password_hash = NULL`; đã có tài khoản `GOOGLE` cùng email thì đăng nhập vào tài khoản đó. Email đã thuộc tài khoản `LOCAL` thì không đăng nhập và không tạo thêm được (cột `email` là `UNIQUE`); cách báo lỗi chốt khi làm đăng nhập Google.
+- Đăng nhập Google: chỉ chấp nhận email Google báo đã xác minh. **Không tự liên kết** với tài khoản mật khẩu (D25). Tài khoản được tra theo `provider_id` = mã `sub` của Google (không theo email, vì email có thể đổi). Chưa có thì tạo mới với `auth_provider = GOOGLE`, `role = LEARNER`, `password_hash = NULL`, `provider_id = sub`; đã có thì đăng nhập vào tài khoản đó. Email đã thuộc tài khoản `LOCAL` thì không đăng nhập và không tạo thêm được (cột `email` là `UNIQUE`): chuyển về `/dang-nhap?loi=google-email-mat-khau` (D31).
 - Đổi mật khẩu chỉ áp dụng cho tài khoản có mật khẩu.
 - Tài khoản bị khóa không đăng nhập được, kể cả qua Google. Đăng nhập bằng email trả `401` chung, không báo "bị khóa" (D25). Admin không tự khóa chính mình và không khóa được Admin cuối cùng.
 - Admin đầu tiên được tạo khi ứng dụng khởi động, từ biến môi trường `ADMIN_EMAIL` và `ADMIN_PASSWORD`, chỉ khi chưa có Admin nào.

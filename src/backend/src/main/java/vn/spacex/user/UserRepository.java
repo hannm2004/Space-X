@@ -13,6 +13,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
 
+    // Đăng nhập Google tra theo mã `sub` cố định, không theo email (email có thể đổi hoặc được cấp lại cho người khác).
+    Optional<User> findByAuthProviderAndProviderId(AuthProvider authProvider, String providerId);
+
     boolean existsByEmail(String email);
 
     boolean existsByRole(Role role);

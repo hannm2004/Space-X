@@ -8,7 +8,7 @@ Dùng PowerShell, đứng ở `src\frontend`:
 
 ```powershell
 npm install        # lần đầu
-npm run dev        # chạy ở máy, tự tải lại khi sửa; /api được chuyển sang backend cổng 8080
+npm run dev        # chạy ở máy, tự tải lại khi sửa; /api và /oauth2 (đăng nhập Google) được chuyển sang backend cổng 8080
 npm test           # Vitest + Testing Library (jsdom), không cần backend hay Docker
 npm run lint       # Oxlint
 npm run build      # tsc -b rồi vite build, kết quả ở dist/
