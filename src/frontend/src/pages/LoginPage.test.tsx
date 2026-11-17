@@ -157,3 +157,41 @@ describe('LoginPage — đăng nhập', () => {
     expect(screen.queryByLabelText('Email')).toBeNull()
   })
 })
+
+describe('LoginPage — đăng nhập bằng Google (UC03)', () => {
+  it('có liên kết "Đăng nhập bằng Google" trỏ tới đường dẫn của máy chủ (tải trang đầy đủ, không qua React Router)', async () => {
+    renderLogin()
+
+    const link = await screen.findByRole('link', { name: 'Đăng nhập bằng Google' })
+    expect(link.getAttribute('href')).toBe('/oauth2/authorization/google')
+  })
+
+  it('nút có logo Google, đánh dấu trang trí nên tên của liên kết vẫn chỉ là chữ', async () => {
+    renderLogin()
+
+    const link = await screen.findByRole('link', { name: 'Đăng nhập bằng Google' })
+    const logo = link.querySelector('svg')
+    expect(logo).not.toBeNull()
+    expect(logo?.getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it.each([
+    ['google-huy', 'Bạn đã hủy đăng nhập bằng Google'],
+    ['google-chua-xac-minh', 'chưa được xác minh'],
+    ['google-email-mat-khau', 'đăng nhập bằng email và mật khẩu'],
+    ['google-bi-khoa', 'đã bị khóa'],
+    ['google-that-bai', 'Không đăng nhập được bằng Google'],
+  ])('?loi=%s thì hiện đúng thông báo', async (code, expected) => {
+    renderLogin(`/dang-nhap?loi=${code}`)
+
+    expect((await screen.findByRole('alert')).textContent).toContain(expected)
+  })
+
+  it('?loi= lạ (không nằm trong danh sách) thì không hiện gì, không chép nguyên giá trị lên màn hình', async () => {
+    renderLogin('/dang-nhap?loi=<b>xin-chao</b>')
+
+    await screen.findByRole('heading', { level: 1, name: 'Đăng nhập' })
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.queryByText(/xin-chao/)).toBeNull()
+  })
+})
