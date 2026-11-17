@@ -28,7 +28,8 @@ Mẫu một mục:
   - Proxy: gọi `GET localhost:5173/oauth2/authorization/google` trả 302 sang `accounts.google.com` với `redirect_uri=http://localhost:8080/login/oauth2/code/google`; `GET localhost:5173/api/health` vẫn 200.
   - **Đăng nhập Google thật trên máy: thành công**, được chuyển về `localhost:8080/` (ở máy cổng 8080 chỉ có trang giả cho test, giao diện thật chỉ nằm chung cổng khi build Docker).
   - Backend: `GoogleLoginDisabledTest`, `GoogleLoginConfigTest`, `GoogleLoginHandlersTest`, `GoogleAccountServiceTest` qua (chạy riêng bốn lớp).
-  - **Chưa chạy đủ:** 161 test tích hợp toàn bộ sau thay đổi này; **chưa kiểm** bằng mắt giao diện chế độ tối, Render.
+  - **Chạy đủ `.\mvnw test` (MySQL Docker bật, `-Xmx384m`): `Tests run: 545, Failures: 0, Errors: 0, Skipped: 0`, `BUILD SUCCESS`.** Cuối log có vài dòng `ERROR`/`WARN` (`Interrupted during connection acquisition`, `Surefire is going to kill self fork JVM`) lúc tắt, khi tác vụ dọn session chạy trong lúc kết nối DB đóng; kết quả test không bị ảnh hưởng, chưa tìm nguyên nhân gốc.
+  - **Chưa kiểm:** giao diện chế độ tối bằng mắt, Render.
 - **Lỗi gặp và cách sửa:**
   - Console báo `401` ở `/api/me` khi chưa đăng nhập: bình thường, `AuthContext` hỏi `/api/me` một lần và `authApi.ts` coi 401 là "chưa đăng nhập".
   - Bị đưa về `/dang-nhap?loi=google-that-bai` một lần; mã này cố ý giấu lý do. Chưa xác định nguyên nhân của lần đó (chạy lại backend rồi thử lại thì thành công). Đã thêm `log.warn` ở trên để lần sau đọc được.
@@ -39,7 +40,8 @@ Mẫu một mục:
   - Cookie không phân biệt cổng, chỉ phân biệt host, nên phiên đăng nhập đặt ở `localhost:8080` dùng được ở `localhost:5173`.
   - Test phải tự đặt mọi cấu hình nó phụ thuộc; để test đọc nhầm `.env` của máy là loại lỗi chỉ lộ ở máy này mà CI không thấy.
   - Mã lỗi trên địa chỉ phải đối chiếu với bảng cho trước, không in lại giá trị người dùng gửi lên.
-- **Tiếp theo:** chạy đủ `.\mvnw test` (kể cả 161 test tích hợp) khi máy trống bộ nhớ; mở Pull Request, chờ CI xanh rồi gộp; sau đó phần còn lại của CP6.3 là trang Hồ sơ.
+- **Lỗi gặp thêm:** lần chạy test đầu không chạy được vì thư mục ghi log chưa tồn tại (lỗi của lệnh, không phải của test); ổ C chỉ còn khoảng 2 GB nên đã dọn cache npm và pip (giải phóng khoảng 1 GB).
+- **Tiếp theo:** mở Pull Request, chờ CI xanh rồi gộp; sau đó phần còn lại của CP6.3 là trang Hồ sơ.
 
 ## 2026-11-16 — Tuần 6, CP6.2: đăng nhập Google (backend)
 - **Nhánh:** `feat/google-login` (tạo từ `main` ở `a812ee5`, sau khi PR #39 gộp; chưa commit).
