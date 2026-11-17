@@ -48,6 +48,24 @@ Chi tiết kỹ thuật của lỗi 500 (tên exception, stack trace) chỉ ghi 
 | PUT | `/api/me` | Đăng nhập | Sửa tên hiển thị |
 | PUT | `/api/me/password` | Đăng nhập | Đổi mật khẩu, phải gửi kèm mật khẩu cũ. Tài khoản không có mật khẩu → 400 |
 
+### Đăng nhập Google — `GET /oauth2/authorization/google` (D31)
+
+- Chỉ có khi máy chủ được đặt `GOOGLE_CLIENT_ID` (và `GOOGLE_CLIENT_SECRET`); không có thì đường dẫn này và `/login/oauth2/code/google` không tồn tại. Đây là các yêu cầu `GET` chuyển hướng của trình duyệt (không phải API JSON), dùng tham số `state` của OAuth2 thay cho CSRF token. Phạm vi xin quyền: `openid email profile`.
+- Luồng: trình duyệt mở `/oauth2/authorization/google` → Google → Google gọi lại `/login/oauth2/code/google` → máy chủ kiểm ID token, tìm hoặc tạo tài khoản, lưu session (cookie `SESSION` như đăng nhập mật khẩu) → chuyển về `/`.
+- Chỉ nhận email Google báo đã xác minh. Tài khoản tra theo mã `sub` của Google, không theo email. Tài khoản mới: `auth_provider = GOOGLE`, `role = LEARNER`, `password_hash = NULL`, email chuẩn hóa như đăng ký (chữ thường, cắt khoảng trắng).
+- Không tự liên kết với tài khoản mật khẩu cùng email (D25): bị từ chối, không tạo tài khoản mới, tài khoản cũ giữ nguyên.
+- Thất bại không trả JSON mà chuyển về `/dang-nhap?loi=<mã>` (giao diện hiện câu tương ứng):
+
+| Mã | Khi nào |
+|---|---|
+| `google-chua-xac-minh` | Google báo email chưa xác minh |
+| `google-email-mat-khau` | Email đã đăng ký bằng mật khẩu: hãy đăng nhập bằng email và mật khẩu |
+| `google-bi-khoa` | Tài khoản bị Admin khóa |
+| `google-huy` | Người dùng bấm Hủy ở màn hình xin quyền của Google |
+| `google-that-bai` | Mọi trường hợp còn lại (state sai, lỗi từ Google, email thuộc tài khoản Google khác, hai tab đăng nhập lần đầu cùng lúc...). Cố ý không nói rõ lý do |
+
+- Tài khoản Google không có mật khẩu: đăng nhập bằng `POST /api/auth/login` nhận `401` chung; đổi mật khẩu → `400`; Admin đặt lại mật khẩu → `409`.
+
 ### Đăng ký — `POST /api/auth/register` (D25)
 
 ```json
