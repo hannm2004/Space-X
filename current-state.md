@@ -16,6 +16,29 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-17 — Tuần 6, CP6.3 (phần còn lại): trang Hồ sơ và nút Google ở trang đăng ký
+- **Nhánh:** `feat/profile-ui` (tạo từ `main` sau khi PR #40 và #41 đã gộp).
+- **Đã làm:**
+  - Backend không đổi: `GET /api/me` và `PUT /api/me` (sửa tên) đã có từ Tuần 3, `docs/API.md` đã ghi.
+  - `authApi.ts`: thêm `Profile`, `fetchProfile()` (khác `fetchCurrentUser`: 401 ném lại, không trả `null`) và `updateDisplayName()`; cả hai kiểm đúng dạng dữ liệu (`authProvider` chỉ `LOCAL` hoặc `GOOGLE`, `createdAt` là chuỗi).
+  - `AuthContext` và `useAuth`: thêm `updateUser` để tên ở thanh đầu trang đổi ngay sau khi lưu; chỉ đổi khi vẫn đang đăng nhập.
+  - `ProfilePage.tsx` (`/ho-so`): xem email, vai trò, cách đăng nhập, ngày tham gia; sửa tên hiển thị (cắt khoảng trắng, không rỗng, tối đa 100 ký tự, dùng giá trị máy chủ trả về); tài khoản `LOCAL` có liên kết Đổi mật khẩu, tài khoản Google thì không và có lời giải thích. Hồ sơ chỉ được tải khi đã chắc chắn đăng nhập.
+  - `Layout.tsx`: tên người dùng thành liên kết tới `/ho-so`; bỏ liên kết "Đổi mật khẩu" khỏi thanh đầu trang vì phản hồi đăng nhập không cho biết tài khoản có mật khẩu hay không (liên kết nằm trong trang Hồ sơ).
+  - `GoogleSignIn.tsx`: tách chữ "G" và nút Google khỏi `LoginPage` thành component dùng chung; thêm nút "Đăng ký bằng Google" ở `/dang-ky` (cùng đường dẫn `/oauth2/authorization/google`, lần đầu máy chủ tự tạo tài khoản).
+- **Kiểm tra:**
+  - Viết test trước: 15 test đỏ (RED), sau khi viết code 3 file chính xanh (64 test); thêm 3 test nút Google ở `/dang-ky`, đỏ rồi xanh.
+  - Toàn bộ frontend: `npx vitest run` 27 file, **351 test qua**; `npx tsc -b` không lỗi; `npm run lint` không cảnh báo.
+  - Lệnh đếm của `docs/TESTING.md` cho 351, khớp Vitest.
+  - **Chưa kiểm:** trang Hồ sơ và nút `/dang-ky` trên trình duyệt thật; đăng nhập Google rồi vào `/ho-so` bằng tài khoản Google; Render; chế độ tối bằng mắt. Backend không đổi nên chưa chạy lại `.\mvnw test` (lần gần nhất: 545 test qua).
+- **Lỗi gặp và cách sửa:**
+  - Lệnh đếm cho 341 trong khi Vitest báo 351: do 2 chỗ dùng `it.each` (mỗi chỗ 5 trường hợp), trái quy ước trong `docs/TESTING.md`. Đổi sang từng `it(` riêng (cả test mới và `LoginPage.test.tsx` có từ trước); sau đó đếm = Vitest = 351.
+  - Thêm `updateUser` bắt buộc vào `AuthValue` làm ba file test tự dựng `AuthContext.Provider` (`HomePage`, `CoursePage`, `CoursePageProgress`) sai kiểu; thêm `updateUser: vi.fn()` cho các file đó.
+- **Học được:**
+  - Sau khi ghi dữ liệu, dùng giá trị máy chủ trả về làm nguồn sự thật cho giao diện (máy chủ có thể đã chuẩn hóa tên), thay vì giá trị người dùng gõ.
+  - Tách component con (`ProfileContent`) để hook tải dữ liệu chỉ chạy khi điều kiện (đã đăng nhập) đã đúng, tránh gọi API thừa cho khách.
+  - Số test đếm bằng lệnh phải khớp công cụ chạy test; một quy ước viết test (không `it.each`) tồn tại chính vì lý do đó.
+- **Tiếp theo:** thử tay trên Chrome (sửa tên, tên đầu trang đổi theo, tài khoản Google không thấy Đổi mật khẩu, nút `/dang-ky`); mở Pull Request, chờ CI xanh rồi gộp; sau đó CP6.4 (giao diện Admin nội dung).
+
 ## 2026-11-17 — Tuần 6, CP6.3 (một phần): nút đăng nhập Google và chạy thử thật
 - **Nhánh:** `feat/google-login` (cùng nhánh với mục CP6.2 bên dưới, commit chung).
 - **Đã làm:**
