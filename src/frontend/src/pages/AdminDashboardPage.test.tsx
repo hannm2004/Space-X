@@ -131,6 +131,15 @@ describe('AdminDashboardPage — số liệu', () => {
     expect(link.getAttribute('href')).toBe('/quan-tri/nguoi-dung')
   })
 
+  it('có liên kết sang trang quản lý khóa học và quản lý bài học', async () => {
+    renderPage()
+
+    expect((await screen.findByRole('link', { name: 'Quản lý khóa học' })).getAttribute('href')).toBe(
+      '/quan-tri/khoa-hoc',
+    )
+    expect(screen.getByRole('link', { name: 'Quản lý bài học' }).getAttribute('href')).toBe('/quan-tri/bai-hoc')
+  })
+
   it('tải lỗi thì hiện thông báo và nút Thử lại gọi lại API', async () => {
     fetchAdminDashboardMock.mockRejectedValueOnce(new Error('mạng lỗi'))
 

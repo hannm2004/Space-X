@@ -121,3 +121,149 @@ export async function setUserEnabled(id: number, enabled: boolean): Promise<Admi
 export async function resetUserPassword(id: number): Promise<TemporaryPassword> {
   return parseTemporaryPassword(await apiRequest('POST', `/api/admin/users/${id}/reset-password`))
 }
+
+// ---- Khóa học, bài học, ảnh (CP6.4). Hình dạng khớp mục "Quản trị" của docs/API.md. ----
+
+export type AdminCourse = { id: number; slug: string; title: string; description: string | null; sortOrder: number }
+// Dữ liệu gửi lên khi tạo/sửa khóa: mô tả để trống thì gửi chuỗi rỗng, máy chủ lưu null.
+export type CourseInput = { slug: string; title: string; description: string; sortOrder: number }
+
+export type LessonStatus = 'DRAFT' | 'PUBLISHED'
+// Một dòng trong danh sách bài (không có nội dung); AdminLesson là bài đầy đủ để sửa.
+export type AdminLessonSummary = {
+  id: number
+  courseId: number
+  slug: string
+  title: string
+  summary: string | null
+  status: LessonStatus
+  sortOrder: number
+}
+export type AdminLesson = AdminLessonSummary & { contentMd: string }
+export type AdminLessonPage = { items: AdminLessonSummary[]; page: number; size: number; totalItems: number }
+export type LessonInput = {
+  courseId: number
+  slug: string
+  title: string
+  summary: string
+  contentMd: string
+  sortOrder: number
+}
+export type LessonFilter = { courseId: number | null; status: LessonStatus | null; page: number }
+
+export type LessonImage = { id: number; fileName: string; contentType: string; sizeBytes: number; url: string }
+export type UploadedImage = { id: number; url: string }
+
+const LESSON_PAGE_SIZE = 20
+
+function parseAdminCourse(value: unknown): AdminCourse {
+  const record = asRecord(value)
+  return {
+    id: asNumber(record.id),
+    slug: asString(record.slug),
+    title: asString(record.title),
+    description: asNullableString(record.description),
+    sortOrder: asNumber(record.sortOrder),
+  }
+}
+
+function asLessonStatus(value: unknown): LessonStatus {
+  if (value !== 'DRAFT' && value !== 'PUBLISHED') throw new Error(BAD_SHAPE)
+  return value
+}
+
+function parseLessonSummary(value: unknown): AdminLessonSummary {
+  const record = asRecord(value)
+  return {
+    id: asNumber(record.id),
+    courseId: asNumber(record.courseId),
+    slug: asString(record.slug),
+    title: asString(record.title),
+    summary: asNullableString(record.summary),
+    status: asLessonStatus(record.status),
+    sortOrder: asNumber(record.sortOrder),
+  }
+}
+
+function parseAdminLesson(value: unknown): AdminLesson {
+  return { ...parseLessonSummary(value), contentMd: asString(asRecord(value).contentMd) }
+}
+
+function parseLessonImage(value: unknown): LessonImage {
+  const record = asRecord(value)
+  return {
+    id: asNumber(record.id),
+    fileName: asString(record.fileName),
+    contentType: asString(record.contentType),
+    sizeBytes: asNumber(record.sizeBytes),
+    url: asString(record.url),
+  }
+}
+
+export async function fetchAdminCourses(): Promise<AdminCourse[]> {
+  return asList(await apiRequest('GET', '/api/admin/courses'), parseAdminCourse)
+}
+
+export async function createCourse(input: CourseInput): Promise<AdminCourse> {
+  return parseAdminCourse(await apiRequest('POST', '/api/admin/courses', input))
+}
+
+export async function updateCourse(id: number, input: CourseInput): Promise<AdminCourse> {
+  return parseAdminCourse(await apiRequest('PUT', `/api/admin/courses/${id}`, input))
+}
+
+export async function deleteCourse(id: number): Promise<void> {
+  await apiRequest('DELETE', `/api/admin/courses/${id}`)
+}
+
+export async function fetchAdminLessons(filter: LessonFilter): Promise<AdminLessonPage> {
+  const params = new URLSearchParams()
+  if (filter.courseId !== null) params.set('courseId', String(filter.courseId))
+  if (filter.status !== null) params.set('status', filter.status)
+  params.set('page', String(filter.page))
+  params.set('size', String(LESSON_PAGE_SIZE))
+  const record = asRecord(await apiRequest('GET', `/api/admin/lessons?${params}`))
+  return {
+    items: asList(record.items, parseLessonSummary),
+    page: asNumber(record.page),
+    size: asNumber(record.size),
+    totalItems: asNumber(record.totalItems),
+  }
+}
+
+export async function fetchAdminLesson(id: number): Promise<AdminLesson> {
+  return parseAdminLesson(await apiRequest('GET', `/api/admin/lessons/${id}`))
+}
+
+export async function createLesson(input: LessonInput): Promise<AdminLesson> {
+  return parseAdminLesson(await apiRequest('POST', '/api/admin/lessons', input))
+}
+
+export async function updateLesson(id: number, input: LessonInput): Promise<AdminLesson> {
+  return parseAdminLesson(await apiRequest('PUT', `/api/admin/lessons/${id}`, input))
+}
+
+// Trả bài sau khi đổi để giao diện hiện đúng trạng thái máy chủ đã ghi.
+export async function setLessonStatus(id: number, status: LessonStatus): Promise<AdminLesson> {
+  return parseAdminLesson(await apiRequest('PATCH', `/api/admin/lessons/${id}/status`, { status }))
+}
+
+export async function deleteLesson(id: number): Promise<void> {
+  await apiRequest('DELETE', `/api/admin/lessons/${id}`)
+}
+
+export async function fetchLessonImages(lessonId: number): Promise<LessonImage[]> {
+  return asList(await apiRequest('GET', `/api/admin/lessons/${lessonId}/images`), parseLessonImage)
+}
+
+// Phần multipart phải tên "file" (docs/API.md). Máy chủ kiểm lại loại tệp và cỡ, nên kiểm ở trình duyệt chỉ để báo sớm.
+export async function uploadLessonImage(lessonId: number, file: File): Promise<UploadedImage> {
+  const form = new FormData()
+  form.append('file', file)
+  const record = asRecord(await apiRequest('POST', `/api/admin/lessons/${lessonId}/images`, form))
+  return { id: asNumber(record.id), url: asString(record.url) }
+}
+
+export async function deleteImage(id: number): Promise<void> {
+  await apiRequest('DELETE', `/api/admin/images/${id}`)
+}

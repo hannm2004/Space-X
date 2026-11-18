@@ -159,6 +159,25 @@ describe('apiRequest — CSRF cho yêu cầu ghi', () => {
   })
 })
 
+describe('apiRequest — tải tệp (FormData)', () => {
+  it('gửi FormData nguyên vẹn, kèm header CSRF và KHÔNG tự đặt Content-Type (để trình duyệt thêm boundary)', async () => {
+    setXsrfCookie('token-123')
+    fetchMock.mockResolvedValue(jsonResponse({ id: 7, url: '/api/images/7' }, 201))
+    const form = new FormData()
+    form.append('file', new File(['x'], 'a.png', { type: 'image/png' }))
+
+    await expect(apiRequest('POST', '/api/admin/lessons/3/images', form)).resolves.toEqual({
+      id: 7,
+      url: '/api/images/7',
+    })
+
+    const sent = sentRequest()
+    expect(sent.body).toBe(form)
+    expect(sent.headers['X-XSRF-TOKEN']).toBe('token-123')
+    expect(sent.headers['Content-Type']).toBeUndefined()
+  })
+})
+
 describe('apiRequest — kết quả thành công', () => {
   it('204 không có nội dung trả về undefined', async () => {
     setXsrfCookie('t')

@@ -1,5 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fetchAdminDashboard, fetchAdminUsers, resetUserPassword, setUserEnabled } from './adminApi'
+import {
+  createCourse,
+  createLesson,
+  deleteCourse,
+  deleteImage,
+  deleteLesson,
+  fetchAdminCourses,
+  fetchAdminDashboard,
+  fetchAdminLesson,
+  fetchAdminLessons,
+  fetchAdminUsers,
+  fetchLessonImages,
+  resetUserPassword,
+  setLessonStatus,
+  setUserEnabled,
+  updateCourse,
+  updateLesson,
+  uploadLessonImage,
+} from './adminApi'
 import { ApiError, apiRequest } from './client'
 
 vi.mock('./client', async (importOriginal) => {
@@ -207,5 +225,198 @@ describe('fetchAdminDashboard', () => {
     apiRequestMock.mockRejectedValue(new ApiError(403, 'Bạn không có quyền thực hiện thao tác này'))
 
     await expect(fetchAdminDashboard()).rejects.toMatchObject({ status: 403 })
+  })
+})
+
+const COURSE_JSON = { id: 5, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Lớp 10', sortOrder: 1 }
+const COURSE_INPUT = { slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Lớp 10', sortOrder: 1 }
+const LESSON_SUMMARY_JSON = {
+  id: 3,
+  courseId: 5,
+  slug: 'may-tinh-la-gi',
+  title: 'Máy tính là gì',
+  summary: null,
+  status: 'DRAFT',
+  sortOrder: 1,
+}
+const LESSON_JSON = { ...LESSON_SUMMARY_JSON, contentMd: '# Máy tính' }
+const LESSON_INPUT = {
+  courseId: 5,
+  slug: 'may-tinh-la-gi',
+  title: 'Máy tính là gì',
+  summary: '',
+  contentMd: '# Máy tính',
+  sortOrder: 1,
+}
+const IMAGE_JSON = { id: 7, fileName: 'a.png', contentType: 'image/png', sizeBytes: 123, url: '/api/images/7' }
+
+describe('khóa học (Admin)', () => {
+  it('fetchAdminCourses gọi GET /api/admin/courses và trả danh sách có sortOrder', async () => {
+    apiRequestMock.mockResolvedValue([COURSE_JSON, { ...COURSE_JSON, id: 6, description: null }])
+
+    const result = await fetchAdminCourses()
+
+    expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/admin/courses')
+    expect(result).toEqual([COURSE_JSON, { ...COURSE_JSON, id: 6, description: null }])
+  })
+
+  it('fetchAdminCourses từ chối phản hồi thiếu sortOrder', async () => {
+    apiRequestMock.mockResolvedValue([{ id: 5, slug: 'a', title: 'A', description: null }])
+
+    await expect(fetchAdminCourses()).rejects.toThrow()
+  })
+
+  it('fetchAdminCourses từ chối phản hồi không phải mảng', async () => {
+    apiRequestMock.mockResolvedValue({ items: [] })
+
+    await expect(fetchAdminCourses()).rejects.toThrow()
+  })
+
+  it('createCourse gọi POST với đúng nội dung và trả khóa vừa tạo', async () => {
+    apiRequestMock.mockResolvedValue(COURSE_JSON)
+
+    await expect(createCourse(COURSE_INPUT)).resolves.toEqual(COURSE_JSON)
+
+    expect(apiRequestMock).toHaveBeenCalledWith('POST', '/api/admin/courses', COURSE_INPUT)
+  })
+
+  it('updateCourse gọi PUT theo id và trả khóa sau khi sửa', async () => {
+    apiRequestMock.mockResolvedValue(COURSE_JSON)
+
+    await expect(updateCourse(5, COURSE_INPUT)).resolves.toEqual(COURSE_JSON)
+
+    expect(apiRequestMock).toHaveBeenCalledWith('PUT', '/api/admin/courses/5', COURSE_INPUT)
+  })
+
+  it('deleteCourse gọi DELETE theo id', async () => {
+    apiRequestMock.mockResolvedValue(undefined)
+
+    await deleteCourse(5)
+
+    expect(apiRequestMock).toHaveBeenCalledWith('DELETE', '/api/admin/courses/5')
+  })
+
+  it('giữ nguyên ApiError 409 (slug trùng, khóa còn bài) để trang hiện đúng câu của máy chủ', async () => {
+    const conflict = new ApiError(409, 'Slug khóa học đã tồn tại', { detail: 'Slug khóa học đã tồn tại' })
+    apiRequestMock.mockRejectedValue(conflict)
+
+    await expect(createCourse(COURSE_INPUT)).rejects.toBe(conflict)
+  })
+})
+
+describe('bài học (Admin)', () => {
+  it('fetchAdminLessons không lọc: chỉ gửi page và size, trả trang bài không có nội dung', async () => {
+    apiRequestMock.mockResolvedValue({ items: [LESSON_SUMMARY_JSON], page: 0, size: 20, totalItems: 1 })
+
+    const result = await fetchAdminLessons({ courseId: null, status: null, page: 0 })
+
+    expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/admin/lessons?page=0&size=20')
+    expect(result).toEqual({ items: [LESSON_SUMMARY_JSON], page: 0, size: 20, totalItems: 1 })
+  })
+
+  it('fetchAdminLessons gửi courseId, status và trang khi có lọc', async () => {
+    apiRequestMock.mockResolvedValue({ items: [], page: 2, size: 20, totalItems: 0 })
+
+    await fetchAdminLessons({ courseId: 5, status: 'PUBLISHED', page: 2 })
+
+    expect(apiRequestMock).toHaveBeenCalledWith(
+      'GET',
+      `/api/admin/lessons?${new URLSearchParams({ courseId: '5', status: 'PUBLISHED', page: '2', size: '20' })}`,
+    )
+  })
+
+  it('từ chối trạng thái bài lạ', async () => {
+    apiRequestMock.mockResolvedValue({
+      items: [{ ...LESSON_SUMMARY_JSON, status: 'ARCHIVED' }],
+      page: 0,
+      size: 20,
+      totalItems: 1,
+    })
+
+    await expect(fetchAdminLessons({ courseId: null, status: null, page: 0 })).rejects.toThrow()
+  })
+
+  it('fetchAdminLesson gọi GET theo id và trả bài kèm contentMd', async () => {
+    apiRequestMock.mockResolvedValue(LESSON_JSON)
+
+    await expect(fetchAdminLesson(3)).resolves.toEqual(LESSON_JSON)
+
+    expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/admin/lessons/3')
+  })
+
+  it('fetchAdminLesson từ chối bài thiếu contentMd', async () => {
+    apiRequestMock.mockResolvedValue(LESSON_SUMMARY_JSON)
+
+    await expect(fetchAdminLesson(3)).rejects.toThrow()
+  })
+
+  it('createLesson gọi POST với đúng nội dung', async () => {
+    apiRequestMock.mockResolvedValue(LESSON_JSON)
+
+    await expect(createLesson(LESSON_INPUT)).resolves.toEqual(LESSON_JSON)
+
+    expect(apiRequestMock).toHaveBeenCalledWith('POST', '/api/admin/lessons', LESSON_INPUT)
+  })
+
+  it('updateLesson gọi PUT theo id với đúng nội dung', async () => {
+    apiRequestMock.mockResolvedValue(LESSON_JSON)
+
+    await expect(updateLesson(3, LESSON_INPUT)).resolves.toEqual(LESSON_JSON)
+
+    expect(apiRequestMock).toHaveBeenCalledWith('PUT', '/api/admin/lessons/3', LESSON_INPUT)
+  })
+
+  it('setLessonStatus gọi PATCH chỉ với { status } và trả bài sau khi đổi', async () => {
+    apiRequestMock.mockResolvedValue({ ...LESSON_JSON, status: 'PUBLISHED' })
+
+    const result = await setLessonStatus(3, 'PUBLISHED')
+
+    expect(apiRequestMock).toHaveBeenCalledWith('PATCH', '/api/admin/lessons/3/status', { status: 'PUBLISHED' })
+    expect(result.status).toBe('PUBLISHED')
+  })
+
+  it('deleteLesson gọi DELETE theo id', async () => {
+    apiRequestMock.mockResolvedValue(undefined)
+
+    await deleteLesson(3)
+
+    expect(apiRequestMock).toHaveBeenCalledWith('DELETE', '/api/admin/lessons/3')
+  })
+})
+
+describe('ảnh bài học (Admin)', () => {
+  it('fetchLessonImages gọi GET và trả danh sách ảnh', async () => {
+    apiRequestMock.mockResolvedValue([IMAGE_JSON])
+
+    await expect(fetchLessonImages(3)).resolves.toEqual([IMAGE_JSON])
+
+    expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/admin/lessons/3/images')
+  })
+
+  it('uploadLessonImage gửi tệp trong phần tên "file" bằng FormData và trả { id, url }', async () => {
+    apiRequestMock.mockResolvedValue({ id: 7, url: '/api/images/7' })
+    const file = new File(['x'], 'a.png', { type: 'image/png' })
+
+    await expect(uploadLessonImage(3, file)).resolves.toEqual({ id: 7, url: '/api/images/7' })
+
+    const [method, path, body] = apiRequestMock.mock.calls[0]
+    expect(method).toBe('POST')
+    expect(path).toBe('/api/admin/lessons/3/images')
+    expect(body).toBeInstanceOf(FormData)
+    expect((body as FormData).get('file')).toBeInstanceOf(File)
+  })
+
+  it('từ chối phản hồi tải ảnh thiếu url', async () => {
+    apiRequestMock.mockResolvedValue({ id: 7 })
+
+    await expect(uploadLessonImage(3, new File(['x'], 'a.png', { type: 'image/png' }))).rejects.toThrow()
+  })
+
+  it('deleteImage gọi DELETE /api/admin/images/{id}', async () => {
+    apiRequestMock.mockResolvedValue(undefined)
+
+    await deleteImage(7)
+
+    expect(apiRequestMock).toHaveBeenCalledWith('DELETE', '/api/admin/images/7')
   })
 })

@@ -55,6 +55,12 @@ function AccountNav() {
           <Link to="/quan-tri/nguoi-dung" className={LINK}>
             Quản lý người dùng
           </Link>
+          <Link to="/quan-tri/khoa-hoc" className={LINK}>
+            Quản lý khóa học
+          </Link>
+          <Link to="/quan-tri/bai-hoc" className={LINK}>
+            Quản lý bài học
+          </Link>
         </>
       )}
       <button type="button" onClick={handleLogout} className={LINK}>

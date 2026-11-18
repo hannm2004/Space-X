@@ -81,7 +81,7 @@ async function send(
   method: HttpMethod,
   path: string,
   headers: Record<string, string>,
-  body?: string,
+  body?: string | FormData,
 ): Promise<unknown> {
   let response: Response
   try {
@@ -110,14 +110,17 @@ async function xsrfToken(): Promise<string | null> {
 
 // Gọi API của Space-X. Yêu cầu ghi (POST/PUT/PATCH/DELETE) tự gắn header X-XSRF-TOKEN.
 // Trả về nội dung JSON đã đọc (kiểu unknown, nơi gọi phải kiểm tra dạng dữ liệu), hoặc undefined nếu không có nội dung.
+// `data` là FormData (tải tệp) thì gửi nguyên và không đặt Content-Type: trình duyệt tự thêm boundary, đặt tay sẽ hỏng.
 export async function apiRequest(
   method: HttpMethod,
   path: string,
   data?: unknown,
 ): Promise<unknown> {
   const headers: Record<string, string> = { Accept: 'application/json' }
-  let body: string | undefined
-  if (data !== undefined) {
+  let body: string | FormData | undefined
+  if (data instanceof FormData) {
+    body = data
+  } else if (data !== undefined) {
     headers['Content-Type'] = 'application/json'
     body = JSON.stringify(data)
   }
