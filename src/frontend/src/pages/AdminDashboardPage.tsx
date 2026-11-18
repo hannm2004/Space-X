@@ -104,9 +104,15 @@ function DashboardContent() {
         <h2 className="text-lg font-semibold">Bài học theo khóa</h2>
         <CourseTable courses={courses} />
       </section>
-      <p>
+      <p className="flex flex-wrap gap-x-6 gap-y-2">
         <Link to="/quan-tri/nguoi-dung" className={LINK}>
           Quản lý người dùng
+        </Link>
+        <Link to="/quan-tri/khoa-hoc" className={LINK}>
+          Quản lý khóa học
+        </Link>
+        <Link to="/quan-tri/bai-hoc" className={LINK}>
+          Quản lý bài học
         </Link>
       </p>
     </div>

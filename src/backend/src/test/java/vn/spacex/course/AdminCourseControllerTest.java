@@ -13,6 +13,8 @@ import vn.spacex.common.error.GlobalExceptionHandler;
 import vn.spacex.common.security.SecurityConfig;
 import vn.spacex.user.Role;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
@@ -33,6 +35,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @WebMvcTest(AdminCourseController.class)
 @Import({SecurityConfig.class, GlobalExceptionHandler.class})
@@ -260,4 +263,50 @@ class AdminCourseControllerTest {
                 .andExpect(jsonPath("$.detail").value("Không xóa được khóa học còn bài học"));
     }
 
+    // ---- Danh sách khóa cho Admin (GET /api/admin/courses) ----
+
+    @Test
+    void khachXemDanhSachKhoaCuaAdminBi401VaServiceKhongDuocGoi() throws Exception {
+        mockMvc.perform(get("/api/admin/courses"))
+                .andExpect(status().isUnauthorized());
+
+        verify(service, never()).findAll();
+    }
+
+    @Test
+    void hocSinhXemDanhSachKhoaCuaAdminBi403VaServiceKhongDuocGoi() throws Exception {
+        mockMvc.perform(get("/api/admin/courses").with(user(hocSinh())))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
+
+        verify(service, never()).findAll();
+    }
+
+    @Test
+    void adminXemDanhSachKhoaCoDayDuCacTruongKemSortOrder() throws Exception {
+        when(service.findAll()).thenReturn(List.of(
+                khoa(),
+                new AdminCourseResponse(6L, "tin-hoc-11", "Tin học 11", null, 2)));
+
+        mockMvc.perform(get("/api/admin/courses").with(user(admin())))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].id").value(5))
+                .andExpect(jsonPath("$[0].slug").value("tin-hoc-10"))
+                .andExpect(jsonPath("$[0].title").value("Tin học 10"))
+                .andExpect(jsonPath("$[0].description").value("Chương trình lớp 10"))
+                .andExpect(jsonPath("$[0].sortOrder").value(1))
+                .andExpect(jsonPath("$[1].description").doesNotExist())
+                .andExpect(jsonPath("$[1].sortOrder").value(2));
+    }
+
+    @Test
+    void chuaCoKhoaNaoThiTraDanhSachRong() throws Exception {
+        when(service.findAll()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/admin/courses").with(user(admin())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+    }
 }

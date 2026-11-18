@@ -304,3 +304,55 @@ describe('App — thanh điều hướng theo trạng thái đăng nhập', () =
     expect(await screen.findByRole('heading', { level: 1, name: 'Hồ sơ cá nhân' })).not.toBeNull()
   })
 })
+
+describe('App — quản trị nội dung (CP6.4)', () => {
+  const USER = { displayName: 'Nguyễn Văn A', email: 'a@example.com', role: 'LEARNER' as const }
+
+  it('Admin thấy liên kết quản lý khóa học và bài học trên thanh đầu trang', async () => {
+    vi.mocked(fetchCurrentUser).mockResolvedValue({ ...USER, role: 'ADMIN' })
+
+    renderAt('/khong-co-trang-nay')
+
+    const header = await screen.findByRole('banner')
+    expect(
+      (await within(header).findByRole('link', { name: 'Quản lý khóa học' })).getAttribute('href'),
+    ).toBe('/quan-tri/khoa-hoc')
+    expect(within(header).getByRole('link', { name: 'Quản lý bài học' }).getAttribute('href')).toBe(
+      '/quan-tri/bai-hoc',
+    )
+  })
+
+  it('học sinh và khách không thấy các liên kết quản lý nội dung', async () => {
+    vi.mocked(fetchCurrentUser).mockResolvedValue(USER)
+    renderAt('/khong-co-trang-nay')
+    const header = await screen.findByRole('banner')
+    await within(header).findByText('Nguyễn Văn A')
+    expect(within(header).queryByRole('link', { name: 'Quản lý khóa học' })).toBeNull()
+    expect(within(header).queryByRole('link', { name: 'Quản lý bài học' })).toBeNull()
+  })
+
+  // Khách vào trang quản trị bị chuyển sang đăng nhập: chứng tỏ route có tồn tại (không rơi vào trang 404).
+  it('khách vào /quan-tri/khoa-hoc thì được chuyển sang trang đăng nhập', async () => {
+    renderAt('/quan-tri/khoa-hoc')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Đăng nhập' })).not.toBeNull()
+  })
+
+  it('khách vào /quan-tri/bai-hoc thì được chuyển sang trang đăng nhập', async () => {
+    renderAt('/quan-tri/bai-hoc')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Đăng nhập' })).not.toBeNull()
+  })
+
+  it('khách vào /quan-tri/bai-hoc/moi thì được chuyển sang trang đăng nhập', async () => {
+    renderAt('/quan-tri/bai-hoc/moi')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Đăng nhập' })).not.toBeNull()
+  })
+
+  it('khách vào /quan-tri/bai-hoc/3/sua thì được chuyển sang trang đăng nhập', async () => {
+    renderAt('/quan-tri/bai-hoc/3/sua')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Đăng nhập' })).not.toBeNull()
+  })
+})

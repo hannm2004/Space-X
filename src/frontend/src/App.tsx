@@ -1,7 +1,10 @@
 import { Route, Routes } from 'react-router'
 import { AuthProvider } from './AuthContext'
 import Layout from './Layout'
+import AdminCoursesPage from './pages/AdminCoursesPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
+import AdminLessonEditPage from './pages/AdminLessonEditPage'
+import AdminLessonsPage from './pages/AdminLessonsPage'
 import AdminUsersPage from './pages/AdminUsersPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
 import CoursePage from './pages/CoursePage'
@@ -28,6 +31,10 @@ function App() {
           <Route path="doi-mat-khau" element={<ChangePasswordPage />} />
           <Route path="quan-tri" element={<AdminDashboardPage />} />
           <Route path="quan-tri/nguoi-dung" element={<AdminUsersPage />} />
+          <Route path="quan-tri/khoa-hoc" element={<AdminCoursesPage />} />
+          <Route path="quan-tri/bai-hoc" element={<AdminLessonsPage />} />
+          <Route path="quan-tri/bai-hoc/moi" element={<AdminLessonEditPage />} />
+          <Route path="quan-tri/bai-hoc/:lessonId/sua" element={<AdminLessonEditPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

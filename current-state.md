@@ -16,6 +16,25 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-18 — Tuần 6, CP6.4: giao diện Admin nội dung (khóa học, bài học, ảnh)
+- **Nhánh:** `feat/admin-content-ui` (tạo từ `main` sau khi PR #42 và #43 đã gộp). Chưa commit.
+- **Đã làm:**
+  - Backend: thêm `GET /api/admin/courses` (kèm `sortOrder`), vì `PUT` khóa bắt buộc `sortOrder` mà API công khai không trả; người dùng chọn phương án này. Ghi vào `docs/API.md`.
+  - `client.ts`: `apiRequest` nhận `FormData` (tải ảnh), không tự đặt `Content-Type`.
+  - `adminApi.ts`: hàm gọi API khóa học, bài học (lọc, đăng/ẩn), ảnh; mọi phản hồi được kiểm dạng.
+  - Trang mới: `/quan-tri/khoa-hoc` (thêm, sửa, xóa có xác nhận), `/quan-tri/bai-hoc` (lọc theo khóa và trạng thái, phân trang, đăng/ẩn, xóa có xác nhận), `/quan-tri/bai-hoc/moi` và `/quan-tri/bai-hoc/:id/sua` (soạn Markdown, xem trước, đăng/ẩn, tải/chèn/xóa ảnh). Dùng chung `AdminGate` (cổng quyền) và `adminUi.ts` (chuỗi class). Menu Admin và Dashboard có thêm liên kết.
+- **Kiểm tra:**
+  - Test viết trước (RED), rồi code (GREEN). Frontend `npx vitest run`: 30 file, **439 test qua** (trước đó 351); `npx tsc -b`, `npm run lint`, `npm run build` sạch. Lệnh đếm frontend = 439.
+  - Backend: nhóm `AdminCourse*` **59 test qua** (gồm 16 test tích hợp MySQL thật). Lệnh đếm backend ra 553.
+  - Backend chạy đủ hai đợt sau khi cài lại JDK 21 (bản cũ bị mất khi dời sang `D:\Dev\Java`): 390 test không cần Docker qua và 163 test tích hợp MySQL thật qua, tổng 553, khớp lệnh đếm.
+  - Thử trên Chrome với backend và MySQL ở máy (Claude điều khiển trình duyệt theo yêu cầu của người dùng): Admin tạo, sửa, xóa khóa; soạn, xem trước, đăng, ẩn, xóa bài; tải ảnh hợp lệ (201) và chặn file sai loại hoặc quá 1 MB ngay ở trình duyệt; khóa còn bài bị từ chối xóa (409); học sinh bị chặn cả ở giao diện lẫn API (403); 4 trang không tràn ngang ở 375 px, giao diện tối đọc rõ. Dữ liệu thử đã xóa, 3 khóa thật còn nguyên; còn lại tài khoản học sinh thử `ktra-cp64@example.test` trong MySQL ở máy.
+  - **Chưa kiểm:** người dùng tự thử trên Chrome; giao diện sáng ở 375 px; production.
+- **Lỗi gặp và cách sửa:**
+  - Lần đầu dùng `it.each` trong `App.test.tsx`, trái quy ước đếm test; đổi thành bốn `it` riêng.
+  - Hai test dùng `USER` khai báo ở `describe` khác; khai báo lại trong khối mới.
+- **Học được:** form sửa cần đủ dữ liệu hiện tại: thiếu một trường mà `PUT` bắt buộc thì phải bổ sung API, không đoán giá trị.
+- **Tiếp theo:** thử tay trên Chrome (tạo khóa, tạo bài, tải ảnh, đăng/ẩn, xóa); chạy đủ `.\mvnw test` khi máy đủ RAM; commit, mở PR.
+
 ## 2026-11-17 — Tuần 6, CP6.3 (phần còn lại): trang Hồ sơ và nút Google ở trang đăng ký
 - **Nhánh:** `feat/profile-ui` (tạo từ `main` sau khi PR #40 và #41 đã gộp).
 - **Đã làm:**

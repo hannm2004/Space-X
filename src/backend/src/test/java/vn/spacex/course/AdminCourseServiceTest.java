@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import vn.spacex.lesson.LessonRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -170,5 +171,25 @@ class AdminCourseServiceTest {
 
         assertThatThrownBy(() -> service.delete(5L))
                 .isInstanceOf(CourseHasLessonsException.class);
+    }
+
+    @Test
+    void danhSachKhoaTraVeDungThuTuCuaRepositoryKemSortOrder() {
+        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(
+                Course.create("tin-hoc-10", "Tin học 10", "Lớp 10", 1),
+                Course.create("tin-hoc-11", "Tin học 11", null, 2)));
+
+        List<AdminCourseResponse> ketQua = service.findAll();
+
+        assertThat(ketQua).extracting(AdminCourseResponse::slug).containsExactly("tin-hoc-10", "tin-hoc-11");
+        assertThat(ketQua).extracting(AdminCourseResponse::sortOrder).containsExactly(1, 2);
+        assertThat(ketQua.get(1).description()).isNull();
+    }
+
+    @Test
+    void chuaCoKhoaNaoThiDanhSachRong() {
+        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of());
+
+        assertThat(service.findAll()).isEmpty();
     }
 }
