@@ -210,6 +210,7 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
 | GET | `/api/admin/dashboard` | Số người dùng (tổng, mới trong 7 ngày), số bài theo trạng thái và theo khóa, số học sinh đang học, số lượt hoàn thành bài |
+| GET | `/api/admin/courses` | Danh sách khóa cho trang quản trị, sắp theo `sortOrder` rồi `id`. Mỗi khóa: `id`, `slug`, `title`, `description` (`null` nếu để trống), `sortOrder`. Khác `GET /api/courses` (công khai, không có `sortOrder`). Chưa có khóa nào → `[]`. Xem "Khóa học (Admin)" bên dưới |
 | POST | `/api/admin/courses` | Tạo khóa. `201` kèm khóa vừa tạo; `400` dữ liệu sai (kèm `errors`); `409` slug trùng. Xem "Khóa học (Admin)" bên dưới |
 | PUT | `/api/admin/courses/{id}` | Sửa khóa. `200`; `400`; `404` không có khóa; `409` slug trùng với khóa khác |
 | DELETE | `/api/admin/courses/{id}` | Xóa khóa. `204`; `404`; `409` khóa còn bài (kể cả bài Nháp) |
@@ -243,7 +244,9 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 - `lessons`: đếm cả bài Nháp. `courses`: mỗi khóa một dòng theo thứ tự hiển thị (`sort_order`, rồi `id`), kể cả khóa chưa có bài (hai số bằng 0).
 - `learning.activeLearners`: số **học sinh** (`LEARNER`) có ít nhất một dòng tiến độ, tức đã mở hoặc đã hoàn thành một bài. `learning.completedLessons`: số dòng tiến độ `COMPLETED` của học sinh. Quản trị viên đọc thử bài không được tính.
 
-### Khóa học (Admin) — `POST`, `PUT /api/admin/courses`
+### Khóa học (Admin) — `GET`, `POST`, `PUT`, `DELETE /api/admin/courses`
+
+`GET /api/admin/courses` trả mảng khóa (`id`, `slug`, `title`, `description`, `sortOrder`) sắp theo `sortOrder` rồi `id`. Có endpoint riêng vì `GET /api/courses` (công khai) không có `sortOrder` mà form sửa khóa cần giá trị hiện tại. Khách → `401`, học sinh → `403`. Mục dưới mô tả thân của `POST` và `PUT`:
 
 ```json
 { "slug": "tin-hoc-10", "title": "Tin học 10", "description": "Chương trình lớp 10", "sortOrder": 1 }

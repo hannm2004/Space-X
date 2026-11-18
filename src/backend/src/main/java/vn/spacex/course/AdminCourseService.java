@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.spacex.lesson.LessonRepository;
 
+import java.util.List;
+
 @Service
 public class AdminCourseService {
 
@@ -14,6 +16,14 @@ public class AdminCourseService {
     public AdminCourseService(CourseRepository courseRepository, LessonRepository lessonRepository) {
         this.courseRepository = courseRepository;
         this.lessonRepository = lessonRepository;
+    }
+
+    // Khác GET /api/courses (công khai, không có sortOrder): form sửa khóa cần giá trị sortOrder hiện tại.
+    @Transactional(readOnly = true)
+    public List<AdminCourseResponse> findAll() {
+        return courseRepository.findAllByOrderBySortOrderAscIdAsc().stream()
+                .map(AdminCourseResponse::from)
+                .toList();
     }
 
     @Transactional

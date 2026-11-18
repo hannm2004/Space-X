@@ -314,4 +314,31 @@ class AdminCourseIntegrationTest {
         mockMvc.perform(delete("/api/admin/courses/999999").cookie(session).with(csrf()))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void adminXemDanhSachKhoaTheoSortOrderKemSortOrderCuaTungKhoa() throws Exception {
+        themKhoa("khoa-c", 3);
+        themKhoa("khoa-a", 1);
+        themKhoa("khoa-b", 2);
+        Cookie session = dangNhapAdmin();
+
+        mockMvc.perform(get("/api/admin/courses").cookie(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[0].slug").value("khoa-a"))
+                .andExpect(jsonPath("$[0].sortOrder").value(1))
+                .andExpect(jsonPath("$[1].slug").value("khoa-b"))
+                .andExpect(jsonPath("$[2].slug").value("khoa-c"))
+                .andExpect(jsonPath("$[2].sortOrder").value(3));
+    }
+
+    @Test
+    void khachVaHocSinhKhongXemDuocDanhSachKhoaCuaAdmin() throws Exception {
+        themKhoa("khoa-a", 1);
+
+        mockMvc.perform(get("/api/admin/courses"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/admin/courses").cookie(dangNhapHocSinh()))
+                .andExpect(status().isForbidden());
+    }
 }
