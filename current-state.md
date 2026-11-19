@@ -16,6 +16,21 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-19 — Tuần 6, CP6.5: thử Google thật trên production, đồng bộ tài liệu
+- **Nhánh:** `feat/google-production` (tạo từ `main` ở `3530c52`, sau khi PR #44 gộp). Chỉ sửa tài liệu, không đổi mã. Chưa commit.
+- **Đã làm:** kiểm cấu hình Google trên Render bằng lệnh gọi đọc; người dùng tự đăng nhập Google thật trên production; đồng bộ `README.md` (trạng thái, các dòng Google/Hồ sơ/Dashboard/Admin, Tuần 6 từ `Planned` sang `Done`), `docs/TESTING.md` (mục "Kiểm Google trên production (CP6.5)"), `docs/PLAN.md`.
+- **Đăng nhập Google thật trên production (người dùng thử, có ảnh chụp):** thành công và về trang chủ; `/ho-so` hiện "Học sinh", "Đăng nhập bằng: Google", không có Đổi mật khẩu; F5 vẫn đăng nhập; cookie `SESSION` (`HttpOnly`, `Secure`, `SameSite=Lax`) và `XSRF-TOKEN` (`Secure`). Như vậy secret đặt trên Render đúng. Email của tài khoản thử không ghi vào repo.
+- **Kiểm tra:**
+  - Frontend: `npx vitest run` 30 file, **439 test qua**; `npx tsc -b` và `npm run lint` không báo gì. Lệnh đếm của `docs/TESTING.md`: backend **553**, frontend **439**, khớp bảng "Tổng quan" và lần chạy backend đủ ngày 2026-11-18 (390 + 163, mã nguồn không đổi từ đó nên không chạy lại; máy chỉ còn khoảng 1 GB RAM trống).
+  - Production `https://space-x-47f1.onrender.com`: `GET /api/health` 200. `GET /oauth2/authorization/google` trả 302 sang `accounts.google.com` với `redirect_uri=https://space-x-47f1.onrender.com/login/oauth2/code/google` (đúng `https`), kèm `state` và PKCE (`S256`). Vậy `GOOGLE_CLIENT_ID` đã có trên Render.
+  - Google chấp nhận redirect URI đó: gọi thẳng địa chỉ xác thực của Google với URI production và với `http://localhost:8080/...` đều được chuyển tới trang đăng nhập (`/v3/signin/identifier`), còn URI giả (đối chứng) bị chuyển tới `/signin/oauth/error`. Nghĩa là không có `redirect_uri_mismatch`.
+  - `GOOGLE_CLIENT_ID` và `GOOGLE_CLIENT_SECRET` trong `.env` ở máy là cặp hợp lệ (người dùng cho phép đọc `.env`): gửi mã giả tới `https://oauth2.googleapis.com/token` thì Google trả `invalid_grant` ("Malformed auth code"), còn secret giả (đối chứng) trả `invalid_client`. Giá trị không in ra màn hình hay ghi vào file.
+  - **Thử tay bổ sung trên production (người dùng tự làm, báo đạt cả 5 mục, chưa ghi chi tiết từng bước):** các trang Admin (Dashboard, khóa học, bài học, tạo/đăng/ảnh/xóa bài thử); Admin khóa tài khoản Google → bị đăng xuất, đăng nhập lại về `loi=google-bi-khoa`, mở khóa vào lại được; đăng nhập lại không tạo thêm dòng; email trùng tài khoản mật khẩu → `loi=google-email-mat-khau`; điện thoại thật.
+  - **Chưa kiểm trên production:** hủy ở màn hình xin quyền của Google (chỉ có test tự động). Còn thêm một tài khoản email-mật khẩu thử trong database production (không có API xóa người dùng). `.env` không có tài khoản Google nào và mình không tự đăng nhập vào tài khoản Google của người dùng, nên lần đăng nhập thật do người dùng làm.
+- **Lỗi gặp và cách sửa:** `README.md` còn ghi Tuần 6, Dashboard, Google ở trạng thái `Planned` và "chưa có giao diện quản lý khóa học" dù đã gộp từ PR #39 đến #44; đã sửa.
+- **Học được:** có thể kiểm redirect URI ở Google mà không cần đăng nhập, bằng cách so phản hồi với một URI giả; lỗi sai URI hiện ra trước bước nhập tài khoản. Gửi mã giả tới endpoint token của Google phân biệt được secret đúng (`invalid_grant`) với secret sai (`invalid_client`).
+- **Tiếp theo:** quét bí mật và email trước khi commit; commit, mở PR, chờ CI xanh rồi gộp; sau đó nội dung bảo vệ Tuần 6 và sang Tuần 7 (chia đoạn, truy xuất, chatbot RAG).
+
 ## 2026-11-18 — Tuần 6, CP6.4: giao diện Admin nội dung (khóa học, bài học, ảnh)
 - **Nhánh:** `feat/admin-content-ui` (tạo từ `main` sau khi PR #42 và #43 đã gộp). Chưa commit.
 - **Đã làm:**
