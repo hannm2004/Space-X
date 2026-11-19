@@ -20,6 +20,24 @@ function saveTheme(theme: Theme): void {
   }
 }
 
+// Biểu tượng vẽ bằng SVG (đường nét như kính lúp ở thanh đầu trang), không dùng emoji vì emoji hiện khác nhau tùy hệ điều hành.
+function SunIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-5 w-5">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </svg>
+  )
+}
+
+function MoonIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+    </svg>
+  )
+}
+
 export default function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>(() =>
     resolveInitialTheme(
@@ -38,14 +56,8 @@ export default function ThemeToggle() {
   const label = theme === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      aria-label={label}
-      title={label}
-      className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
-    >
-      <span aria-hidden="true">{theme === 'dark' ? '☀️' : '🌙'}</span>
+    <button type="button" onClick={handleClick} aria-label={label} title={label} className="btn-icon">
+      {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
     </button>
   )
 }

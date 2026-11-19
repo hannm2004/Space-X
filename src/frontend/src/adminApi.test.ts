@@ -4,6 +4,8 @@ import {
   createLesson,
   deleteCourse,
   deleteImage,
+  setImageCover,
+  clearImageCover,
   deleteLesson,
   fetchAdminCourses,
   fetchAdminDashboard,
@@ -248,7 +250,14 @@ const LESSON_INPUT = {
   contentMd: '# Máy tính',
   sortOrder: 1,
 }
-const IMAGE_JSON = { id: 7, fileName: 'a.png', contentType: 'image/png', sizeBytes: 123, url: '/api/images/7' }
+const IMAGE_JSON = {
+  id: 7,
+  fileName: 'a.png',
+  contentType: 'image/png',
+  sizeBytes: 123,
+  url: '/api/images/7',
+  cover: false,
+}
 
 describe('khóa học (Admin)', () => {
   it('fetchAdminCourses gọi GET /api/admin/courses và trả danh sách có sortOrder', async () => {
@@ -418,5 +427,31 @@ describe('ảnh bài học (Admin)', () => {
     await deleteImage(7)
 
     expect(apiRequestMock).toHaveBeenCalledWith('DELETE', '/api/admin/images/7')
+  })
+})
+
+describe('ảnh bìa (Admin)', () => {
+  it('fetchLessonImages trả cờ ảnh bìa', async () => {
+    apiRequestMock.mockResolvedValue([{ ...IMAGE_JSON, cover: true }, IMAGE_JSON])
+
+    const images = await fetchLessonImages(3)
+
+    expect(images.map((image) => image.cover)).toEqual([true, false])
+  })
+
+  it('setImageCover gọi PUT /api/admin/images/{id}/cover', async () => {
+    apiRequestMock.mockResolvedValue(undefined)
+
+    await setImageCover(7)
+
+    expect(apiRequestMock).toHaveBeenCalledWith('PUT', '/api/admin/images/7/cover')
+  })
+
+  it('clearImageCover gọi DELETE /api/admin/images/{id}/cover', async () => {
+    apiRequestMock.mockResolvedValue(undefined)
+
+    await clearImageCover(7)
+
+    expect(apiRequestMock).toHaveBeenCalledWith('DELETE', '/api/admin/images/7/cover')
   })
 })

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../client'
@@ -52,7 +52,7 @@ describe('HomePage', () => {
 
     renderHome()
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Học Tin học 10, 11, 12' })).not.toBeNull()
+    expect(screen.getByRole('heading', { level: 1, name: 'Học Tin học từ lớp 6 đến lớp 12' })).not.toBeNull()
   })
 
   it('hiện "đang tải" trong lúc chờ danh sách khóa', () => {
@@ -169,5 +169,109 @@ describe('HomePage — tiến độ học', () => {
     expect(screen.queryByRole('progressbar')).toBeNull()
     expect(screen.queryByRole('alert')).toBeNull()
     expect(document.body.textContent).not.toContain('SQLException')
+  })
+})
+
+const KHOA_NHIEU_LOP = [
+  { id: 1, slug: 'tin-hoc-6', title: 'Tin học 6', description: 'Mô tả lớp 6' },
+  { id: 2, slug: 'tin-hoc-9', title: 'Tin học 9', description: null },
+  { id: 3, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Mô tả lớp 10' },
+  { id: 4, slug: 'tin-hoc-12', title: 'Tin học 12', description: null },
+]
+
+describe('HomePage — bố cục như trang khóa học thực tế', () => {
+  it('chia khóa học thành hai nhóm THCS và THPT theo số lớp trong slug', async () => {
+    fetchCoursesMock.mockResolvedValue(KHOA_NHIEU_LOP)
+
+    renderHome()
+
+    const thcs = await screen.findByRole('region', { name: /Trung học cơ sở/ })
+    const thpt = screen.getByRole('region', { name: /Trung học phổ thông/ })
+    expect(within(thcs).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual([
+      '/khoa-hoc/tin-hoc-6',
+      '/khoa-hoc/tin-hoc-9',
+    ])
+    expect(within(thpt).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual([
+      '/khoa-hoc/tin-hoc-10',
+      '/khoa-hoc/tin-hoc-12',
+    ])
+  })
+
+  it('khóa có slug không theo dạng tin-hoc-<lớp> vẫn hiện, ở nhóm "Khác"', async () => {
+    fetchCoursesMock.mockResolvedValue([
+      ...KHOA_NHIEU_LOP,
+      { id: 9, slug: 'on-thi-hsg', title: 'Ôn thi HSG', description: null },
+    ])
+
+    renderHome()
+
+    const khac = await screen.findByRole('region', { name: /Khác/ })
+    expect(within(khac).getByRole('link', { name: /Ôn thi HSG/ }).getAttribute('href')).toBe('/khoa-hoc/on-thi-hsg')
+  })
+
+  it('mỗi thẻ khóa có số lớp lớn và nhãn cấp học', async () => {
+    fetchCoursesMock.mockResolvedValue(KHOA_NHIEU_LOP)
+
+    renderHome()
+
+    const the = (await screen.findByRole('link', { name: /Tin học 10/ })) as HTMLElement
+    expect(within(the).getByText('THPT')).not.toBeNull()
+    expect(within(the).getByText('Lớp 10')).not.toBeNull()
+  })
+
+  it('phần mở đầu có nút chọn lớp dẫn thẳng tới từng khóa', async () => {
+    fetchCoursesMock.mockResolvedValue(KHOA_NHIEU_LOP)
+
+    renderHome()
+
+    const nav = await screen.findByRole('navigation', { name: 'Chọn lớp' })
+    expect(within(nav).getByRole('link', { name: 'Lớp 6' }).getAttribute('href')).toBe('/khoa-hoc/tin-hoc-6')
+    expect(within(nav).getByRole('link', { name: 'Lớp 12' }).getAttribute('href')).toBe('/khoa-hoc/tin-hoc-12')
+  })
+
+  it('số khóa học trong phần giới thiệu tính từ dữ liệu thật, không ghi cứng', async () => {
+    fetchCoursesMock.mockResolvedValue(KHOA_NHIEU_LOP)
+
+    renderHome()
+
+    expect(await screen.findByText('4 khóa học')).not.toBeNull()
+  })
+
+  it('có phần "Mỗi bài học có gì" nêu những thứ có thật: kiểm tra nhanh, tiến độ, tìm kiếm', async () => {
+    fetchCoursesMock.mockResolvedValue(KHOA_NHIEU_LOP)
+
+    renderHome()
+
+    const vung = await screen.findByRole('region', { name: 'Mỗi bài học có gì' })
+    expect(within(vung).getByText(/Kiểm tra nhanh/)).not.toBeNull()
+    expect(within(vung).getByText(/tiến độ/i)).not.toBeNull()
+    expect(within(vung).getByText(/Tìm kiếm/)).not.toBeNull()
+  })
+
+  it('có phần câu hỏi thường gặp với đủ sáu câu, mỗi câu mở ra được câu trả lời', async () => {
+    fetchCoursesMock.mockResolvedValue(KHOA_NHIEU_LOP)
+
+    const { container } = renderHome()
+
+    const vung = await screen.findByRole('region', { name: 'Câu hỏi thường gặp' })
+    expect(container.querySelector('#hoi-dap')).not.toBeNull()
+    expect(within(vung).getByText('Học trên Space-X có mất phí không?')).not.toBeNull()
+    expect(within(vung).getByText('Có cần tạo tài khoản không?')).not.toBeNull()
+    expect(within(vung).getByText('Quên mật khẩu thì làm thế nào?')).not.toBeNull()
+    expect(vung.querySelectorAll('details')).toHaveLength(6)
+    expect(within(vung).getByRole('link', { name: 'Chính sách bảo mật' }).getAttribute('href')).toBe(
+      '/chinh-sach-bao-mat',
+    )
+  })
+
+  it('khách thấy lời mời đăng ký miễn phí, người đã đăng nhập thì không', async () => {
+    fetchCoursesMock.mockResolvedValue(KHOA_NHIEU_LOP)
+    const { unmount } = renderHome(ANONYMOUS)
+    expect((await screen.findByRole('link', { name: 'Đăng ký miễn phí' })).getAttribute('href')).toBe('/dang-ky')
+    unmount()
+
+    renderHome(SIGNED_IN)
+    await screen.findByRole('region', { name: /Trung học cơ sở/ })
+    expect(screen.queryByRole('link', { name: 'Đăng ký miễn phí' })).toBeNull()
   })
 })

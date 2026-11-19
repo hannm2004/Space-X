@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router'
 import { ApiError } from './client'
 import { searchLessons, type LessonSummary } from './learningApi'
 
-const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
-
 // Chờ người dùng dừng gõ rồi mới gọi API; từ khóa ngắn hơn 3 ký tự thì API cũng không khớp từ nào (xem D29).
 const DEBOUNCE_MS = 300
 const MIN_QUERY_LENGTH = 3
@@ -192,12 +190,12 @@ function SearchBox({ onClose }: { onClose: CloseHandler }) {
           setActiveIndex(-1)
         }}
         onKeyDown={handleKeyDown}
-        className={`w-44 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 sm:w-64 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 ${FOCUS}`}
+        className="field w-44 py-1.5 text-sm sm:w-64"
       />
       {(options.length > 0 || status !== null) && (
-        <div className="absolute right-0 top-full z-20 mt-2 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-slate-200 bg-white text-sm shadow-lg dark:border-slate-700 dark:bg-slate-900">
+        <div className="absolute right-0 top-full z-20 mt-2 w-[min(20rem,calc(100vw-2rem))] overflow-hidden border border-line-strong bg-surface text-sm">
           {status !== null && (
-            <p role="status" className="px-3 py-2 text-slate-600 dark:text-slate-400">
+            <p role="status" className="px-3 py-2 text-muted">
               {status}
             </p>
           )}
@@ -213,9 +211,7 @@ function SearchBox({ onClose }: { onClose: CloseHandler }) {
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => choose(option)}
                   className={`cursor-pointer px-3 py-2 ${
-                    index === active
-                      ? 'bg-blue-700 text-white'
-                      : 'text-slate-900 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800'
+                    index === active ? 'bg-accent text-on-accent' : 'text-ink hover:bg-sunken'
                   }`}
                 >
                   {option.label}
@@ -258,7 +254,7 @@ export default function HeaderSearch() {
       aria-label="Tìm bài học"
       title="Tìm bài học"
       onClick={() => setOpen(true)}
-      className={`rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 ${FOCUS}`}
+      className="btn-icon"
     >
       <MagnifierIcon />
     </button>

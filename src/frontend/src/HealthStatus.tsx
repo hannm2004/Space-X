@@ -3,6 +3,12 @@ import { fetchHealth } from './api'
 
 type State = { kind: 'loading' } | { kind: 'ok'; status: string } | { kind: 'error' }
 
+// Chấm màu + một dòng chữ: gọn để đặt ở chân trang. Chữ luôn nói rõ trạng thái, màu chỉ là phụ (không dựa vào màu).
+function Dot({ tone }: { tone: 'success' | 'warn' | 'danger' }) {
+  const color = tone === 'success' ? 'bg-success' : tone === 'warn' ? 'bg-warn' : 'bg-danger'
+  return <span aria-hidden="true" className={`inline-block h-2 w-2 rounded-full ${color}`} />
+}
+
 export default function HealthStatus() {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
@@ -27,33 +33,30 @@ export default function HealthStatus() {
   }
 
   return (
-    <div role="status" className="mt-2 text-base">
-      {state.kind === 'loading' && (
-        <p className="text-slate-600 dark:text-slate-400">Đang kiểm tra hệ thống...</p>
-      )}
+    <div role="status" className="text-sm">
+      {state.kind === 'loading' && <p className="text-muted">Đang kiểm tra hệ thống...</p>}
       {state.kind === 'ok' && state.status === 'UP' && (
-        <p className="font-medium text-green-700 dark:text-green-400">
-          Hệ thống hoạt động bình thường
+        <p className="flex items-center gap-2">
+          <Dot tone="success" />
+          <span>Hệ thống hoạt động bình thường</span>
         </p>
       )}
       {state.kind === 'ok' && state.status !== 'UP' && (
-        <p className="font-medium text-amber-700 dark:text-amber-400">
-          Trạng thái hệ thống: {state.status}
+        <p className="flex items-center gap-2">
+          <Dot tone="warn" />
+          <span>Trạng thái hệ thống: {state.status}</span>
         </p>
       )}
       {state.kind === 'error' && (
-        <div>
-          <p className="font-medium text-red-700 dark:text-red-400">
-            Không kết nối được tới máy chủ.
-          </p>
-          <button
-            type="button"
-            onClick={retry}
-            className="mt-2 rounded-lg border border-slate-300 px-3 py-1.5 text-slate-900 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-800"
-          >
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="flex items-center gap-2">
+            <Dot tone="danger" />
+            <span>Không kết nối được tới máy chủ.</span>
+          </span>
+          <button type="button" onClick={retry} className="link">
             Thử lại
           </button>
-        </div>
+        </p>
       )}
     </div>
   )

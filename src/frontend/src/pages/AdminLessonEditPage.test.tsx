@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createLesson,
   deleteImage,
+  setImageCover,
+  clearImageCover,
   fetchAdminCourses,
   fetchAdminLesson,
   fetchLessonImages,
@@ -28,6 +30,8 @@ vi.mock('../adminApi', () => ({
   fetchLessonImages: vi.fn(),
   uploadLessonImage: vi.fn(),
   deleteImage: vi.fn(),
+  setImageCover: vi.fn(),
+  clearImageCover: vi.fn(),
 }))
 vi.mock('../authApi', () => ({
   fetchCurrentUser: vi.fn(),
@@ -45,6 +49,8 @@ const setLessonStatusMock = vi.mocked(setLessonStatus)
 const fetchLessonImagesMock = vi.mocked(fetchLessonImages)
 const uploadLessonImageMock = vi.mocked(uploadLessonImage)
 const deleteImageMock = vi.mocked(deleteImage)
+const setImageCoverMock = vi.mocked(setImageCover)
+const clearImageCoverMock = vi.mocked(clearImageCover)
 const fetchCurrentUserMock = vi.mocked(fetchCurrentUser)
 
 const ADMIN_ME = { displayName: 'Quản trị viên', email: 'admin@example.com', role: 'ADMIN' as const }
@@ -64,7 +70,7 @@ const BAI: AdminLesson = {
   sortOrder: 2,
   contentMd: '# Máy tính\n\nNội dung',
 }
-const ANH: LessonImage = { id: 7, fileName: 'so-do.png', contentType: 'image/png', sizeBytes: 2048, url: '/api/images/7' }
+const ANH: LessonImage = { id: 7, fileName: 'so-do.png', contentType: 'image/png', sizeBytes: 2048, cover: false, url: '/api/images/7' }
 
 function LoginStub() {
   const state = useLocation().state as { from?: string } | null
@@ -426,5 +432,43 @@ describe('AdminLessonEditPage — ảnh bài học', () => {
     fireEvent.click(item.getByRole('button', { name: 'Hủy' }))
 
     expect(deleteImageMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('AdminLessonEditPage — ảnh bìa', () => {
+  it('ảnh chưa là ảnh bìa có nút "Đặt làm ảnh bìa"; bấm thì gọi API rồi tải lại danh sách', async () => {
+    setImageCoverMock.mockResolvedValue(undefined)
+    await openEdit()
+
+    const item = within((await screen.findByText('so-do.png')).closest('li') as HTMLElement)
+    expect(item.queryByText('Ảnh bìa')).toBeNull()
+    fireEvent.click(item.getByRole('button', { name: 'Đặt ảnh so-do.png làm ảnh bìa' }))
+
+    await waitFor(() => expect(setImageCoverMock).toHaveBeenCalledWith(7))
+    await waitFor(() => expect(fetchLessonImagesMock).toHaveBeenCalledTimes(2))
+  })
+
+  it('ảnh đang là ảnh bìa có nhãn "Ảnh bìa" và nút "Bỏ ảnh bìa"; bấm thì gọi API', async () => {
+    fetchLessonImagesMock.mockResolvedValue([{ ...ANH, cover: true }])
+    clearImageCoverMock.mockResolvedValue(undefined)
+    await openEdit()
+
+    const item = within((await screen.findByText('so-do.png')).closest('li') as HTMLElement)
+    expect(item.getByText('Ảnh bìa')).not.toBeNull()
+    expect(item.queryByRole('button', { name: 'Đặt ảnh so-do.png làm ảnh bìa' })).toBeNull()
+    fireEvent.click(item.getByRole('button', { name: 'Bỏ ảnh bìa của so-do.png' }))
+
+    await waitFor(() => expect(clearImageCoverMock).toHaveBeenCalledWith(7))
+  })
+
+  it('đặt ảnh bìa lỗi thì báo câu cố định và không tải lại danh sách', async () => {
+    setImageCoverMock.mockRejectedValue(new Error('x'))
+    await openEdit()
+
+    const item = within((await screen.findByText('so-do.png')).closest('li') as HTMLElement)
+    fireEvent.click(item.getByRole('button', { name: 'Đặt ảnh so-do.png làm ảnh bìa' }))
+
+    expect((await item.findByRole('alert')).textContent).toContain('Không đặt được ảnh bìa')
+    expect(fetchLessonImagesMock).toHaveBeenCalledTimes(1)
   })
 })

@@ -13,44 +13,36 @@ function heading(Tag: 'h2' | 'h3' | 'h4' | 'h5' | 'h6', className: string) {
 }
 
 const components: Components = {
-  h1: heading('h2', 'mt-8 text-2xl font-bold tracking-tight'),
-  h2: heading('h3', 'mt-8 text-xl font-semibold tracking-tight'),
-  h3: heading('h4', 'mt-6 text-lg font-semibold'),
+  h1: heading('h2', 'mt-12 font-serif text-3xl font-bold tracking-tight'),
+  h2: heading('h3', 'mt-10 border-t border-line pt-6 font-serif text-2xl font-bold tracking-tight'),
+  h3: heading('h4', 'mt-8 font-serif text-xl font-bold'),
   h4: heading('h5', 'mt-6 font-semibold'),
   h5: heading('h6', 'mt-4 font-semibold'),
   h6: heading('h6', 'mt-4 font-semibold'),
-  p: ({ children }) => <p className="mt-4 leading-relaxed">{children}</p>,
-  ul: ({ children }) => <ul className="mt-4 list-disc space-y-1 pl-6">{children}</ul>,
-  ol: ({ children }) => <ol className="mt-4 list-decimal space-y-1 pl-6">{children}</ol>,
+  p: ({ children }) => <p className="mt-4 leading-[1.75]">{children}</p>,
+  ul: ({ children }) => <ul className="mt-4 list-disc space-y-1.5 pl-6 marker:text-accent">{children}</ul>,
+  ol: ({ children }) => <ol className="mt-4 list-decimal space-y-1.5 pl-6 marker:font-semibold marker:text-accent">{children}</ol>,
   blockquote: ({ children }) => (
-    <blockquote className="mt-4 border-l-4 border-slate-300 pl-4 text-slate-600 dark:border-slate-600 dark:text-slate-400">
-      {children}
-    </blockquote>
+    <blockquote className="mt-6 border-l-4 border-accent bg-sunken px-5 py-1 text-muted">{children}</blockquote>
   ),
   pre: ({ children }) => (
-    <pre className="mt-4 overflow-x-auto rounded-lg bg-slate-100 p-4 text-sm dark:bg-slate-800 [&>code]:bg-transparent [&>code]:p-0">
+    <pre className="mt-5 overflow-x-auto border border-line bg-sunken p-4 text-sm [&>code]:border-0 [&>code]:bg-transparent [&>code]:p-0">
       {children}
     </pre>
   ),
   code: ({ children }) => (
-    <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[0.9em] dark:bg-slate-800">
-      {children}
-    </code>
+    <code className="border border-line bg-sunken px-1 py-0.5 font-mono text-[0.9em]">{children}</code>
   ),
   table: ({ children }) => (
-    <div className="mt-4 overflow-x-auto">
+    <div className="mt-5 overflow-x-auto">
       <table className="w-full border-collapse text-left">{children}</table>
     </div>
   ),
   th: ({ children }) => (
-    <th className="border border-slate-300 bg-slate-100 px-3 py-2 font-semibold dark:border-slate-600 dark:bg-slate-800">
-      {children}
-    </th>
+    <th className="border border-line-strong bg-sunken px-3 py-2 text-sm font-semibold">{children}</th>
   ),
-  td: ({ children }) => (
-    <td className="border border-slate-300 px-3 py-2 dark:border-slate-600">{children}</td>
-  ),
-  hr: () => <hr className="my-8 border-slate-200 dark:border-slate-700" />,
+  td: ({ children }) => <td className="border border-line-strong px-3 py-2">{children}</td>,
+  hr: () => <hr className="my-10 border-line" />,
   a: ({ href, children }) => {
     // react-markdown đã bỏ địa chỉ javascript:/data:, khi đó href rỗng và chỉ giữ chữ.
     if (!href) return <span>{children}</span>
@@ -59,7 +51,7 @@ const components: Components = {
       <a
         href={href}
         {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-        className="text-blue-700 underline hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+        className="link"
       >
         {children}
       </a>
@@ -67,9 +59,9 @@ const components: Components = {
   },
   img: ({ src, alt }) => {
     if (typeof src === 'string' && OWN_IMAGE.test(src)) {
-      return <img src={src} alt={alt ?? ''} loading="lazy" className="mt-4 h-auto max-w-full rounded-lg" />
+      return <img src={src} alt={alt ?? ''} loading="lazy" className="mt-5 h-auto max-w-full border border-line" />
     }
-    return <span className="italic text-slate-600 dark:text-slate-400">{alt}</span>
+    return <span className="italic text-muted">{alt}</span>
   },
 }
 

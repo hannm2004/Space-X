@@ -36,7 +36,7 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
 
   if (state.status === 'loading') {
-    return <p className="text-slate-600 dark:text-slate-400">Đang tải...</p>
+    return <p className="text-muted">Đang tải...</p>
   }
   // Đã đăng nhập (kể cả vừa đăng nhập xong) thì không cần form: quay lại trang đang đọc dở, hoặc về trang chủ.
   if (state.status === 'authenticated') {
@@ -62,17 +62,17 @@ export default function LoginPage() {
   }
 
   return (
-    <>
-      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Đăng nhập</h1>
+    <div className="mx-auto max-w-md border border-line bg-surface p-6 sm:p-8">
+      <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Đăng nhập</h1>
       {justRegistered(location.state) && (
         <p
           role="status"
-          className="mt-4 rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
+          className="mt-4 border-l-4 border-success bg-success-soft px-4 py-3 text-success"
         >
           Đăng ký thành công. Hãy đăng nhập để bắt đầu học.
         </p>
       )}
-      <form noValidate onSubmit={handleSubmit} className="mt-6 max-w-md space-y-4">
+      <form noValidate onSubmit={handleSubmit} className="mt-6 space-y-4">
         <ErrorAlert messages={messages} />
         <TextField id="email" label="Email" type="email" value={email} onChange={setEmail} autoComplete="username" />
         <TextField
@@ -86,12 +86,12 @@ export default function LoginPage() {
         <SubmitButton pending={submitting} label="Đăng nhập" pendingLabel="Đang đăng nhập..." />
       </form>
       <GoogleSignIn label="Đăng nhập bằng Google" />
-      <p className="mt-6 text-slate-600 dark:text-slate-400">
+      <p className="mt-6 text-muted">
         Chưa có tài khoản?{' '}
-        <Link to="/dang-ky" className="text-blue-700 underline dark:text-blue-400">
+        <Link to="/dang-ky" className="link">
           Đăng ký
         </Link>
       </p>
-    </>
+    </div>
   )
 }

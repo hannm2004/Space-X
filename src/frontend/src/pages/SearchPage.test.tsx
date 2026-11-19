@@ -221,3 +221,23 @@ describe('SearchPage — phân trang', () => {
     expect(searchLessonsMock).toHaveBeenLastCalledWith('mang', 1)
   })
 })
+
+describe('SearchPage — ảnh bìa bài học', () => {
+  it('kết quả có ảnh bìa thì hiện ảnh nhỏ, kết quả không có thì không', async () => {
+    searchLessonsMock.mockResolvedValue(
+      resultPage({
+        items: [
+          { id: 1, slug: 'a', title: 'Bài A', summary: null, coverImageUrl: '/api/images/5' },
+          { id: 2, slug: 'b', title: 'Bài B', summary: null, coverImageUrl: null },
+        ],
+        totalItems: 2,
+      }),
+    )
+
+    const { container } = renderSearch()
+
+    await screen.findByText('Bài A')
+    expect(container.querySelectorAll('img')).toHaveLength(1)
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('/api/images/5')
+  })
+})

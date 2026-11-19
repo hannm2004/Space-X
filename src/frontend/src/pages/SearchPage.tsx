@@ -1,11 +1,12 @@
 import { Link, useLocation, useSearchParams } from 'react-router'
 import { ApiError } from '../client'
+import LessonThumb from '../LessonThumb'
 import LoadError from '../LoadError'
 import { searchLessons } from '../learningApi'
 import SearchForm from '../SearchForm'
 import { useLoad } from '../useLoad'
 
-const LINK = 'text-blue-700 underline dark:text-blue-400'
+const LINK = 'btn btn-secondary btn-sm'
 
 // Chỉ nhận số nguyên không âm; chữ, số âm hay số thập phân coi như trang 0.
 function parsePage(raw: string | null): number {
@@ -21,7 +22,7 @@ function SearchResults({ query, page }: { query: string; page: number }) {
   const { state, reload } = useLoad(() => searchLessons(query, page), `${page}:${query}`)
 
   if (state.kind === 'loading') {
-    return <p className="mt-6 text-slate-600 dark:text-slate-400">Đang tìm...</p>
+    return <p className="mt-6 text-muted">Đang tìm...</p>
   }
 
   if (state.kind === 'error') {
@@ -32,7 +33,7 @@ function SearchResults({ query, page }: { query: string; page: number }) {
           <Link
             to="/dang-nhap"
             state={{ from: location.pathname + location.search }}
-            className="mt-4 inline-block rounded-lg bg-blue-700 px-4 py-2 font-medium text-white hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            className="btn btn-primary mt-4"
           >
             Đăng nhập
           </Link>
@@ -47,7 +48,7 @@ function SearchResults({ query, page }: { query: string; page: number }) {
     return (
       <>
         <p className="mt-6 text-lg">{`Không tìm thấy bài phù hợp với “${query}”.`}</p>
-        <p className="mt-2 text-slate-600 dark:text-slate-400">
+        <p className="mt-2 text-muted">
           Gợi ý: dùng từ khóa có ít nhất 3 ký tự hoặc ít từ hơn.
         </p>
       </>
@@ -68,24 +69,27 @@ function SearchResults({ query, page }: { query: string; page: number }) {
   const totalPages = Math.ceil(result.totalItems / result.size)
   return (
     <>
-      <p className="mt-6 text-slate-600 dark:text-slate-400">{`Tìm thấy ${result.totalItems} bài`}</p>
-      <ul className="mt-4 space-y-3">
+      <p className="mt-6 text-muted">{`Tìm thấy ${result.totalItems} bài`}</p>
+      <ul className="mt-4 divide-y divide-line border-y border-line">
         {result.items.map((lesson) => (
           <li key={lesson.id}>
             <Link
               to={`/bai/${encodeURIComponent(lesson.slug)}`}
-              className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-blue-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-400"
+              className="group flex items-center gap-4 px-2 py-4 hover:bg-sunken"
             >
-              <span className="block text-lg font-semibold">{lesson.title}</span>
-              {lesson.summary && (
-                <span className="mt-1 block text-sm text-slate-600 dark:text-slate-400">{lesson.summary}</span>
-              )}
+              <span className="min-w-0 flex-1">
+                <span className="block font-serif text-xl font-bold group-hover:underline group-hover:underline-offset-4">
+                  {lesson.title}
+                </span>
+                {lesson.summary && <span className="mt-1 block text-sm text-muted">{lesson.summary}</span>}
+              </span>
+              <LessonThumb url={lesson.coverImageUrl} />
             </Link>
           </li>
         ))}
       </ul>
       {totalPages > 1 && (
-        <nav aria-label="Phân trang" className="mt-6 flex items-center gap-4">
+        <nav aria-label="Phân trang" className="mt-6 flex items-center gap-4 text-sm">
           {result.page > 0 && (
             <Link to={pageHref(query, result.page - 1)} className={LINK}>
               Trang trước
@@ -109,17 +113,17 @@ export default function SearchPage() {
   const page = parsePage(params.get('page'))
 
   return (
-    <>
-      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Tìm bài học</h1>
+    <div className="max-w-3xl">
+      <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Tìm bài học</h1>
       <div className="mt-6">
         {/* key theo từ khóa để ô nhập đồng bộ lại khi từ khóa trong địa chỉ đổi */}
         <SearchForm key={query} initialQuery={query} />
       </div>
       {query === '' ? (
-        <p className="mt-6 text-slate-600 dark:text-slate-400">Nhập từ khóa để tìm bài học.</p>
+        <p className="mt-6 text-muted">Nhập từ khóa để tìm bài học.</p>
       ) : (
         <SearchResults query={query} page={page} />
       )}
-    </>
+    </div>
   )
 }

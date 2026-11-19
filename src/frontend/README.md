@@ -20,12 +20,13 @@ npm run build      # tsc -b rồi vite build, kết quả ở dist/
 
 | Nhóm | File chính |
 |---|---|
-| Khung và định tuyến | `main.tsx`, `App.tsx` (các route), `Layout.tsx` (thanh đầu trang), `pages/` (mỗi trang một file) |
+| Khung và định tuyến | `main.tsx`, `App.tsx` (các route), `Layout.tsx` (đầu trang: thương hiệu, điều hướng chính gồm Khóa học và Hỏi đáp, tìm kiếm, đổi giao diện, tài khoản; chân trang nhiều cột: khóa theo cấp học, hỗ trợ, pháp lý, trạng thái hệ thống), `pages/PolicyPages.tsx` (Chính sách bảo mật, Điều khoản sử dụng, Bản quyền), `courseGroups.ts` (chia khóa theo cấp THCS/THPT từ slug `tin-hoc-<lớp>`), `links.ts` (địa chỉ nhận góp ý), `AdminLayout.tsx` (thanh mục riêng của khu quản trị, chỉ hiện với Admin), `pages/` (mỗi trang một file) |
 | Gọi API | `client.ts` (tự gắn `X-XSRF-TOKEN` cho `POST/PUT/PATCH/DELETE`, đổi lỗi `problem+json` thành `ApiError`), `authApi.ts`, `learningApi.ts`, `adminApi.ts`, `parse.ts` (kiểm dạng dữ liệu nhận từ máy chủ) |
 | Đăng nhập | `AuthContext.tsx`, `useAuth.ts`, `authRedirect.ts` (chỉ nhận đường dẫn nội bộ), `formErrors.ts` |
 | Đọc bài | `MarkdownContent.tsx` (không cho HTML thô, chỉ ảnh `/api/images/{id}`), `HeaderSearch.tsx`, `SearchForm.tsx` |
 | Tiến độ học | `ProgressBar.tsx`, `LessonProgressControl.tsx`, `CourseProgressPanel.tsx`, `useMyProgress.ts` |
 | Giao diện sáng/tối | `theme.ts` (hàm thuần), `ThemeToggle.tsx`, script chống nháy màu trong `index.html` |
+| Hệ thiết kế | `index.css`: màu theo vai trò (`bg-paper`, `bg-surface`, `bg-sunken`, `text-ink`, `text-muted`, `border-line`, `bg-accent`, `text-danger`, `text-success`...) khai báo bằng `@theme`, giá trị chế độ tối đổi ở khối `.dark` nên thành phần không cần `dark:`; lớp dùng lại `btn btn-primary/secondary/danger`, `btn-sm`, `btn-icon`, `field`, `link`, `eyebrow`; tiêu đề dùng `font-serif`. Không dùng màu mặc định của Tailwind (`slate-*`, `blue-*`...) trong thành phần. |
 
 Phần lớn file `X.ts(x)` có `X.test.ts(x)` cạnh nó.
 

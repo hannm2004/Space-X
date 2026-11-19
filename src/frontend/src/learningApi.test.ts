@@ -75,7 +75,7 @@ describe('fetchLessons', () => {
 
     expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/courses/tin-hoc-10/lessons')
     expect(lessons).toHaveLength(2)
-    expect(lessons[1]).toEqual({ id: 2, slug: 'mang-may-tinh', title: 'Mạng máy tính', summary: null })
+    expect(lessons[1]).toEqual({ id: 2, slug: 'mang-may-tinh', title: 'Mạng máy tính', summary: null, coverImageUrl: null })
   })
 
   it('mã hóa slug trong đường dẫn để ký tự lạ không đổi đích của yêu cầu', async () => {
@@ -157,7 +157,10 @@ describe('searchLessons', () => {
       'GET',
       '/api/lessons?q=th%C3%B4ng+tin&page=0&size=20',
     )
-    expect(result).toEqual(PAGE)
+    expect(result).toEqual({
+      ...PAGE,
+      items: [{ ...PAGE.items[0], coverImageUrl: null }],
+    })
   })
 
   it('mã hóa ký tự đặc biệt của từ khóa, không để chen thêm tham số', async () => {
@@ -302,5 +305,32 @@ describe('restartCourse', () => {
     apiRequestMock.mockRejectedValue(new ApiError(404, 'Không tìm thấy khóa học'))
 
     await expect(restartCourse(99)).rejects.toMatchObject({ status: 404 })
+  })
+})
+
+describe('ảnh bìa trong dữ liệu bài', () => {
+  it('fetchLessons giữ đường dẫn ảnh bìa; thiếu trường thì là null (máy chủ bỏ trường null)', async () => {
+    apiRequestMock.mockResolvedValue([
+      { id: 1, slug: 'a', title: 'A', summary: null, coverImageUrl: '/api/images/5' },
+      { id: 2, slug: 'b', title: 'B', summary: null },
+    ])
+
+    const lessons = await fetchLessons('tin-hoc-10')
+
+    expect(lessons.map((lesson) => lesson.coverImageUrl)).toEqual(['/api/images/5', null])
+  })
+
+  it('đường dẫn ảnh bìa không phải chuỗi thì bị từ chối', async () => {
+    apiRequestMock.mockResolvedValue([{ id: 1, slug: 'a', title: 'A', summary: null, coverImageUrl: 5 }])
+
+    await expect(fetchLessons('tin-hoc-10')).rejects.toThrow()
+  })
+
+  it('fetchLesson cũng trả đường dẫn ảnh bìa', async () => {
+    apiRequestMock.mockResolvedValue({
+      id: 1, slug: 'a', title: 'A', summary: null, contentMd: 'x', coverImageUrl: '/api/images/5',
+    })
+
+    expect((await fetchLesson('a')).coverImageUrl).toBe('/api/images/5')
   })
 })

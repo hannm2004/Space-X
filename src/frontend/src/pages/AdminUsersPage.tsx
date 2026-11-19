@@ -9,10 +9,9 @@ import { useAuth } from '../useAuth'
 import { useLoad } from '../useLoad'
 
 const PATH = '/quan-tri/nguoi-dung'
-const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
-const LINK = 'text-blue-700 underline dark:text-blue-400'
-const SECONDARY = `rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-900 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-800 ${FOCUS}`
-const DANGER = `rounded-lg bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60 ${FOCUS}`
+const LINK = 'link'
+const SECONDARY = `btn btn-secondary btn-sm`
+const DANGER = `btn btn-danger btn-sm`
 const NO_PERMISSION = 'Bạn không có quyền truy cập trang này.'
 
 // Chỉ nhận số nguyên không âm; chữ, số âm hay số thập phân coi như trang 0.
@@ -55,11 +54,11 @@ function UserSearchForm({ initialQuery }: { initialQuery: string }) {
         maxLength={100}
         placeholder="Tìm theo email hoặc tên"
         onChange={(event) => setValue(event.target.value)}
-        className={`min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 ${FOCUS}`}
+        className={`min-w-0 flex-1 field w-auto`}
       />
       <button
         type="submit"
-        className={`rounded-lg bg-blue-700 px-4 py-2 font-medium text-white hover:bg-blue-800 ${FOCUS}`}
+        className={`btn btn-primary`}
       >
         Tìm
       </button>
@@ -119,29 +118,29 @@ function UserRow({ initial, isMe }: { initial: AdminUser; isMe: boolean }) {
   const canReset = user.authProvider === 'LOCAL'
 
   return (
-    <li className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <li className="border border-line bg-surface p-4">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="font-semibold">{user.displayName}</span>
-        {isMe && <span className="text-sm text-slate-600 dark:text-slate-400">(bạn)</span>}
-        <span className="rounded bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800">
+        {isMe && <span className="text-sm text-muted">(bạn)</span>}
+        <span className="border border-line bg-sunken px-2 py-0.5 text-xs">
           {user.role === 'ADMIN' ? 'Quản trị viên' : 'Học sinh'}
         </span>
         {user.authProvider === 'GOOGLE' && (
-          <span className="rounded bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800">Google</span>
+          <span className="border border-line bg-sunken px-2 py-0.5 text-xs">Google</span>
         )}
         {/* Trạng thái bằng chữ, không chỉ bằng màu. */}
         <span
           className={
             user.enabled
-              ? 'text-sm font-medium text-green-700 dark:text-green-400'
-              : 'text-sm font-medium text-red-700 dark:text-red-400'
+              ? 'text-sm font-medium text-success'
+              : 'text-sm font-medium text-danger'
           }
         >
           {user.enabled ? 'Đang hoạt động' : 'Đã khóa'}
         </span>
       </div>
-      <p className="mt-1 break-all text-slate-700 dark:text-slate-300">{user.email}</p>
-      {joined && <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{`Tham gia ${joined}`}</p>}
+      <p className="mt-1 break-all text-ink">{user.email}</p>
+      {joined && <p className="mt-1 text-sm text-muted">{`Tham gia ${joined}`}</p>}
 
       {!isMe && confirming === null && (
         <div className="mt-3 flex flex-wrap gap-3">
@@ -179,7 +178,7 @@ function UserRow({ initial, isMe }: { initial: AdminUser; isMe: boolean }) {
       )}
 
       {confirming === 'lock' && (
-        <div className="mt-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+        <div className="mt-3 border border-line bg-surface p-3">
           <p>{`Khóa tài khoản ${user.email}? Người này sẽ không đăng nhập được và bị đăng xuất khỏi mọi thiết bị.`}</p>
           <div className="mt-3 flex gap-3">
             <button type="button" disabled={busy} onClick={() => changeEnabled(false)} className={DANGER}>
@@ -193,7 +192,7 @@ function UserRow({ initial, isMe }: { initial: AdminUser; isMe: boolean }) {
       )}
 
       {confirming === 'reset' && (
-        <div className="mt-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+        <div className="mt-3 border border-line bg-surface p-3">
           <p>
             {`Đặt lại mật khẩu của ${user.email}? Mật khẩu cũ sẽ không dùng được và người này bị đăng xuất khỏi mọi thiết bị.`}
           </p>
@@ -217,7 +216,7 @@ function UserRow({ initial, isMe }: { initial: AdminUser; isMe: boolean }) {
       {temporaryPassword !== null && (
         <div
           role="status"
-          className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-amber-950 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
+          className="mt-3 border-l-4 border-warn bg-sunken p-3 text-ink"
         >
           <p>
             {`Mật khẩu tạm của ${user.email}: `}
@@ -240,12 +239,12 @@ function UserList({ query, page, myEmail }: { query: string; page: number; myEma
   const { state, reload } = useLoad(() => fetchAdminUsers(query, page), `${page}:${query}`)
 
   if (state.kind === 'loading') {
-    return <p className="mt-6 text-slate-600 dark:text-slate-400">Đang tải...</p>
+    return <p className="mt-6 text-muted">Đang tải...</p>
   }
   if (state.kind === 'error') {
     if (state.error instanceof ApiError && state.error.status === 403) {
       return (
-        <p role="alert" className="mt-6 font-medium text-red-700 dark:text-red-400">
+        <p role="alert" className="mt-6 font-medium text-danger">
           {NO_PERMISSION}
         </p>
       )
@@ -273,7 +272,7 @@ function UserList({ query, page, myEmail }: { query: string; page: number; myEma
   const me = myEmail.toLowerCase()
   return (
     <>
-      <p className="mt-6 text-slate-600 dark:text-slate-400">{`Tìm thấy ${result.totalItems} người dùng`}</p>
+      <p className="mt-6 text-muted">{`Tìm thấy ${result.totalItems} người dùng`}</p>
       <ul className="mt-4 space-y-3">
         {result.items.map((user) => (
           <UserRow key={user.id} initial={user} isMe={user.email.toLowerCase() === me} />
@@ -306,14 +305,14 @@ export default function AdminUsersPage() {
   const [params] = useSearchParams()
 
   if (state.status === 'loading') {
-    return <p className="text-slate-600 dark:text-slate-400">Đang tải...</p>
+    return <p className="text-muted">Đang tải...</p>
   }
   if (state.status === 'anonymous') {
     return <Navigate to="/dang-nhap" replace state={{ from: location.pathname + location.search }} />
   }
   if (state.user.role !== 'ADMIN') {
     return (
-      <p role="alert" className="font-medium text-red-700 dark:text-red-400">
+      <p role="alert" className="font-medium text-danger">
         {NO_PERMISSION}
       </p>
     )
@@ -323,7 +322,7 @@ export default function AdminUsersPage() {
   const page = parsePage(params.get('page'))
   return (
     <>
-      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Quản lý người dùng</h1>
+      <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Quản lý người dùng</h1>
       <div className="mt-6">
         {/* key theo từ khóa để ô nhập đồng bộ lại khi từ khóa trong địa chỉ đổi */}
         <UserSearchForm key={query} initialQuery={query} />

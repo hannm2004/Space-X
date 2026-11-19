@@ -2,7 +2,9 @@ import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import {
   createLesson,
+  clearImageCover,
   deleteImage,
+  setImageCover,
   fetchAdminCourses,
   fetchAdminLesson,
   fetchLessonImages,
@@ -16,7 +18,7 @@ import {
   type LessonStatus,
 } from '../adminApi'
 import AdminGate from '../AdminGate'
-import { CARD, DANGER, FOCUS, LINK, NO_PERMISSION, SECONDARY, SUCCESS_BOX } from '../adminUi'
+import { CARD, DANGER, LINK, NO_PERMISSION, SECONDARY, SUCCESS_BOX } from '../adminUi'
 import { ApiError } from '../client'
 import { errorMessages } from '../formErrors'
 import { ErrorAlert, SubmitButton, TextField } from '../FormParts'
@@ -28,7 +30,7 @@ const LIST_PATH = '/quan-tri/bai-hoc'
 const MAX_CONTENT_LENGTH = 100000
 const MAX_IMAGE_BYTES = 1024 * 1024
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp']
-const FIELD = `mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 ${FOCUS}`
+const FIELD = `mt-1 field`
 const STATUS_LABEL: Record<LessonStatus, string> = { DRAFT: 'Nháp', PUBLISHED: 'Đã đăng' }
 
 type FormValues = {
@@ -92,7 +94,7 @@ function appendSnippet(content: string, snippet: string): string {
   return `${content}${content.endsWith('\n') ? '\n' : '\n\n'}${snippet}`
 }
 
-function ImageItem({ image, onInsert, onDeleted }: { image: LessonImage; onInsert: () => void; onDeleted: () => void }) {
+function ImageItem({ image, onInsert, onChanged }: { image: LessonImage; onInsert: () => void; onChanged: () => void }) {
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
   const [messages, setMessages] = useState<string[]>([])
@@ -103,9 +105,24 @@ function ImageItem({ image, onInsert, onDeleted }: { image: LessonImage; onInser
     setMessages([])
     try {
       await deleteImage(image.id)
-      onDeleted()
+      onChanged()
     } catch (error) {
       setMessages(errorMessages(error, 'Không xóa được ảnh. Hãy thử lại.'))
+    }
+    setBusy(false)
+  }
+
+  // Mỗi bài tối đa một ảnh bìa: đặt ảnh này thì máy chủ tự bỏ ảnh bìa cũ. Ảnh bìa hiện ở danh sách bài, kết quả tìm kiếm
+  // và đầu trang bài của người học.
+  async function handleCover(makeCover: boolean) {
+    if (busy) return
+    setBusy(true)
+    setMessages([])
+    try {
+      await (makeCover ? setImageCover(image.id) : clearImageCover(image.id))
+      onChanged()
+    } catch {
+      setMessages([makeCover ? 'Không đặt được ảnh bìa. Hãy thử lại.' : 'Không bỏ được ảnh bìa. Hãy thử lại.'])
     }
     setBusy(false)
   }
@@ -115,8 +132,11 @@ function ImageItem({ image, onInsert, onDeleted }: { image: LessonImage; onInser
       <div className="flex items-center gap-3">
         <img src={image.url} alt="" className="h-12 w-12 shrink-0 rounded object-cover" />
         <div className="min-w-0">
-          <p className="break-all font-medium">{image.fileName}</p>
-          <p className="text-sm text-slate-600 dark:text-slate-400">{formatSize(image.sizeBytes)}</p>
+          <p className="break-all font-medium">
+            {image.fileName}
+            {image.cover && <span className="ml-2 border border-accent px-1.5 py-0.5 align-middle text-xs font-semibold text-accent">Ảnh bìa</span>}
+          </p>
+          <p className="text-sm text-muted">{formatSize(image.sizeBytes)}</p>
         </div>
       </div>
       {!confirming && (
@@ -124,6 +144,27 @@ function ImageItem({ image, onInsert, onDeleted }: { image: LessonImage; onInser
           <button type="button" aria-label={`Chèn ảnh ${image.fileName} vào bài`} onClick={onInsert} className={SECONDARY}>
             Chèn vào bài
           </button>
+          {image.cover ? (
+            <button
+              type="button"
+              disabled={busy}
+              aria-label={`Bỏ ảnh bìa của ${image.fileName}`}
+              onClick={() => handleCover(false)}
+              className={SECONDARY}
+            >
+              Bỏ ảnh bìa
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={busy}
+              aria-label={`Đặt ảnh ${image.fileName} làm ảnh bìa`}
+              onClick={() => handleCover(true)}
+              className={SECONDARY}
+            >
+              Đặt làm ảnh bìa
+            </button>
+          )}
           <button
             type="button"
             aria-label={`Xóa ảnh ${image.fileName}`}
@@ -135,7 +176,7 @@ function ImageItem({ image, onInsert, onDeleted }: { image: LessonImage; onInser
         </div>
       )}
       {confirming && (
-        <div className="mt-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+        <div className="mt-3 border border-line bg-surface p-3">
           <p>Xóa ảnh này? Nếu bài còn chèn ảnh, ảnh sẽ không hiện nữa. Không hoàn tác được.</p>
           <div className="mt-3 flex gap-3">
             <button type="button" disabled={busy} onClick={handleDelete} className={DANGER}>
@@ -185,7 +226,7 @@ function ImagePanel({ lessonId, onInsert }: { lessonId: number; onInsert: (snipp
       setUploading(true)
       try {
         await uploadLessonImage(lessonId, file)
-        setNotice('Đã tải ảnh. Bấm "Chèn vào bài" để thêm ảnh vào nội dung.')
+        setNotice('Đã tải ảnh. Bấm "Chèn vào bài" để thêm ảnh vào nội dung, hoặc "Đặt làm ảnh bìa" để ảnh hiện ở danh sách bài và kết quả tìm kiếm.')
         reload()
       } catch (error) {
         setMessages(errorMessages(error, 'Không tải được ảnh. Hãy thử lại.'))
@@ -197,7 +238,7 @@ function ImagePanel({ lessonId, onInsert }: { lessonId: number; onInsert: (snipp
 
   let list
   if (state.kind === 'loading') {
-    list = <p className="mt-3 text-slate-600 dark:text-slate-400">Đang tải ảnh...</p>
+    list = <p className="mt-3 text-muted">Đang tải ảnh...</p>
   } else if (state.kind === 'error') {
     list = <LoadError message="Không tải được danh sách ảnh." onRetry={reload} />
   } else if (state.data.length === 0) {
@@ -206,7 +247,7 @@ function ImagePanel({ lessonId, onInsert }: { lessonId: number; onInsert: (snipp
     list = (
       <ul className="mt-3 space-y-3">
         {state.data.map((image) => (
-          <ImageItem key={image.id} image={image} onInsert={() => onInsert(imageSnippet(image))} onDeleted={reload} />
+          <ImageItem key={image.id} image={image} onInsert={() => onInsert(imageSnippet(image))} onChanged={reload} />
         ))}
       </ul>
     )
@@ -227,10 +268,10 @@ function ImagePanel({ lessonId, onInsert }: { lessonId: number; onInsert: (snipp
           accept={IMAGE_TYPES.join(',')}
           disabled={uploading}
           onChange={handleFile}
-          className={`mt-1 block w-full text-sm ${FOCUS}`}
+          className={`mt-1 block w-full text-sm`}
         />
       </div>
-      {uploading && <p className="mt-2 text-slate-600 dark:text-slate-400">Đang tải ảnh lên...</p>}
+      {uploading && <p className="mt-2 text-muted">Đang tải ảnh lên...</p>}
       {messages.length > 0 && (
         <div className="mt-3">
           <ErrorAlert messages={messages} />
@@ -302,7 +343,7 @@ function LessonForm({ courses, lesson, flash }: { courses: AdminCourse[]; lesson
 
   return (
     <>
-      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{lesson ? 'Sửa bài học' : 'Thêm bài học'}</h1>
+      <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">{lesson ? 'Sửa bài học' : 'Thêm bài học'}</h1>
       <p className="mt-3">
         <Link to={LIST_PATH} className={LINK}>
           Danh sách bài học
@@ -351,7 +392,7 @@ function LessonForm({ courses, lesson, flash }: { courses: AdminCourse[]; lesson
             ))}
           </select>
           {courses.length === 0 && (
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            <p className="mt-1 text-sm text-muted">
               Chưa có khóa học nào.{' '}
               <Link to="/quan-tri/khoa-hoc" className={LINK}>
                 Tạo khóa học trước
@@ -398,7 +439,7 @@ function LessonForm({ courses, lesson, flash }: { courses: AdminCourse[]; lesson
           {preview ? (
             <section aria-label="Xem trước nội dung" className={`mt-2 ${CARD}`}>
               {values.contentMd.trim() === '' ? (
-                <p className="text-slate-600 dark:text-slate-400">Chưa có nội dung.</p>
+                <p className="text-muted">Chưa có nội dung.</p>
               ) : (
                 <MarkdownContent source={values.contentMd} />
               )}
@@ -432,7 +473,7 @@ function LessonForm({ courses, lesson, flash }: { courses: AdminCourse[]; lesson
           }}
         />
       ) : (
-        <p className="mt-8 text-slate-600 dark:text-slate-400">
+        <p className="mt-8 text-muted">
           Lưu bài trước, rồi mới thêm được ảnh cho bài này.
         </p>
       )}
@@ -447,12 +488,12 @@ function LessonLoader({ id, flash }: { id: number | null; flash: string | null }
   }, `lesson:${id}`)
 
   if (state.kind === 'loading') {
-    return <p className="text-slate-600 dark:text-slate-400">Đang tải...</p>
+    return <p className="text-muted">Đang tải...</p>
   }
   if (state.kind === 'error') {
     if (state.error instanceof ApiError && state.error.status === 403) {
       return (
-        <p role="alert" className="font-medium text-red-700 dark:text-red-400">
+        <p role="alert" className="font-medium text-danger">
           {NO_PERMISSION}
         </p>
       )
