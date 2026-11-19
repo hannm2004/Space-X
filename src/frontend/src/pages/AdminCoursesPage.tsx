@@ -146,10 +146,10 @@ function CourseRow({ course, onChanged }: { course: AdminCourse; onChanged: (mes
         <>
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <span className="font-semibold">{course.title}</span>
-            <code className="text-sm text-slate-600 dark:text-slate-400">{course.slug}</code>
-            <span className="text-sm text-slate-600 dark:text-slate-400">{`Thứ tự ${course.sortOrder}`}</span>
+            <code className="text-sm text-muted">{course.slug}</code>
+            <span className="text-sm text-muted">{`Thứ tự ${course.sortOrder}`}</span>
           </div>
-          {course.description && <p className="mt-1 text-slate-700 dark:text-slate-300">{course.description}</p>}
+          {course.description && <p className="mt-1 text-ink">{course.description}</p>}
           {mode === 'view' && (
             <div className="mt-3 flex flex-wrap gap-3">
               <button
@@ -171,7 +171,7 @@ function CourseRow({ course, onChanged }: { course: AdminCourse; onChanged: (mes
             </div>
           )}
           {mode === 'delete' && (
-            <div className="mt-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+            <div className="mt-3 border border-line bg-surface p-3">
               <p>{`Xóa khóa học "${course.title}"? Chỉ xóa được khi khóa không còn bài học. Việc này không hoàn tác được.`}</p>
               <div className="mt-3 flex gap-3">
                 <button type="button" disabled={busy} onClick={handleDelete} className={DANGER}>
@@ -213,11 +213,11 @@ function CourseManager() {
 
   let list
   if (state.kind === 'loading') {
-    list = <p className="mt-6 text-slate-600 dark:text-slate-400">Đang tải...</p>
+    list = <p className="mt-6 text-muted">Đang tải...</p>
   } else if (state.kind === 'error') {
     list =
       state.error instanceof ApiError && state.error.status === 403 ? (
-        <p role="alert" className="mt-6 font-medium text-red-700 dark:text-red-400">
+        <p role="alert" className="mt-6 font-medium text-danger">
           {NO_PERMISSION}
         </p>
       ) : (
@@ -237,7 +237,7 @@ function CourseManager() {
 
   return (
     <>
-      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Quản lý khóa học</h1>
+      <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Quản lý khóa học</h1>
       <p className="mt-3">
         <Link to="/quan-tri/bai-hoc" className={LINK}>
           Quản lý bài học

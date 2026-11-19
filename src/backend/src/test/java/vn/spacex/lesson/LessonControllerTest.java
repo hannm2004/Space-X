@@ -68,7 +68,8 @@ class LessonControllerTest {
                 new LessonDetailResponse(11L, "may-tinh-la-gi", "Máy tính là gì", "Tóm tắt", "Nội dung"));
 
         mockMvc.perform(get("/api/lessons/may-tinh-la-gi").with(user("hocsinh")))
-                .andExpect(jsonPath("$.*", hasSize(5)))
+                .andExpect(jsonPath("$.*", hasSize(6)))
+                .andExpect(jsonPath("$.coverImageUrl").doesNotExist())
                 .andExpect(jsonPath("$.status").doesNotExist())
                 .andExpect(jsonPath("$.courseId").doesNotExist())
                 .andExpect(jsonPath("$.createdBy").doesNotExist());
@@ -107,7 +108,7 @@ class LessonControllerTest {
                 .andExpect(jsonPath("$.size").value(20))
                 .andExpect(jsonPath("$.totalItems").value(1))
                 .andExpect(jsonPath("$.items", hasSize(1)))
-                .andExpect(jsonPath("$.items[0].*", hasSize(4)))
+                .andExpect(jsonPath("$.items[0].*", hasSize(5)))
                 .andExpect(jsonPath("$.items[0].slug").value("thong-tin-va-du-lieu"))
                 .andExpect(jsonPath("$.items[0].contentMd").doesNotExist())
                 .andExpect(jsonPath("$.items[0].status").doesNotExist());

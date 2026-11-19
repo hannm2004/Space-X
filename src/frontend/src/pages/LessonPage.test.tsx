@@ -158,3 +158,23 @@ describe('LessonPage — quyền đọc và lỗi', () => {
     expect(fetchLessonMock).toHaveBeenCalledTimes(2)
   })
 })
+
+describe('LessonPage — ảnh bìa', () => {
+  it('bài có ảnh bìa thì hiện ảnh bìa dưới tiêu đề', async () => {
+    fetchLessonMock.mockResolvedValue({ ...LESSON, coverImageUrl: '/api/images/5' })
+
+    const { container } = renderLesson()
+
+    await screen.findByRole('heading', { level: 1 })
+    expect(container.querySelector('[data-testid="lesson-cover"]')?.getAttribute('src')).toBe('/api/images/5')
+  })
+
+  it('bài không có ảnh bìa thì không có khung ảnh bìa', async () => {
+    fetchLessonMock.mockResolvedValue(LESSON)
+
+    const { container } = renderLesson()
+
+    await screen.findByRole('heading', { level: 1 })
+    expect(container.querySelector('[data-testid="lesson-cover"]')).toBeNull()
+  })
+})

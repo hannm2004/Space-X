@@ -124,20 +124,12 @@ describe('AdminDashboardPage — số liệu', () => {
     expect(screen.queryByRole('table')).toBeNull()
   })
 
-  it('có liên kết sang trang quản lý người dùng', async () => {
+  // Các liên kết sang trang quản lý nằm ở thanh "Quản trị" chung của khu quản trị (App.test.tsx), không lặp ở đây.
+  it('không lặp lại các liên kết quản lý (đã có ở thanh Quản trị chung)', async () => {
     renderPage()
 
-    const link = await screen.findByRole('link', { name: 'Quản lý người dùng' })
-    expect(link.getAttribute('href')).toBe('/quan-tri/nguoi-dung')
-  })
-
-  it('có liên kết sang trang quản lý khóa học và quản lý bài học', async () => {
-    renderPage()
-
-    expect((await screen.findByRole('link', { name: 'Quản lý khóa học' })).getAttribute('href')).toBe(
-      '/quan-tri/khoa-hoc',
-    )
-    expect(screen.getByRole('link', { name: 'Quản lý bài học' }).getAttribute('href')).toBe('/quan-tri/bai-hoc')
+    await screen.findByRole('region', { name: 'Người dùng' })
+    expect(screen.queryByRole('link', { name: /Quản lý/ })).toBeNull()
   })
 
   it('tải lỗi thì hiện thông báo và nút Thử lại gọi lại API', async () => {

@@ -32,6 +32,9 @@ class LessonServiceTest {
     @Mock
     private LessonRepository lessonRepository;
 
+    @Mock
+    private vn.spacex.image.CoverImageLookup coverImageLookup;
+
     @InjectMocks
     private LessonService lessonService;
 
@@ -91,5 +94,38 @@ class LessonServiceTest {
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
         verify(lessonRepository).searchPublished(anyString(), captor.capture());
         assertThat(captor.getValue().getSort().isUnsorted()).isTrue();
+    }
+
+    @Test
+    void timKiemGanDuongDanAnhBiaChoBaiCoAnhBia() {
+        Lesson co = mock(Lesson.class);
+        when(co.getId()).thenReturn(11L);
+        when(co.getSlug()).thenReturn("a");
+        when(co.getTitle()).thenReturn("A");
+        Lesson khong = mock(Lesson.class);
+        when(khong.getId()).thenReturn(12L);
+        when(khong.getSlug()).thenReturn("b");
+        when(khong.getTitle()).thenReturn("B");
+        Pageable trang = PageRequest.of(0, 20);
+        when(lessonRepository.searchPublished("a", trang)).thenReturn(new PageImpl<>(List.of(co, khong), trang, 2));
+        when(coverImageLookup.urlsByLessonId(List.of(11L, 12L))).thenReturn(java.util.Map.of(11L, "/api/images/5"));
+
+        PageResponse<LessonSummaryResponse> ketQua = lessonService.search("a", 0, 20);
+
+        assertThat(ketQua.items()).extracting(LessonSummaryResponse::coverImageUrl)
+                .containsExactly("/api/images/5", null);
+    }
+
+    @Test
+    void baiDaDangTraVeDuongDanAnhBiaNeuCo() {
+        LessonContent bai = mock(LessonContent.class);
+        when(bai.getId()).thenReturn(11L);
+        when(bai.getSlug()).thenReturn("a");
+        when(bai.getTitle()).thenReturn("A");
+        when(bai.getContentMd()).thenReturn("x");
+        when(lessonContentRepository.findBySlugAndStatus("a", LessonStatus.PUBLISHED)).thenReturn(Optional.of(bai));
+        when(coverImageLookup.urlsByLessonId(List.of(11L))).thenReturn(java.util.Map.of(11L, "/api/images/5"));
+
+        assertThat(lessonService.getPublishedLesson("a").coverImageUrl()).isEqualTo("/api/images/5");
     }
 }

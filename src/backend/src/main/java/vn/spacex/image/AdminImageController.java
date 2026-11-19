@@ -5,6 +5,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -42,6 +43,18 @@ public class AdminImageController {
     @GetMapping("/lessons/{lessonId}/images")
     List<ImageResponse> list(@PathVariable Long lessonId) {
         return imageService.list(lessonId);
+    }
+
+    @PutMapping("/images/{id}/cover")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void setCover(@PathVariable Long id) {
+        imageService.setCover(id);
+    }
+
+    @DeleteMapping("/images/{id}/cover")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void clearCover(@PathVariable Long id) {
+        imageService.clearCover(id);
     }
 
     @DeleteMapping("/images/{id}")

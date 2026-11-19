@@ -12,4 +12,6 @@ public interface LessonImageInfo {
     String getContentType();
 
     int getSizeBytes();
+
+    Boolean getCover();
 }

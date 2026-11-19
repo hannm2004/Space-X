@@ -4,7 +4,7 @@
 Nhật ký phát triển: `current-state.md`. Kế hoạch `docs/PLAN.md`, phạm vi và use case `docs/PROJECT_SCOPE.md`, nhật ký quyết định `docs/DECISIONS.md` **chỉ có ở máy** (không push). Khi có mâu thuẫn, `docs/DECISIONS.md` là nguồn sự thật.
 
 ## Dự án là gì
-Space-X là website học **Tin học lớp 10, 11, 12** (Chương trình GDPT 2018) cho học sinh THPT, nội dung **tiếng Việt**.
+Space-X là website học **Tin học từ lớp 6 đến lớp 12** (Chương trình GDPT 2018) cho học sinh THCS và THPT, nội dung **tiếng Việt**.
 Nội dung chia 2 tầng: khóa học (Tin học 10 / 11 / 12) → bài học. Bài học do người dùng tự viết theo chương trình, không sao chép sách giáo khoa hay website khác.
 Tính năng: tài khoản (email + Google), thông tin cá nhân, tiến độ học tập, trang quản trị (dashboard, khóa học, bài học, ảnh, người dùng), chatbot RAG trả lời kèm trích dẫn, AI Agent gọi tool chỉ đọc (`searchKnowledge`, `findLessons`).
 Không mở rộng sang chủ đề khác. Space-X là tên dự án, không liên quan SpaceX/vũ trụ.

@@ -1,20 +1,44 @@
 [
   {
+    "slug": "tin-hoc-6",
+    "title": "Tin học 6",
+    "description": "Làm quen với thiết bị số, mạng và Internet, tìm kiếm thông tin và sơ đồ tư duy.",
+    "sortOrder": 1
+  },
+  {
+    "slug": "tin-hoc-7",
+    "title": "Tin học 7",
+    "description": "Dung lượng dữ liệu, phần mềm bảng tính và bước đầu với thuật toán.",
+    "sortOrder": 2
+  },
+  {
+    "slug": "tin-hoc-8",
+    "title": "Tin học 8",
+    "description": "Lịch sử máy tính, thành phần của mạng và lập trình trực quan với biến, điều kiện, vòng lặp.",
+    "sortOrder": 3
+  },
+  {
+    "slug": "tin-hoc-9",
+    "title": "Tin học 9",
+    "description": "An toàn thông tin, nhận biết tin giả, làm sản phẩm số và định hướng nghề nghiệp.",
+    "sortOrder": 4
+  },
+  {
     "slug": "tin-hoc-10",
     "title": "Tin học 10",
-    "description": "Khóa học Tin học lớp 10 (Chương trình GDPT 2018).",
-    "sortOrder": 1
+    "description": "Thông tin, mạng, lập trình Python đầu tiên và đạo đức trong môi trường số.",
+    "sortOrder": 5
   },
   {
     "slug": "tin-hoc-11",
     "title": "Tin học 11",
-    "description": "Khóa học Tin học lớp 11 (Chương trình GDPT 2018).",
-    "sortOrder": 2
+    "description": "Hệ điều hành, tệp, cơ sở dữ liệu, thuật toán tìm kiếm và trang web cơ bản.",
+    "sortOrder": 6
   },
   {
     "slug": "tin-hoc-12",
     "title": "Tin học 12",
-    "description": "Khóa học Tin học lớp 12 (Chương trình GDPT 2018).",
-    "sortOrder": 3
+    "description": "Bảo vệ thông tin, trí tuệ nhân tạo, SQL, phát triển phần mềm và dữ liệu lớn.",
+    "sortOrder": 7
   }
 ]

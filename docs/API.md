@@ -119,15 +119,15 @@ Người dùng hiện tại luôn lấy từ session. `userId` gửi lên (đư�
 | Method | Đường dẫn | Quyền | Mô tả |
 |---|---|---|---|
 | GET | `/api/courses` | Công khai | Danh sách khóa học, sắp theo `sort_order` rồi `id`. Mỗi khóa: `id`, `slug`, `title`, `description` (`null` nếu để trống). Chưa có khóa nào → `[]` |
-| GET | `/api/courses/{slug}/lessons` | Công khai | Danh sách bài Đã đăng của khóa, sắp theo `sort_order` rồi `id`. Mỗi bài: `id`, `slug`, `title`, `summary`; không có nội dung và không có trạng thái. Bài Nháp không bao giờ có mặt. Khóa chưa có bài đã đăng → `[]`; khóa không tồn tại → `404` |
-| GET | `/api/lessons/{slug}` | Đăng nhập | Nội dung một bài Đã đăng: `id`, `slug`, `title`, `summary`, `contentMd` (Markdown). Không có trạng thái, mã khóa hay người tạo. Bài không tồn tại và bài Nháp trả **cùng một** `404` (`detail`: "Không tìm thấy bài học") nên không dò được bài nháp. Chưa đăng nhập → `401` |
+| GET | `/api/courses/{slug}/lessons` | Công khai | Danh sách bài Đã đăng của khóa, sắp theo `sort_order` rồi `id`. Mỗi bài: `id`, `slug`, `title`, `summary`, `coverImageUrl` (ảnh bìa do Admin chọn, `null` nếu chưa có); không có nội dung và không có trạng thái. Bài Nháp không bao giờ có mặt. Khóa chưa có bài đã đăng → `[]`; khóa không tồn tại → `404` |
+| GET | `/api/lessons/{slug}` | Đăng nhập | Nội dung một bài Đã đăng: `id`, `slug`, `title`, `summary`, `contentMd` (Markdown), `coverImageUrl` (`null` nếu chưa có ảnh bìa). Không có trạng thái, mã khóa hay người tạo. Bài không tồn tại và bài Nháp trả **cùng một** `404` (`detail`: "Không tìm thấy bài học") nên không dò được bài nháp. Chưa đăng nhập → `401` |
 | GET | `/api/lessons?q=từ khóa&page=0&size=20` | Đăng nhập | Tìm bài Đã đăng bằng FULLTEXT (D29), phân trang. Xem "Tìm bài" bên dưới |
 | GET | `/api/images/{id}` | Đăng nhập | Ảnh thuộc bài mà người gọi được xem: học sinh chỉ xem ảnh của bài Đã đăng, Admin xem cả ảnh của bài Nháp. Trả chính ảnh (không phải JSON); không có ảnh hoặc ảnh của bài Nháp (với học sinh) → cùng một `404`. Xem "Ảnh bài học" bên dưới |
 
 ### Tìm bài — `GET /api/lessons?q=` (D29, việc 5.4)
 
 - `q` bắt buộc, **1–200 ký tự** và không toàn khoảng trắng (thiếu, rỗng hoặc dài hơn → `400`); backend cắt khoảng trắng đầu/cuối. `page` ≥ 0 (mặc định 0), `size` 1–50 (mặc định 20); sai → `400`. Chưa đăng nhập → `401`.
-- Trả `{ items, page, size, totalItems }`; mỗi phần tử `id`, `slug`, `title`, `summary` (như danh sách bài của khóa, **không** có nội dung hay trạng thái). Không khớp bài nào → `200` với `items: []` và `totalItems: 0` (không phải lỗi). Trang vượt quá số trang → `items: []` nhưng `totalItems` vẫn đúng.
+- Trả `{ items, page, size, totalItems }`; mỗi phần tử `id`, `slug`, `title`, `summary`, `coverImageUrl` (như danh sách bài của khóa, **không** có nội dung hay trạng thái). Không khớp bài nào → `200` với `items: []` và `totalItems: 0` (không phải lỗi). Trang vượt quá số trang → `items: []` nhưng `totalItems` vẫn đúng.
 - Chỉ bài **Đã đăng**; bài Nháp không bao giờ có mặt và không được đếm vào `totalItems`.
 - Cách tìm: chỉ mục `FULLTEXT` (`V3`) trên `title`, `summary`, `content_md` của MySQL, chế độ `NATURAL LANGUAGE`. Kết quả xếp theo độ liên quan giảm dần, rồi `id`. Từ khóa được bind tham số, không ghép vào câu SQL.
 - Hành vi cần biết (đã kiểm bằng test trên MySQL thật):
@@ -222,6 +222,8 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 | DELETE | `/api/admin/lessons/{id}` | Xóa bài (kèm ảnh, tiến độ, đoạn tri thức của bài). `204`; `404` |
 | GET | `/api/admin/lessons/{id}/images` | Danh sách ảnh của bài (không kèm dữ liệu ảnh). `200`; `404` không có bài |
 | POST | `/api/admin/lessons/{id}/images` | Tải ảnh lên (`multipart/form-data`, phần tên `file`; PNG/JPEG/WebP; tối đa 1 MB); trả `{ "id", "url" }` để chèn vào Markdown. `201`; `400` thiếu phần `file`; `404` không có bài; `413` quá 1 MB; `415` không phải ảnh hợp lệ |
+| PUT | `/api/admin/images/{id}/cover` | Đặt ảnh làm ảnh bìa của bài (tự bỏ ảnh bìa cũ của bài đó, ảnh của bài khác không bị đụng tới). `204`; `404` |
+| DELETE | `/api/admin/images/{id}/cover` | Bỏ ảnh bìa (ảnh vẫn còn). `204`; `404` |
 | DELETE | `/api/admin/images/{id}` | Xóa ảnh. `204`; `404` |
 | GET | `/api/admin/users` | Danh sách người dùng, tìm theo email/tên (`?q=`), phân trang. Xem "Người dùng (Admin)" bên dưới |
 | PATCH | `/api/admin/users/{id}/status` | Khóa/mở: `{ "enabled": false }`. `200` kèm người dùng; `400`; `404`; `409` tự khóa mình hoặc khóa Admin cuối cùng. Khóa xong thì mọi session của người đó bị xóa |
@@ -295,7 +297,8 @@ Tạo và sửa dùng cùng một body:
 - **Kích thước:** tối đa 1 MB (1.048.576 byte) mỗi tệp. Vượt → `413` "Ảnh vượt quá 1 MB", được chặn ở hai tầng: cấu hình `spring.servlet.multipart.max-file-size=1MB` (request tổng tối đa 2 MB) và kiểm tra lại trong `ImageService`.
 - **Tên tệp** chỉ để hiển thị: bỏ phần đường dẫn (`../../etc/passwd.png` → `passwd.png`, cả `/` lẫn `\`), bỏ ký tự điều khiển, tối đa 255 ký tự; thiếu hoặc rỗng thì đặt `image.png`/`image.jpg`/`image.webp` theo loại thật. Tên này không bao giờ được dùng làm đường dẫn tệp (ảnh nằm trong MySQL).
 - **Xem ảnh:** `GET /api/images/{id}` yêu cầu đăng nhập (khách → `401`). Học sinh chỉ xem được ảnh của bài **Đã đăng**; ảnh của bài Nháp và ảnh không tồn tại trả **cùng một** `404` "Không tìm thấy ảnh" (không dò được id nào thuộc bài nháp). Admin xem được mọi ảnh. Khi bài chuyển `DRAFT` ↔ `PUBLISHED`, quyền xem ảnh đổi theo ngay. Phản hồi có `X-Content-Type-Options: nosniff` và `Cache-Control: private, max-age=3600`.
-- **Danh sách:** `GET /api/admin/lessons/{id}/images` → `[ { id, fileName, contentType, sizeBytes, url } ]` sắp theo `id`, không có dữ liệu ảnh.
+- **Danh sách:** `GET /api/admin/lessons/{id}/images` → `[ { id, fileName, contentType, sizeBytes, url, cover } ]` sắp theo `id`, không có dữ liệu ảnh; `cover` cho biết ảnh có đang là ảnh bìa của bài không.
+- **Ảnh bìa (D33):** mỗi bài tối đa một ảnh bìa. `PUT /api/admin/images/{id}/cover` đặt (tự bỏ ảnh bìa cũ cùng bài), `DELETE /api/admin/images/{id}/cover` bỏ. Ảnh bìa được dùng ở: danh sách bài của khóa, kết quả tìm kiếm và đầu trang bài (qua `coverImageUrl`, dạng `/api/images/{id}`). Xóa ảnh bìa thì bài tự hết ảnh bìa. Ảnh vẫn chỉ xem được khi đã đăng nhập (khách thấy `coverImageUrl` nhưng tải ảnh nhận `401`, nên giao diện không vẽ ảnh bìa cho khách).
 - **Xóa:** xóa một ảnh bằng `DELETE /api/admin/images/{id}`; xóa bài kéo theo toàn bộ ảnh của bài (`ON DELETE CASCADE`). Chưa có giới hạn số ảnh mỗi bài.
 - Chỉ `ADMIN` được tải lên, liệt kê, xóa (khách → `401`, học sinh → `403`, thiếu CSRF → `403`).
 

@@ -151,7 +151,15 @@ export type LessonInput = {
 }
 export type LessonFilter = { courseId: number | null; status: LessonStatus | null; page: number }
 
-export type LessonImage = { id: number; fileName: string; contentType: string; sizeBytes: number; url: string }
+// cover: ảnh này đang là ảnh bìa của bài (mỗi bài tối đa một ảnh bìa; ảnh bìa hiện ở danh sách bài, kết quả tìm kiếm, đầu trang bài).
+export type LessonImage = {
+  id: number
+  fileName: string
+  contentType: string
+  sizeBytes: number
+  url: string
+  cover: boolean
+}
 export type UploadedImage = { id: number; url: string }
 
 const LESSON_PAGE_SIZE = 20
@@ -197,6 +205,7 @@ function parseLessonImage(value: unknown): LessonImage {
     contentType: asString(record.contentType),
     sizeBytes: asNumber(record.sizeBytes),
     url: asString(record.url),
+    cover: record.cover === true,
   }
 }
 
@@ -262,6 +271,15 @@ export async function uploadLessonImage(lessonId: number, file: File): Promise<U
   form.append('file', file)
   const record = asRecord(await apiRequest('POST', `/api/admin/lessons/${lessonId}/images`, form))
   return { id: asNumber(record.id), url: asString(record.url) }
+}
+
+// Đặt ảnh làm ảnh bìa của bài (máy chủ tự bỏ ảnh bìa cũ của bài đó) hoặc bỏ ảnh bìa.
+export async function setImageCover(id: number): Promise<void> {
+  await apiRequest('PUT', `/api/admin/images/${id}/cover`)
+}
+
+export async function clearImageCover(id: number): Promise<void> {
+  await apiRequest('DELETE', `/api/admin/images/${id}/cover`)
 }
 
 export async function deleteImage(id: number): Promise<void> {

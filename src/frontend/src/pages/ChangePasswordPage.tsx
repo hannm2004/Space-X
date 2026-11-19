@@ -16,7 +16,7 @@ export default function ChangePasswordPage() {
   const [submitting, setSubmitting] = useState(false)
 
   if (state.status === 'loading') {
-    return <p className="text-slate-600 dark:text-slate-400">Đang tải...</p>
+    return <p className="text-muted">Đang tải...</p>
   }
   if (state.status === 'anonymous') {
     return <Navigate to="/dang-nhap" replace state={{ from: location.pathname }} />
@@ -55,13 +55,13 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <>
-      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Đổi mật khẩu</h1>
-      <form noValidate onSubmit={handleSubmit} className="mt-6 max-w-md space-y-4">
+    <div className="mx-auto max-w-md border border-line bg-surface p-6 sm:p-8">
+      <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Đổi mật khẩu</h1>
+      <form noValidate onSubmit={handleSubmit} className="mt-6 space-y-4">
         {done && (
           <p
             role="status"
-            className="rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
+            className="border-l-4 border-success bg-success-soft px-4 py-3 text-success"
           >
             Đã đổi mật khẩu thành công; các thiết bị khác đã bị đăng xuất.
           </p>
@@ -96,6 +96,6 @@ export default function ChangePasswordPage() {
         />
         <SubmitButton pending={submitting} label="Đổi mật khẩu" pendingLabel="Đang đổi mật khẩu..." />
       </form>
-    </>
+    </div>
   )
 }

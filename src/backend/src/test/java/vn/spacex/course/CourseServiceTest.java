@@ -5,6 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import vn.spacex.lesson.Lesson;
 import vn.spacex.lesson.LessonRepository;
 import vn.spacex.lesson.LessonStatus;
 
@@ -26,6 +27,9 @@ class CourseServiceTest {
 
     @Mock
     private LessonRepository lessonRepository;
+
+    @Mock
+    private vn.spacex.image.CoverImageLookup coverImageLookup;
 
     @InjectMocks
     private CourseService courseService;
@@ -60,5 +64,23 @@ class CourseServiceTest {
         assertThat(courseService.listPublishedLessons("tin-hoc-10")).isEmpty();
 
         verify(lessonRepository).findByCourseIdAndStatusOrderBySortOrderAscIdAsc(5L, LessonStatus.PUBLISHED);
+    }
+
+    @Test
+    void danhSachBaiCuaKhoaGanDuongDanAnhBia() {
+        Course khoa = mock(Course.class);
+        when(khoa.getId()).thenReturn(5L);
+        when(courseRepository.findBySlug("tin-hoc-10")).thenReturn(Optional.of(khoa));
+        Lesson co = mock(Lesson.class);
+        when(co.getId()).thenReturn(11L);
+        Lesson khong = mock(Lesson.class);
+        when(khong.getId()).thenReturn(12L);
+        when(lessonRepository.findByCourseIdAndStatusOrderBySortOrderAscIdAsc(5L, LessonStatus.PUBLISHED))
+                .thenReturn(List.of(co, khong));
+        when(coverImageLookup.urlsByLessonId(List.of(11L, 12L))).thenReturn(java.util.Map.of(12L, "/api/images/9"));
+
+        assertThat(courseService.listPublishedLessons("tin-hoc-10"))
+                .extracting(vn.spacex.lesson.LessonSummaryResponse::coverImageUrl)
+                .containsExactly(null, "/api/images/9");
     }
 }

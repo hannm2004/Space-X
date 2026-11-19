@@ -19,7 +19,7 @@ import LoadError from '../LoadError'
 import { useLoad } from '../useLoad'
 
 const PATH = '/quan-tri/bai-hoc'
-const SELECT = `rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600`
+const SELECT = `field w-auto`
 const STATUS_LABEL: Record<LessonStatus, string> = { DRAFT: 'Nháp', PUBLISHED: 'Đã đăng' }
 
 // Tham số lạ trong địa chỉ coi như không có, không gửi lên máy chủ.
@@ -129,14 +129,14 @@ function LessonRow({ initial, courseTitle, onDeleted }: RowProps) {
         <span
           className={
             published
-              ? 'text-sm font-medium text-green-700 dark:text-green-400'
-              : 'text-sm font-medium text-amber-700 dark:text-amber-400'
+              ? 'text-sm font-medium text-success'
+              : 'text-sm font-medium text-warn'
           }
         >
           {STATUS_LABEL[lesson.status]}
         </span>
       </div>
-      <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+      <p className="mt-1 text-sm text-muted">
         <span>{courseTitle}</span>
         {' · '}
         <code>{lesson.slug}</code>
@@ -182,7 +182,7 @@ function LessonRow({ initial, courseTitle, onDeleted }: RowProps) {
       )}
 
       {confirming && (
-        <div className="mt-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+        <div className="mt-3 border border-line bg-surface p-3">
           <p>{`Xóa bài học "${lesson.title}"? Ảnh, tiến độ học của học sinh và nội dung bài sẽ mất, không hoàn tác được.`}</p>
           <div className="mt-3 flex gap-3">
             <button type="button" disabled={busy} onClick={handleDelete} className={DANGER}>
@@ -222,12 +222,12 @@ function LessonList({ filter, courses }: { filter: LessonFilter; courses: AdminC
   }
 
   if (state.kind === 'loading') {
-    return <p className="mt-6 text-slate-600 dark:text-slate-400">Đang tải...</p>
+    return <p className="mt-6 text-muted">Đang tải...</p>
   }
   if (state.kind === 'error') {
     if (state.error instanceof ApiError && state.error.status === 403) {
       return (
-        <p role="alert" className="mt-6 font-medium text-red-700 dark:text-red-400">
+        <p role="alert" className="mt-6 font-medium text-danger">
           {NO_PERMISSION}
         </p>
       )
@@ -256,7 +256,7 @@ function LessonList({ filter, courses }: { filter: LessonFilter; courses: AdminC
         </p>
       ) : (
         <>
-          <p className="mt-6 text-slate-600 dark:text-slate-400">{`Có ${result.totalItems} bài học`}</p>
+          <p className="mt-6 text-muted">{`Có ${result.totalItems} bài học`}</p>
           <ul className="mt-4 space-y-3">
             {result.items.map((lesson) => (
               <LessonRow
@@ -297,7 +297,7 @@ function LessonManager() {
 
   return (
     <>
-      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Quản lý bài học</h1>
+      <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Quản lý bài học</h1>
       <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2">
         <Link to={`${PATH}/moi`} className={LINK}>
           Thêm bài học

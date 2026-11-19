@@ -11,14 +11,14 @@ export default function AdminGate({ children }: { children: ReactNode }) {
   const location = useLocation()
 
   if (state.status === 'loading') {
-    return <p className="text-slate-600 dark:text-slate-400">Đang tải...</p>
+    return <p className="text-muted">Đang tải...</p>
   }
   if (state.status === 'anonymous') {
     return <Navigate to="/dang-nhap" replace state={{ from: location.pathname + location.search }} />
   }
   if (state.user.role !== 'ADMIN') {
     return (
-      <p role="alert" className="font-medium text-red-700 dark:text-red-400">
+      <p role="alert" className="font-medium text-danger">
         {NO_PERMISSION}
       </p>
     )

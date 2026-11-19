@@ -81,7 +81,7 @@ class CourseControllerTest {
                 new LessonSummaryResponse(11L, "may-tinh-la-gi", "Máy tính là gì", "Tóm tắt")));
 
         mockMvc.perform(get("/api/courses/tin-hoc-10/lessons"))
-                .andExpect(jsonPath("$[0].*", hasSize(4)))
+                .andExpect(jsonPath("$[0].*", hasSize(5)))
                 .andExpect(jsonPath("$[0].contentMd").doesNotExist())
                 .andExpect(jsonPath("$[0].content").doesNotExist())
                 .andExpect(jsonPath("$[0].status").doesNotExist());

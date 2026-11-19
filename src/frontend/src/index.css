@@ -1,3 +1,195 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+/*
+  Bảng thiết kế "giáo trình hiện đại": nền giấy ấm, chữ mực đậm, MỘT màu nhấn cam đất.
+  Mọi màu trong giao diện đều lấy từ các vai trò dưới đây (bg-paper, text-ink, border-line, bg-accent...), nên chế độ
+  tối chỉ cần đổi giá trị ở khối `.dark`, không phải viết thêm `dark:` ở từng thành phần.
+  Độ tương phản chữ/nền đã chọn để đạt tối thiểu 4,5:1 (WCAG AA) ở cả hai chế độ.
+*/
+@theme {
+  --font-sans: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Tiêu đề có chân (serif) cho cảm giác sách giáo trình; các font này đều hỗ trợ đủ dấu tiếng Việt. */
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+
+  --color-paper: #f6f1e7; /* nền trang */
+  --color-surface: #fffdf8; /* ô nhập, bảng, khung nổi trên nền */
+  --color-sunken: #ece5d6; /* nền chìm: mã, tiêu đề bảng, mục đang chọn */
+  --color-ink: #1f1b16; /* chữ chính */
+  --color-muted: #615a4e; /* chữ phụ */
+  --color-line: #ddd5c3; /* đường kẻ mảnh */
+  --color-line-strong: #b9af99; /* viền ô nhập, nút phụ */
+  --color-accent: #b4441c; /* màu nhấn (cam đất): liên kết, nút chính, tiến độ */
+  --color-accent-strong: #8f3414;
+  --color-on-accent: #ffffff;
+  --color-accent-soft: #f4e1d3;
+  --color-danger: #a12a1b;
+  --color-danger-soft: #f7e1dc;
+  --color-success: #2e6a3b;
+  --color-success-soft: #e1eedf;
+  --color-warn: #8a5a00;
+
+  /* Góc gần vuông thay cho bo tròn lớn mặc định. */
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 3px;
+  --radius-xl: 4px;
+}
+
+.dark {
+  --color-paper: #15130e;
+  --color-surface: #1d1a13;
+  --color-sunken: #26221a;
+  --color-ink: #efe9da;
+  --color-muted: #a59e8c;
+  --color-line: #342f24;
+  --color-line-strong: #544c3a;
+  --color-accent: #e9895a;
+  --color-accent-strong: #f2a07a;
+  --color-on-accent: #1a0f08;
+  --color-accent-soft: #3a2518;
+  --color-danger: #f0877a;
+  --color-danger-soft: #3b1d18;
+  --color-success: #7fc08c;
+  --color-success-soft: #1b2e1f;
+  --color-warn: #e0b050;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background-color: var(--color-accent-soft);
+    color: var(--color-ink);
+  }
+}
+
+/*
+  Thành phần dùng lại ở nhiều trang. Viết một lần ở đây để nút và ô nhập ở mọi nơi giống nhau;
+  trang chỉ chọn vai trò (btn-primary, btn-secondary, btn-danger), không tự ghép màu.
+*/
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 0.5rem 1rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.4;
+    cursor: pointer;
+    transition:
+      background-color 120ms,
+      color 120ms,
+      border-color 120ms;
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  .btn-primary {
+    background-color: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--color-accent-strong);
+  }
+  /* Nút phụ: khung mảnh, không tô nền; di chuột thì đảo màu như dấu đóng mộc. */
+  .btn-secondary {
+    border-color: var(--color-ink);
+    color: var(--color-ink);
+    background-color: transparent;
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+  .btn-danger {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+    background-color: transparent;
+  }
+  .btn-danger:hover:not(:disabled) {
+    background-color: var(--color-danger);
+    color: var(--color-paper);
+  }
+  .btn-sm {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  /* Nút chỉ có biểu tượng (kính lúp, đổi giao diện). */
+  .btn-icon {
+    display: inline-flex;
+    height: 2.25rem;
+    width: 2.25rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-line-strong);
+    border-radius: var(--radius-md);
+    color: var(--color-ink);
+    background-color: transparent;
+    cursor: pointer;
+  }
+  .btn-icon:hover {
+    background-color: var(--color-sunken);
+  }
+
+  .field {
+    display: block;
+    width: 100%;
+    border: 1px solid var(--color-line-strong);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface);
+    padding: 0.5rem 0.75rem;
+    color: var(--color-ink);
+  }
+  .field::placeholder {
+    color: var(--color-muted);
+    opacity: 0.8;
+  }
+
+  /* Liên kết trong dòng chữ: màu nhấn, gạch chân mảnh cách chữ một chút. */
+  .link {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  .link:hover {
+    color: var(--color-accent-strong);
+    text-decoration-thickness: 2px;
+  }
+
+  /* Dòng nhỏ viết hoa phía trên tiêu đề (tên khóa, tên mục). */
+  .eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+}
+
+/* Viền nổi khi dùng bàn phím: cùng một kiểu ở mọi phần tử tương tác. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

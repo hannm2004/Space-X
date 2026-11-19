@@ -17,7 +17,7 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false)
 
   if (state.status === 'loading') {
-    return <p className="text-slate-600 dark:text-slate-400">Đang tải...</p>
+    return <p className="text-muted">Đang tải...</p>
   }
   if (state.status === 'authenticated') {
     return <Navigate to="/" replace />
@@ -49,9 +49,9 @@ export default function RegisterPage() {
   }
 
   return (
-    <>
-      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Đăng ký</h1>
-      <form noValidate onSubmit={handleSubmit} className="mt-6 max-w-md space-y-4">
+    <div className="mx-auto max-w-md border border-line bg-surface p-6 sm:p-8">
+      <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Đăng ký</h1>
+      <form noValidate onSubmit={handleSubmit} className="mt-6 space-y-4">
         <ErrorAlert messages={messages} />
         <TextField
           id="displayName"
@@ -81,12 +81,12 @@ export default function RegisterPage() {
         <SubmitButton pending={submitting} label="Đăng ký" pendingLabel="Đang đăng ký..." />
       </form>
       <GoogleSignIn label="Đăng ký bằng Google" />
-      <p className="mt-6 text-slate-600 dark:text-slate-400">
+      <p className="mt-6 text-muted">
         Đã có tài khoản?{' '}
-        <Link to="/dang-nhap" className="text-blue-700 underline dark:text-blue-400">
+        <Link to="/dang-nhap" className="link">
           Đăng nhập
         </Link>
       </p>
-    </>
+    </div>
   )
 }

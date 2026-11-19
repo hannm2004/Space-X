@@ -28,12 +28,12 @@ function GoogleLogo() {
 // lý, phải tải trang đầy đủ.
 export default function GoogleSignIn({ label }: { label: string }) {
   return (
-    <div className="mt-4 max-w-md">
-      <p className="mb-4 text-center text-sm text-slate-500 dark:text-slate-400">hoặc</p>
-      <a
-        href="/oauth2/authorization/google"
-        className="inline-flex w-full items-center justify-center gap-3 rounded-lg border border-slate-300 px-4 py-2 font-medium hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800"
-      >
+    <div className="mt-6">
+      {/* Đường kẻ hai bên chữ "hoặc" ngăn cách form mật khẩu với đăng nhập Google. */}
+      <p className="mb-5 flex items-center gap-4 text-sm text-muted before:h-px before:flex-1 before:bg-line after:h-px after:flex-1 after:bg-line">
+        hoặc
+      </p>
+      <a href="/oauth2/authorization/google" className="btn w-full border-line-strong bg-surface text-ink hover:bg-sunken">
         <GoogleLogo />
         {label}
       </a>

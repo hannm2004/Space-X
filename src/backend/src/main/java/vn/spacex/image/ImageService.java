@@ -52,7 +52,7 @@ public class ImageService {
         }
         return imageRepository.findByLessonIdOrderByIdAsc(lessonId).stream()
                 .map(info -> new ImageResponse(info.getId(), info.getFileName(), info.getContentType(),
-                        info.getSizeBytes(), urlOf(info.getId())))
+                        info.getSizeBytes(), urlOf(info.getId()), Boolean.TRUE.equals(info.getCover())))
                 .toList();
     }
 
@@ -62,6 +62,23 @@ public class ImageService {
             throw new ImageNotFoundException();
         }
         imageRepository.deleteById(id);
+    }
+
+    // Mỗi bài tối đa một ảnh bìa: bỏ cờ của các ảnh khác trong bài rồi đặt cờ ảnh này, cùng một transaction.
+    @Transactional
+    public void setCover(Long id) {
+        LessonImageInfo info = imageRepository.findById(id, LessonImageInfo.class)
+                .orElseThrow(ImageNotFoundException::new);
+        imageRepository.clearCover(info.getLessonId());
+        imageRepository.updateCover(id, true);
+    }
+
+    @Transactional
+    public void clearCover(Long id) {
+        if (!imageRepository.existsById(id)) {
+            throw new ImageNotFoundException();
+        }
+        imageRepository.updateCover(id, false);
     }
 
     // Học sinh chỉ xem được ảnh của bài đã đăng; Admin xem được cả ảnh của bài nháp. Ảnh không tồn tại và ảnh của bài

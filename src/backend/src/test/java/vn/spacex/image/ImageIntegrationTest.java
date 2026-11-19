@@ -26,6 +26,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -372,5 +373,95 @@ class ImageIntegrationTest {
         assertThat(demAnh()).isEqualTo(1);
         assertThat(((Number) jdbc.queryForObject("SELECT lesson_id FROM lesson_images", Long.class)).longValue())
                 .isEqualTo(baiDaDang);
+    }
+
+    // ---- Ảnh bìa ----
+
+    private int demAnhBia(long baiId) {
+        return jdbc.queryForObject("SELECT COUNT(*) FROM lesson_images WHERE lesson_id = ? AND is_cover = 1",
+                Integer.class, baiId);
+    }
+
+    @Test
+    void datAnhBiaThiDanhSachAdminDanhDauVaApiCongKhaiTraDuongDanAnhBia() throws Exception {
+        Cookie admin = dangNhapAdmin();
+        long anh = taiAnhHopLe(admin, baiDaDang);
+
+        mockMvc.perform(put("/api/admin/images/" + anh + "/cover").cookie(admin).with(csrf()))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/admin/lessons/" + baiDaDang + "/images").cookie(admin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].cover").value(true));
+        mockMvc.perform(get("/api/courses/tin-hoc-10/lessons"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].coverImageUrl").value("/api/images/" + anh));
+        mockMvc.perform(get("/api/lessons/bai-da-dang").cookie(dangNhapHocSinh()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.coverImageUrl").value("/api/images/" + anh));
+    }
+
+    @Test
+    void baiChuaDatAnhBiaThiCoverImageUrlLaNull() throws Exception {
+        taiAnhHopLe(dangNhapAdmin(), baiDaDang);
+
+        mockMvc.perform(get("/api/courses/tin-hoc-10/lessons"))
+                .andExpect(jsonPath("$[0].coverImageUrl").doesNotExist());
+    }
+
+    @Test
+    void datAnhBiaMoiThiAnhBiaCuBiBoVaMoiBaiChiCoMotAnhBia() throws Exception {
+        Cookie admin = dangNhapAdmin();
+        long anhCu = taiAnhHopLe(admin, baiDaDang);
+        long anhMoi = taiAnhHopLe(admin, baiDaDang);
+        long anhBaiKhac = taiAnhHopLe(admin, baiNhap);
+        mockMvc.perform(put("/api/admin/images/" + anhBaiKhac + "/cover").cookie(admin).with(csrf()))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(put("/api/admin/images/" + anhCu + "/cover").cookie(admin).with(csrf()))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(put("/api/admin/images/" + anhMoi + "/cover").cookie(admin).with(csrf()))
+                .andExpect(status().isNoContent());
+
+        assertThat(demAnhBia(baiDaDang)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT id FROM lesson_images WHERE lesson_id = ? AND is_cover = 1",
+                Long.class, baiDaDang)).isEqualTo(anhMoi);
+        // Ảnh bìa của bài khác không bị đụng tới.
+        assertThat(demAnhBia(baiNhap)).isEqualTo(1);
+    }
+
+    @Test
+    void boAnhBiaVaXoaAnhBiaDeuLamBaiHetCoAnhBia() throws Exception {
+        Cookie admin = dangNhapAdmin();
+        long anh = taiAnhHopLe(admin, baiDaDang);
+        mockMvc.perform(put("/api/admin/images/" + anh + "/cover").cookie(admin).with(csrf()))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(delete("/api/admin/images/" + anh + "/cover").cookie(admin).with(csrf()))
+                .andExpect(status().isNoContent());
+        assertThat(demAnhBia(baiDaDang)).isZero();
+
+        mockMvc.perform(put("/api/admin/images/" + anh + "/cover").cookie(admin).with(csrf()))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/admin/images/" + anh).cookie(admin).with(csrf()))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/courses/tin-hoc-10/lessons"))
+                .andExpect(jsonPath("$[0].coverImageUrl").doesNotExist());
+    }
+
+    @Test
+    void hocSinhVaKhachKhongDatDuocAnhBiaVaAnhKhongCoThi404() throws Exception {
+        Cookie admin = dangNhapAdmin();
+        long anh = taiAnhHopLe(admin, baiDaDang);
+
+        mockMvc.perform(put("/api/admin/images/" + anh + "/cover").with(csrf()))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(put("/api/admin/images/" + anh + "/cover").cookie(dangNhapHocSinh()).with(csrf()))
+                .andExpect(status().isForbidden());
+        assertThat(demAnhBia(baiDaDang)).isZero();
+        mockMvc.perform(put("/api/admin/images/999999/cover").cookie(admin).with(csrf()))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/admin/images/999999/cover").cookie(admin).with(csrf()))
+                .andExpect(status().isNotFound());
     }
 }

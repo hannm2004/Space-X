@@ -1,12 +1,8 @@
 export default function LoadError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div role="alert" className="mt-4">
-      <p className="font-medium text-red-700 dark:text-red-400">{message}</p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="mt-2 rounded-lg border border-slate-300 px-3 py-1.5 text-slate-900 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-800"
-      >
+    <div role="alert" className="mt-4 border-l-4 border-danger bg-danger-soft px-4 py-3">
+      <p className="font-medium text-danger">{message}</p>
+      <button type="button" onClick={onRetry} className="btn btn-secondary btn-sm mt-3">
         Thử lại
       </button>
     </div>

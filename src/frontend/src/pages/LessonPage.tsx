@@ -22,7 +22,7 @@ export default function LessonPage() {
   const { state, reload } = useLoad(() => fetchLesson(lessonSlug), lessonSlug)
 
   if (state.kind === 'loading') {
-    return <p className="text-slate-600 dark:text-slate-400">Đang tải bài học...</p>
+    return <p className="text-muted">Đang tải bài học...</p>
   }
 
   if (state.kind === 'error') {
@@ -34,7 +34,7 @@ export default function LessonPage() {
           <Link
             to="/dang-nhap"
             state={{ from: location.pathname }}
-            className="mt-4 inline-block rounded-lg bg-blue-700 px-4 py-2 font-medium text-white hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            className="mt-4 inline-block btn btn-primary"
           >
             Đăng nhập
           </Link>
@@ -44,8 +44,8 @@ export default function LessonPage() {
     if (error instanceof ApiError && error.status === 404) {
       return (
         <>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Không tìm thấy bài học</h1>
-          <Link to="/" className="mt-6 inline-block text-blue-700 underline dark:text-blue-400">
+          <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Không tìm thấy bài học</h1>
+          <Link to="/" className="link mt-6 inline-block">
             Về trang chủ
           </Link>
         </>
@@ -58,25 +58,33 @@ export default function LessonPage() {
   const from = readLessonLinkState(location.state)
 
   return (
-    <article>
+    <article className="mx-auto max-w-2xl">
       <Link
         to={from ? `/khoa-hoc/${from.courseSlug}` : '/'}
-        className="text-sm text-blue-700 underline dark:text-blue-400"
+        className="link text-sm"
       >
         <span aria-hidden="true">← </span>
         {from ? `Quay lại ${from.courseTitle}` : 'Trang chủ'}
       </Link>
-      <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">{lesson.title}</h1>
+      <h1 className="mt-5 font-serif text-4xl font-bold leading-tight tracking-tight sm:text-5xl">{lesson.title}</h1>
       {lesson.summary && (
-        <p data-testid="lesson-summary" className="mt-3 text-lg text-slate-600 dark:text-slate-400">
+        <p data-testid="lesson-summary" className="mt-4 font-serif text-xl leading-relaxed text-muted">
           {lesson.summary}
         </p>
+      )}
+      {lesson.coverImageUrl && (
+        <img
+          data-testid="lesson-cover"
+          src={lesson.coverImageUrl}
+          alt=""
+          className="mt-6 max-h-80 w-full border border-line object-cover"
+        />
       )}
       <div className="mt-6">
         <MarkdownContent source={withoutLeadingTitle(lesson.contentMd, lesson.title)} />
       </div>
       {/* Bài chỉ tải được khi đã đăng nhập nên ở đây chắc chắn có tài khoản. key để sang bài khác thì gắn lại từ đầu. */}
-      <div className="mt-8 border-t border-slate-200 pt-6 dark:border-slate-800">
+      <div className="mt-12 border-t-2 border-ink pt-6">
         <LessonProgressControl key={lesson.id} lessonId={lesson.id} />
       </div>
     </article>

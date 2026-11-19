@@ -125,3 +125,34 @@ describe('CoursePage', () => {
     expect(await screen.findByText('Không tải được khóa học.')).not.toBeNull()
   })
 })
+
+describe('CoursePage — ảnh bìa bài học', () => {
+  const NGUOI_DUNG: AuthState = {
+    status: 'authenticated',
+    user: { displayName: 'Học sinh', email: 'hs@example.com', role: 'LEARNER' },
+  }
+  const BAI = [
+    { id: 1, slug: 'a', title: 'Bài A', summary: null, coverImageUrl: '/api/images/5' },
+    { id: 2, slug: 'b', title: 'Bài B', summary: null, coverImageUrl: null },
+  ]
+
+  it('người đã đăng nhập thấy ảnh bìa nhỏ ở bài có ảnh bìa, bài không có thì không có ảnh', async () => {
+    fetchLessonsMock.mockResolvedValue(BAI)
+
+    const { container } = renderCourse('/khoa-hoc/tin-hoc-10', NGUOI_DUNG)
+
+    await screen.findByText('Bài A')
+    expect(container.querySelectorAll('img')).toHaveLength(1)
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('/api/images/5')
+    expect(container.querySelector('img')?.getAttribute('loading')).toBe('lazy')
+  })
+
+  it('khách chưa đăng nhập không thấy ảnh bìa (ảnh chỉ xem được khi đã đăng nhập)', async () => {
+    fetchLessonsMock.mockResolvedValue(BAI)
+
+    const { container } = renderCourse('/khoa-hoc/tin-hoc-10', ANONYMOUS)
+
+    await screen.findByText('Bài A')
+    expect(container.querySelector('img')).toBeNull()
+  })
+})

@@ -65,7 +65,7 @@ describe('App — định tuyến', () => {
   it('đường dẫn / hiện trang chủ', async () => {
     renderAt('/')
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Học Tin học 10, 11, 12' })).not.toBeNull()
+    expect(screen.getByRole('heading', { level: 1, name: 'Học Tin học từ lớp 6 đến lớp 12' })).not.toBeNull()
     expect(await screen.findByText('Hệ thống hoạt động bình thường')).not.toBeNull()
   })
 
@@ -224,30 +224,51 @@ describe('App — thanh điều hướng theo trạng thái đăng nhập', () =
     expect(within(header).queryByRole('link', { name: 'Đổi mật khẩu' })).toBeNull()
   })
 
-  it('Admin thấy liên kết "Quản lý người dùng" trên thanh đầu trang', async () => {
+  it('Admin chỉ thấy một liên kết "Quản trị" trên thanh đầu trang, các mục quản lý nằm ở thanh riêng của khu quản trị', async () => {
     vi.mocked(fetchCurrentUser).mockResolvedValue({ ...USER, role: 'ADMIN' })
 
     renderAt('/khong-co-trang-nay')
 
     const header = await screen.findByRole('banner')
-    expect(
-      (await within(header).findByRole('link', { name: 'Quản lý người dùng' })).getAttribute('href'),
-    ).toBe('/quan-tri/nguoi-dung')
+    expect((await within(header).findByRole('link', { name: 'Quản trị' })).getAttribute('href')).toBe('/quan-tri')
+    expect(within(header).queryByRole('link', { name: 'Quản lý người dùng' })).toBeNull()
+    expect(within(header).queryByRole('link', { name: 'Quản lý khóa học' })).toBeNull()
+    expect(within(header).queryByRole('link', { name: 'Quản lý bài học' })).toBeNull()
   })
 
-  it('học sinh và khách không thấy liên kết "Quản lý người dùng"', async () => {
+  it('học sinh và khách không thấy liên kết "Quản trị"', async () => {
     vi.mocked(fetchCurrentUser).mockResolvedValue(USER)
     renderAt('/khong-co-trang-nay')
     const header = await screen.findByRole('banner')
     await within(header).findByText('Nguyễn Văn A')
-    expect(within(header).queryByRole('link', { name: 'Quản lý người dùng' })).toBeNull()
+    expect(within(header).queryByRole('link', { name: 'Quản trị' })).toBeNull()
 
     cleanup()
     vi.mocked(fetchCurrentUser).mockResolvedValue(null)
     renderAt('/khong-co-trang-nay')
     const guestHeader = await screen.findByRole('banner')
     await within(guestHeader).findByRole('link', { name: 'Đăng nhập' })
-    expect(within(guestHeader).queryByRole('link', { name: 'Quản lý người dùng' })).toBeNull()
+    expect(within(guestHeader).queryByRole('link', { name: 'Quản trị' })).toBeNull()
+  })
+
+  it('thanh đầu trang có điều hướng chính với liên kết "Khóa học" về trang chủ', async () => {
+    renderAt('/khong-co-trang-nay')
+
+    const nav = within(await screen.findByRole('banner')).getByRole('navigation', { name: 'Chính' })
+    expect(within(nav).getByRole('link', { name: 'Khóa học' }).getAttribute('href')).toBe('/')
+  })
+
+  it('trạng thái hệ thống nằm ở chân trang của mọi trang, không nằm trong nội dung trang chủ', async () => {
+    renderAt('/khong-co-trang-nay')
+
+    const footer = await screen.findByRole('contentinfo')
+    expect(await within(footer).findByText('Hệ thống hoạt động bình thường')).not.toBeNull()
+    cleanup()
+
+    renderAt('/')
+    const main = await screen.findByRole('main')
+    await within(screen.getByRole('contentinfo')).findByText('Hệ thống hoạt động bình thường')
+    expect(within(main).queryByText('Hệ thống hoạt động bình thường')).toBeNull()
   })
 
   it('bấm "Đăng xuất" gọi API rồi trở về trạng thái chưa đăng nhập và trang chủ', async () => {
@@ -259,7 +280,7 @@ describe('App — thanh điều hướng theo trạng thái đăng nhập', () =
     expect(await screen.findByRole('link', { name: 'Đăng nhập' })).not.toBeNull()
     expect(logout).toHaveBeenCalledTimes(1)
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Học Tin học 10, 11, 12' }),
+      await screen.findByRole('heading', { level: 1, name: 'Học Tin học từ lớp 6 đến lớp 12' }),
     ).not.toBeNull()
     expect(screen.queryByRole('heading', { level: 1, name: 'Đăng nhập' })).toBeNull()
   })
@@ -308,27 +329,42 @@ describe('App — thanh điều hướng theo trạng thái đăng nhập', () =
 describe('App — quản trị nội dung (CP6.4)', () => {
   const USER = { displayName: 'Nguyễn Văn A', email: 'a@example.com', role: 'LEARNER' as const }
 
-  it('Admin thấy liên kết quản lý khóa học và bài học trên thanh đầu trang', async () => {
+  it('Admin ở khu quản trị thấy thanh "Quản trị" với đủ bốn mục, mục đang mở được đánh dấu', async () => {
     vi.mocked(fetchCurrentUser).mockResolvedValue({ ...USER, role: 'ADMIN' })
 
-    renderAt('/khong-co-trang-nay')
+    renderAt('/quan-tri/khoa-hoc')
 
-    const header = await screen.findByRole('banner')
-    expect(
-      (await within(header).findByRole('link', { name: 'Quản lý khóa học' })).getAttribute('href'),
-    ).toBe('/quan-tri/khoa-hoc')
-    expect(within(header).getByRole('link', { name: 'Quản lý bài học' }).getAttribute('href')).toBe(
-      '/quan-tri/bai-hoc',
-    )
+    const nav = await screen.findByRole('navigation', { name: 'Quản trị' })
+    const hrefs = (name: string) => within(nav).getByRole('link', { name }).getAttribute('href')
+    expect(hrefs('Tổng quan')).toBe('/quan-tri')
+    expect(hrefs('Người dùng')).toBe('/quan-tri/nguoi-dung')
+    expect(hrefs('Khóa học')).toBe('/quan-tri/khoa-hoc')
+    expect(hrefs('Bài học')).toBe('/quan-tri/bai-hoc')
+    expect(within(nav).getByRole('link', { name: 'Khóa học' }).getAttribute('aria-current')).toBe('page')
+    expect(within(nav).getByRole('link', { name: 'Tổng quan' }).getAttribute('aria-current')).toBeNull()
   })
 
-  it('học sinh và khách không thấy các liên kết quản lý nội dung', async () => {
+  it('ở /quan-tri chỉ mục "Tổng quan" được đánh dấu đang mở (không đánh dấu nhầm các mục con)', async () => {
+    vi.mocked(fetchCurrentUser).mockResolvedValue({ ...USER, role: 'ADMIN' })
+
+    renderAt('/quan-tri')
+
+    const nav = await screen.findByRole('navigation', { name: 'Quản trị' })
+    expect(within(nav).getByRole('link', { name: 'Tổng quan' }).getAttribute('aria-current')).toBe('page')
+    expect(within(nav).getByRole('link', { name: 'Bài học' }).getAttribute('aria-current')).toBeNull()
+  })
+
+  it('học sinh và khách không thấy thanh "Quản trị" ở khu quản trị', async () => {
     vi.mocked(fetchCurrentUser).mockResolvedValue(USER)
-    renderAt('/khong-co-trang-nay')
-    const header = await screen.findByRole('banner')
-    await within(header).findByText('Nguyễn Văn A')
-    expect(within(header).queryByRole('link', { name: 'Quản lý khóa học' })).toBeNull()
-    expect(within(header).queryByRole('link', { name: 'Quản lý bài học' })).toBeNull()
+    renderAt('/quan-tri/khoa-hoc')
+    await screen.findByText('Bạn không có quyền truy cập trang này.')
+    expect(screen.queryByRole('navigation', { name: 'Quản trị' })).toBeNull()
+
+    cleanup()
+    vi.mocked(fetchCurrentUser).mockResolvedValue(null)
+    renderAt('/quan-tri/khoa-hoc')
+    await screen.findByRole('heading', { level: 1, name: 'Đăng nhập' })
+    expect(screen.queryByRole('navigation', { name: 'Quản trị' })).toBeNull()
   })
 
   // Khách vào trang quản trị bị chuyển sang đăng nhập: chứng tỏ route có tồn tại (không rơi vào trang 404).
@@ -354,5 +390,53 @@ describe('App — quản trị nội dung (CP6.4)', () => {
     renderAt('/quan-tri/bai-hoc/3/sua')
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Đăng nhập' })).not.toBeNull()
+  })
+})
+
+describe('App — chân trang và trang chính sách', () => {
+  it('chân trang có liên kết Chính sách bảo mật, Điều khoản sử dụng, Bản quyền và Câu hỏi thường gặp', async () => {
+    renderAt('/khong-co-trang-nay')
+
+    const footer = await screen.findByRole('contentinfo')
+    const href = (name: string) => within(footer).getByRole('link', { name }).getAttribute('href')
+    expect(href('Chính sách bảo mật')).toBe('/chinh-sach-bao-mat')
+    expect(href('Điều khoản sử dụng')).toBe('/dieu-khoan-su-dung')
+    expect(href('Bản quyền')).toBe('/ban-quyen')
+    expect(href('Câu hỏi thường gặp')).toBe('/#hoi-dap')
+  })
+
+  it('chân trang có liên kết góp ý, báo lỗi mở sang trang ngoài an toàn', async () => {
+    renderAt('/khong-co-trang-nay')
+
+    const link = within(await screen.findByRole('contentinfo')).getByRole('link', { name: /Góp ý, báo lỗi/ })
+    expect(link.getAttribute('href')).toMatch(/^https:\/\/github\.com\//)
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(link.getAttribute('rel')).toContain('noopener')
+  })
+
+  it('chân trang liệt kê các khóa theo cấp học', async () => {
+    renderAt('/khong-co-trang-nay')
+
+    const footer = await screen.findByRole('contentinfo')
+    expect(within(footer).getByText('Trung học cơ sở')).not.toBeNull()
+    expect(within(footer).getByText('Trung học phổ thông')).not.toBeNull()
+  })
+
+  it('thanh điều hướng chính có liên kết Hỏi đáp tới phần câu hỏi thường gặp', async () => {
+    renderAt('/khong-co-trang-nay')
+
+    const nav = within(await screen.findByRole('banner')).getByRole('navigation', { name: 'Chính' })
+    expect(within(nav).getByRole('link', { name: 'Hỏi đáp' }).getAttribute('href')).toBe('/#hoi-dap')
+  })
+
+  it('/chinh-sach-bao-mat, /dieu-khoan-su-dung và /ban-quyen hiện đúng trang', async () => {
+    renderAt('/chinh-sach-bao-mat')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Chính sách bảo mật' })).not.toBeNull()
+    cleanup()
+    renderAt('/dieu-khoan-su-dung')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Điều khoản sử dụng' })).not.toBeNull()
+    cleanup()
+    renderAt('/ban-quyen')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Bản quyền' })).not.toBeNull()
   })
 })

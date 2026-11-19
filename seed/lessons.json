@@ -1,5 +1,133 @@
 [
   {
+    "courseSlug": "tin-hoc-6",
+    "slug": "thiet-bi-so-quanh-em",
+    "title": "Thiết bị số quanh em",
+    "summary": "Nhận biết các thiết bị số, bốn việc một máy tính làm được và vì sao cần phần mềm để thiết bị hoạt động.",
+    "sortOrder": 1,
+    "file": "tin-hoc-6/thiet-bi-so-quanh-em.md"
+  },
+  {
+    "courseSlug": "tin-hoc-6",
+    "slug": "mang-may-tinh-va-internet-co-ban",
+    "title": "Mạng máy tính và Internet",
+    "summary": "Mạng máy tính giúp gì cho em, Internet khác mạng cục bộ ở đâu và những dịch vụ phổ biến trên Internet.",
+    "sortOrder": 2,
+    "file": "tin-hoc-6/mang-may-tinh-va-internet-co-ban.md"
+  },
+  {
+    "courseSlug": "tin-hoc-6",
+    "slug": "tim-kiem-thong-tin-tren-internet",
+    "title": "Tìm kiếm thông tin trên Internet",
+    "summary": "Dùng máy tìm kiếm hiệu quả: chọn từ khóa, đọc kết quả và kiểm tra xem nguồn tin có đáng tin hay không.",
+    "sortOrder": 3,
+    "file": "tin-hoc-6/tim-kiem-thong-tin-tren-internet.md"
+  },
+  {
+    "courseSlug": "tin-hoc-6",
+    "slug": "so-do-tu-duy",
+    "title": "Sơ đồ tư duy",
+    "summary": "Dùng sơ đồ tư duy để ghi chú, sắp xếp ý tưởng và ôn bài, kèm cách vẽ một sơ đồ bằng phần mềm.",
+    "sortOrder": 4,
+    "file": "tin-hoc-6/so-do-tu-duy.md"
+  },
+  {
+    "courseSlug": "tin-hoc-7",
+    "slug": "dung-luong-du-lieu",
+    "title": "Dung lượng và đơn vị lưu trữ dữ liệu",
+    "summary": "Bit, byte và các đơn vị KB, MB, GB; cách đổi đơn vị và ước lượng một thẻ nhớ chứa được bao nhiêu tệp.",
+    "sortOrder": 1,
+    "file": "tin-hoc-7/dung-luong-du-lieu.md"
+  },
+  {
+    "courseSlug": "tin-hoc-7",
+    "slug": "lam-quen-voi-bang-tinh",
+    "title": "Làm quen với phần mềm bảng tính",
+    "summary": "Hàng, cột, ô và vùng dữ liệu trong bảng tính; nhập dữ liệu, viết công thức đơn giản bắt đầu bằng dấu bằng.",
+    "sortOrder": 2,
+    "file": "tin-hoc-7/lam-quen-voi-bang-tinh.md"
+  },
+  {
+    "courseSlug": "tin-hoc-7",
+    "slug": "ham-co-ban-trong-bang-tinh",
+    "title": "Các hàm cơ bản trong bảng tính",
+    "summary": "Dùng SUM, AVERAGE, MAX, MIN và COUNT để tổng hợp một cột số liệu, kèm ví dụ bảng điểm.",
+    "sortOrder": 3,
+    "file": "tin-hoc-7/ham-co-ban-trong-bang-tinh.md"
+  },
+  {
+    "courseSlug": "tin-hoc-7",
+    "slug": "thuat-toan-va-so-do-khoi",
+    "title": "Thuật toán và sơ đồ khối",
+    "summary": "Thuật toán là dãy bước rõ ràng để giải một bài toán; mô tả bằng lời và bằng sơ đồ khối qua ví dụ tìm số lớn nhất.",
+    "sortOrder": 4,
+    "file": "tin-hoc-7/thuat-toan-va-so-do-khoi.md"
+  },
+  {
+    "courseSlug": "tin-hoc-8",
+    "slug": "lich-su-phat-trien-may-tinh",
+    "title": "Lịch sử phát triển của máy tính",
+    "summary": "Từ bàn tính, máy tính cơ học đến máy tính điện tử và thiết bị di động: các cột mốc và ý nghĩa của sự thu nhỏ, tăng tốc.",
+    "sortOrder": 1,
+    "file": "tin-hoc-8/lich-su-phat-trien-may-tinh.md"
+  },
+  {
+    "courseSlug": "tin-hoc-8",
+    "slug": "thanh-phan-cua-mang-may-tinh",
+    "title": "Thành phần của mạng máy tính",
+    "summary": "Các thiết bị mạng thường gặp (router, switch, access point), môi trường truyền dẫn và vai trò của giao thức.",
+    "sortOrder": 2,
+    "file": "tin-hoc-8/thanh-phan-cua-mang-may-tinh.md"
+  },
+  {
+    "courseSlug": "tin-hoc-8",
+    "slug": "bien-va-lenh-dieu-kien",
+    "title": "Biến và lệnh điều kiện trong lập trình",
+    "summary": "Biến là ô nhớ có tên, lệnh nếu - thì - nếu không cho chương trình rẽ nhánh; minh họa bằng lập trình kéo thả và mã giả.",
+    "sortOrder": 3,
+    "file": "tin-hoc-8/bien-va-lenh-dieu-kien.md"
+  },
+  {
+    "courseSlug": "tin-hoc-8",
+    "slug": "vong-lap-trong-lap-trinh",
+    "title": "Vòng lặp trong lập trình",
+    "summary": "Dùng vòng lặp để lặp lại khối lệnh theo số lần hoặc theo điều kiện, giúp chương trình ngắn gọn và dễ sửa.",
+    "sortOrder": 4,
+    "file": "tin-hoc-8/vong-lap-trong-lap-trinh.md"
+  },
+  {
+    "courseSlug": "tin-hoc-9",
+    "slug": "ma-doc-va-lua-dao-truc-tuyen",
+    "title": "Mã độc và lừa đảo trực tuyến",
+    "summary": "Nhận biết mã độc, thư giả mạo (phishing) và cách bảo vệ tài khoản bằng mật khẩu mạnh, xác thực hai lớp và cập nhật phần mềm.",
+    "sortOrder": 1,
+    "file": "tin-hoc-9/ma-doc-va-lua-dao-truc-tuyen.md"
+  },
+  {
+    "courseSlug": "tin-hoc-9",
+    "slug": "nhan-biet-tin-gia-tren-mang",
+    "title": "Nhận biết tin giả trên mạng",
+    "summary": "Tin giả lan nhanh vì sao, các dấu hiệu nhận biết, cách kiểm chứng ảnh và nguồn tin, và trách nhiệm khi chia sẻ.",
+    "sortOrder": 2,
+    "file": "tin-hoc-9/nhan-biet-tin-gia-tren-mang.md"
+  },
+  {
+    "courseSlug": "tin-hoc-9",
+    "slug": "lam-san-pham-so-video-ngan",
+    "title": "Làm một sản phẩm số: video ngắn",
+    "summary": "Quy trình làm video ngắn từ ý tưởng, kịch bản, phân cảnh đến quay, dựng, xuất bản và lưu ý về bản quyền hình ảnh, âm nhạc.",
+    "sortOrder": 3,
+    "file": "tin-hoc-9/lam-san-pham-so-video-ngan.md"
+  },
+  {
+    "courseSlug": "tin-hoc-9",
+    "slug": "cac-nganh-nghe-trong-linh-vuc-tin-hoc",
+    "title": "Các ngành nghề trong lĩnh vực tin học",
+    "summary": "Giới thiệu một số nghề như lập trình viên, kỹ sư mạng, chuyên gia an toàn thông tin, phân tích dữ liệu, thiết kế giao diện và cách chuẩn bị cho lựa chọn nghề.",
+    "sortOrder": 4,
+    "file": "tin-hoc-9/cac-nganh-nghe-trong-linh-vuc-tin-hoc.md"
+  },
+  {
     "courseSlug": "tin-hoc-10",
     "slug": "thong-tin-va-du-lieu",
     "title": "Thông tin và dữ liệu",
@@ -14,6 +142,30 @@
     "summary": "Mạng máy tính là gì, Internet khác mạng máy tính thế nào, địa chỉ IP và tên miền dùng để làm gì.",
     "sortOrder": 2,
     "file": "tin-hoc-10/mang-may-tinh-va-internet.md"
+  },
+  {
+    "courseSlug": "tin-hoc-10",
+    "slug": "python-bien-nhap-xuat-kieu-du-lieu",
+    "title": "Python đầu tiên: biến, nhập xuất, kiểu dữ liệu",
+    "summary": "Viết chương trình Python đầu tiên với print và input, khai báo biến, các kiểu số nguyên, số thực, xâu và logic, đổi kiểu bằng int và float.",
+    "sortOrder": 3,
+    "file": "tin-hoc-10/python-bien-nhap-xuat-kieu-du-lieu.md"
+  },
+  {
+    "courseSlug": "tin-hoc-10",
+    "slug": "python-re-nhanh-va-vong-lap",
+    "title": "Python: rẽ nhánh và vòng lặp",
+    "summary": "Dùng if - elif - else để chọn việc làm, vòng for với range và vòng while để lặp, qua ví dụ xếp loại điểm và tính tổng.",
+    "sortOrder": 4,
+    "file": "tin-hoc-10/python-re-nhanh-va-vong-lap.md"
+  },
+  {
+    "courseSlug": "tin-hoc-10",
+    "slug": "ban-quyen-va-dao-duc-so",
+    "title": "Bản quyền và đạo đức trong môi trường số",
+    "summary": "Quyền tác giả với sản phẩm số, trích dẫn nguồn, giấy phép Creative Commons, phần mềm lậu và ứng xử có trách nhiệm trên mạng.",
+    "sortOrder": 5,
+    "file": "tin-hoc-10/ban-quyen-va-dao-duc-so.md"
   },
   {
     "courseSlug": "tin-hoc-11",
@@ -32,6 +184,30 @@
     "file": "tin-hoc-11/tep-va-thu-muc.md"
   },
   {
+    "courseSlug": "tin-hoc-11",
+    "slug": "co-so-du-lieu-la-gi",
+    "title": "Cơ sở dữ liệu là gì",
+    "summary": "Khái niệm cơ sở dữ liệu, bảng, bản ghi, trường và khóa chính; so sánh với lưu thông tin rời rạc và ví dụ quản lý lớp học.",
+    "sortOrder": 3,
+    "file": "tin-hoc-11/co-so-du-lieu-la-gi.md"
+  },
+  {
+    "courseSlug": "tin-hoc-11",
+    "slug": "thuat-toan-tim-kiem-tuan-tu-va-nhi-phan",
+    "title": "Thuật toán tìm kiếm tuần tự và nhị phân",
+    "summary": "Hai cách tìm một giá trị trong danh sách, ví dụ chạy tay trên dãy số, đếm số bước và điều kiện để dùng tìm kiếm nhị phân.",
+    "sortOrder": 4,
+    "file": "tin-hoc-11/thuat-toan-tim-kiem-tuan-tu-va-nhi-phan.md"
+  },
+  {
+    "courseSlug": "tin-hoc-11",
+    "slug": "trang-web-co-ban-voi-html",
+    "title": "Trang web cơ bản với HTML",
+    "summary": "Cấu trúc một tài liệu HTML, các thẻ tiêu đề, đoạn văn, liên kết, ảnh, danh sách và vai trò của CSS trong trình bày.",
+    "sortOrder": 5,
+    "file": "tin-hoc-11/trang-web-co-ban-voi-html.md"
+  },
+  {
     "courseSlug": "tin-hoc-12",
     "slug": "tri-tue-nhan-tao-co-ban",
     "title": "Trí tuệ nhân tạo là gì",
@@ -46,5 +222,29 @@
     "summary": "Thông tin cá nhân gồm những gì, cách đặt mật khẩu tốt và nhận biết các chiêu lừa đảo phổ biến.",
     "sortOrder": 2,
     "file": "tin-hoc-12/bao-ve-thong-tin-ca-nhan.md"
+  },
+  {
+    "courseSlug": "tin-hoc-12",
+    "slug": "sql-co-ban",
+    "title": "SQL cơ bản: truy vấn dữ liệu",
+    "summary": "Các câu lệnh SELECT, INSERT, UPDATE, DELETE trên bảng học sinh, cách lọc bằng WHERE, sắp xếp và dùng hàm COUNT, AVG.",
+    "sortOrder": 3,
+    "file": "tin-hoc-12/sql-co-ban.md"
+  },
+  {
+    "courseSlug": "tin-hoc-12",
+    "slug": "quy-trinh-phat-trien-phan-mem",
+    "title": "Quy trình phát triển phần mềm",
+    "summary": "Các giai đoạn phân tích yêu cầu, thiết kế, lập trình, kiểm thử, triển khai và bảo trì, kèm vai trò làm việc nhóm.",
+    "sortOrder": 4,
+    "file": "tin-hoc-12/quy-trinh-phat-trien-phan-mem.md"
+  },
+  {
+    "courseSlug": "tin-hoc-12",
+    "slug": "du-lieu-lon-va-phan-tich-du-lieu",
+    "title": "Dữ liệu lớn và phân tích dữ liệu",
+    "summary": "Dữ liệu lớn là gì, các nguồn sinh ra dữ liệu, quy trình phân tích từ thu thập đến trực quan hóa và vấn đề quyền riêng tư.",
+    "sortOrder": 5,
+    "file": "tin-hoc-12/du-lieu-lon-va-phan-tich-du-lieu.md"
   }
 ]

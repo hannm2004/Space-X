@@ -2,7 +2,14 @@ import { apiRequest } from './client'
 import { asList, asNullableString, asNumber, asRecord, asString, BAD_SHAPE } from './parse'
 
 export type Course = { id: number; slug: string; title: string; description: string | null }
-export type LessonSummary = { id: number; slug: string; title: string; summary: string | null }
+// coverImageUrl: ảnh bìa do Admin chọn (máy chủ bỏ trường khi bài chưa có ảnh bìa, nên thiếu trường nghĩa là null).
+export type LessonSummary = {
+  id: number
+  slug: string
+  title: string
+  summary: string | null
+  coverImageUrl?: string | null
+}
 export type Lesson = LessonSummary & { contentMd: string }
 // Trang kết quả tìm kiếm: cùng hình dạng phân trang chung của API (docs/API.md); trang đếm từ 0.
 export type LessonSearchPage = { items: LessonSummary[]; page: number; size: number; totalItems: number }
@@ -47,6 +54,7 @@ function parseLessonSummary(value: unknown): LessonSummary {
     slug: asString(record.slug),
     title: asString(record.title),
     summary: asNullableString(record.summary),
+    coverImageUrl: record.coverImageUrl === undefined ? null : asNullableString(record.coverImageUrl),
   }
 }
 

@@ -88,7 +88,7 @@ class LessonIntegrationTest {
         themBai("may-tinh-la-gi", "PUBLISHED", "x");
 
         mockMvc.perform(get("/api/lessons/may-tinh-la-gi").with(user("hocsinh")))
-                .andExpect(jsonPath("$.*", hasSize(5)));
+                .andExpect(jsonPath("$.*", hasSize(6)));
     }
 
     @Test
