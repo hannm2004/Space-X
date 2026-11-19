@@ -70,10 +70,11 @@ class SeedDataTest {
     }
 
     @Test
-    void coDungBaKhoaTinHoc10Den12() throws IOException {
+    void coDungBayKhoaTinHocLop6Den12() throws IOException {
         List<String> slugs = readList("courses.json").stream().map(c -> str(c, "slug")).toList();
 
-        assertThat(slugs).containsExactly("tin-hoc-10", "tin-hoc-11", "tin-hoc-12");
+        assertThat(slugs).containsExactly("tin-hoc-6", "tin-hoc-7", "tin-hoc-8", "tin-hoc-9",
+                "tin-hoc-10", "tin-hoc-11", "tin-hoc-12");
     }
 
     @Test
@@ -151,7 +152,22 @@ class SeedDataTest {
             assertThat(md).as("bài %s", str(lesson, "slug")).isNotBlank();
             assertThat(md.charAt(0)).as("BOM đầu tệp của %s", str(lesson, "slug")).isNotEqualTo('﻿');
             assertThat(md.toLowerCase()).doesNotContain("<script").doesNotContain("<iframe").doesNotContain("javascript:");
-            assertThat(md).as("bài %s phải là bài mẫu", str(lesson, "slug")).contains("Bài mẫu");
+            // Bài thử hệ thống ghi "Bài mẫu"; bài soạn theo chương trình (D32) ghi nguồn khung chương trình.
+            assertThat(md.contains("Bài mẫu") || md.contains("Thông tư 32/2018/TT-BGDĐT"))
+                    .as("bài %s phải là bài mẫu hoặc ghi nguồn khung chương trình", str(lesson, "slug")).isTrue();
+        }
+    }
+
+    @Test
+    void moiBaiCoTieuDeCapMotVaMucKiemTraNhanhHoacLaBaiMau() throws IOException {
+        for (Map<String, Object> lesson : readList("lessons.json")) {
+            String md = content(lesson);
+            String slug = str(lesson, "slug");
+
+            assertThat(md.startsWith("# ")).as("bài %s mở đầu bằng tiêu đề cấp 1", slug).isTrue();
+            if (md.contains("Thông tư 32/2018/TT-BGDĐT")) {
+                assertThat(md).as("bài %s có mục tự kiểm tra", slug).contains("## Kiểm tra nhanh");
+            }
         }
     }
 }
