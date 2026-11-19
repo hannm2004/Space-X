@@ -32,6 +32,10 @@ public class LessonImage {
     @Column(name = "size_bytes", nullable = false)
     private int sizeBytes;
 
+    // Ảnh bìa của bài (tối đa một ảnh mỗi bài, do ImageService giữ). Chỉ đổi qua truy vấn cập nhật của repository.
+    @Column(name = "is_cover", nullable = false)
+    private boolean cover;
+
     // Cột MEDIUMBLOB. Cần khai báo kiểu để Hibernate (ddl-auto=validate) coi nó khớp thay vì VARBINARY mặc định.
     @JdbcTypeCode(SqlTypes.LONGVARBINARY)
     @Column(nullable = false)
@@ -68,6 +72,10 @@ public class LessonImage {
 
     public int getSizeBytes() {
         return sizeBytes;
+    }
+
+    public boolean isCover() {
+        return cover;
     }
 
     public byte[] getData() {

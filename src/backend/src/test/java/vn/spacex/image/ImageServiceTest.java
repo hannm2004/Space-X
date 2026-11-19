@@ -275,4 +275,68 @@ class ImageServiceTest {
         assertThatThrownBy(() -> service.load(99L, true)).isInstanceOf(ImageNotFoundException.class);
         assertThatThrownBy(() -> service.load(99L, false)).isInstanceOf(ImageNotFoundException.class);
     }
+
+    // ---- Ảnh bìa ----
+
+    @Test
+    void datAnhBiaBoCoCuaCacAnhKhacCungBaiRoiDanhDauAnhMoi() {
+        LessonImageInfo info = org.mockito.Mockito.mock(LessonImageInfo.class);
+        when(info.getLessonId()).thenReturn(LESSON_ID);
+        when(imageRepository.findById(7L, LessonImageInfo.class)).thenReturn(java.util.Optional.of(info));
+
+        service.setCover(7L);
+
+        org.mockito.InOrder thuTu = org.mockito.Mockito.inOrder(imageRepository);
+        thuTu.verify(imageRepository).clearCover(LESSON_ID);
+        thuTu.verify(imageRepository).updateCover(7L, true);
+    }
+
+    @Test
+    void datAnhBiaChoAnhKhongTonTaiNemImageNotFoundVaKhongSuaGi() {
+        when(imageRepository.findById(99L, LessonImageInfo.class)).thenReturn(java.util.Optional.empty());
+
+        assertThatThrownBy(() -> service.setCover(99L)).isInstanceOf(ImageNotFoundException.class);
+
+        org.mockito.Mockito.verify(imageRepository, org.mockito.Mockito.never()).clearCover(org.mockito.ArgumentMatchers.anyLong());
+        org.mockito.Mockito.verify(imageRepository, org.mockito.Mockito.never()).updateCover(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean());
+    }
+
+    @Test
+    void boAnhBiaChiTatCoCuaDungAnhDo() {
+        when(imageRepository.existsById(7L)).thenReturn(true);
+
+        service.clearCover(7L);
+
+        org.mockito.Mockito.verify(imageRepository).updateCover(7L, false);
+        org.mockito.Mockito.verify(imageRepository, org.mockito.Mockito.never()).clearCover(org.mockito.ArgumentMatchers.anyLong());
+    }
+
+    @Test
+    void boAnhBiaChoAnhKhongTonTaiNemImageNotFound() {
+        when(imageRepository.existsById(99L)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.clearCover(99L)).isInstanceOf(ImageNotFoundException.class);
+    }
+
+    @Test
+    void danhSachAnhChoBietAnhNaoDangLaAnhBia() {
+        when(lessonRepository.existsById(LESSON_ID)).thenReturn(true);
+        LessonImageInfo bia = org.mockito.Mockito.mock(LessonImageInfo.class);
+        when(bia.getId()).thenReturn(5L);
+        when(bia.getFileName()).thenReturn("a.png");
+        when(bia.getContentType()).thenReturn("image/png");
+        when(bia.getSizeBytes()).thenReturn(10);
+        when(bia.getCover()).thenReturn(true);
+        LessonImageInfo thuong = org.mockito.Mockito.mock(LessonImageInfo.class);
+        when(thuong.getId()).thenReturn(6L);
+        when(thuong.getFileName()).thenReturn("b.png");
+        when(thuong.getContentType()).thenReturn("image/png");
+        when(thuong.getSizeBytes()).thenReturn(20);
+        when(thuong.getCover()).thenReturn(false);
+        when(imageRepository.findByLessonIdOrderByIdAsc(LESSON_ID)).thenReturn(List.of(bia, thuong));
+
+        List<ImageResponse> ketQua = service.list(LESSON_ID);
+
+        assertThat(ketQua).extracting(ImageResponse::cover).containsExactly(true, false);
+    }
 }

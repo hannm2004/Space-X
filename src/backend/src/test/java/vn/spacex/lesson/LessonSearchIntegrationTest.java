@@ -218,7 +218,7 @@ class LessonSearchIntegrationTest {
         themBai("bai-1", "Mạng máy tính", "Tóm tắt", "Nội dung mạng", "PUBLISHED");
 
         tim("mạng")
-                .andExpect(jsonPath("$.items[0].*", hasSize(4)))
+                .andExpect(jsonPath("$.items[0].*", hasSize(5)))
                 .andExpect(jsonPath("$.items[0].id").exists())
                 .andExpect(jsonPath("$.items[0].slug").value("bai-1"))
                 .andExpect(jsonPath("$.items[0].title").value("Mạng máy tính"))

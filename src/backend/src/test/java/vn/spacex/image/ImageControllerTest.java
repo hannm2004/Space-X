@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -140,19 +141,20 @@ class ImageControllerTest {
     @Test
     void danhSachAnhCuaBaiChiAdminXemDuocVaKhongCoDuLieuAnh() throws Exception {
         when(service.list(11L)).thenReturn(List.of(
-                new ImageResponse(5L, "a.png", "image/png", 123, "/api/images/5")));
+                new ImageResponse(5L, "a.png", "image/png", 123, "/api/images/5", true)));
 
         mockMvc.perform(get("/api/admin/lessons/11/images")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/admin/lessons/11/images").with(user(hocSinh()))).andExpect(status().isForbidden());
         mockMvc.perform(get("/api/admin/lessons/11/images").with(user(admin())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].*", hasSize(5)))
+                .andExpect(jsonPath("$[0].*", hasSize(6)))
                 .andExpect(jsonPath("$[0].id").value(5))
                 .andExpect(jsonPath("$[0].fileName").value("a.png"))
                 .andExpect(jsonPath("$[0].contentType").value("image/png"))
                 .andExpect(jsonPath("$[0].sizeBytes").value(123))
                 .andExpect(jsonPath("$[0].url").value("/api/images/5"))
+                .andExpect(jsonPath("$[0].cover").value(true))
                 .andExpect(jsonPath("$[0].data").doesNotExist());
     }
 
@@ -241,5 +243,45 @@ class ImageControllerTest {
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(service);
+    }
+
+    // ---- Ảnh bìa (Admin) ----
+
+    @Test
+    void datAnhBiaChiAdminCoCsrfLamDuocTra204() throws Exception {
+        mockMvc.perform(put("/api/admin/images/5/cover").with(csrf())).andExpect(status().isUnauthorized());
+        mockMvc.perform(put("/api/admin/images/5/cover").with(user(hocSinh())).with(csrf()))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/admin/images/5/cover").with(user(admin()))).andExpect(status().isForbidden());
+        verifyNoInteractions(service);
+
+        mockMvc.perform(put("/api/admin/images/5/cover").with(user(admin())).with(csrf()))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+        verify(service).setCover(5L);
+    }
+
+    @Test
+    void boAnhBiaChiAdminCoCsrfLamDuocTra204() throws Exception {
+        mockMvc.perform(delete("/api/admin/images/5/cover").with(csrf())).andExpect(status().isUnauthorized());
+        mockMvc.perform(delete("/api/admin/images/5/cover").with(user(hocSinh())).with(csrf()))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(service);
+
+        mockMvc.perform(delete("/api/admin/images/5/cover").with(user(admin())).with(csrf()))
+                .andExpect(status().isNoContent());
+        verify(service).clearCover(5L);
+    }
+
+    @Test
+    void datHoacBoAnhBiaChoAnhKhongTonTaiBi404() throws Exception {
+        doThrow(new ImageNotFoundException()).when(service).setCover(99L);
+        doThrow(new ImageNotFoundException()).when(service).clearCover(99L);
+
+        mockMvc.perform(put("/api/admin/images/99/cover").with(user(admin())).with(csrf()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.detail").value("Không tìm thấy ảnh"));
+        mockMvc.perform(delete("/api/admin/images/99/cover").with(user(admin())).with(csrf()))
+                .andExpect(status().isNotFound());
     }
 }
