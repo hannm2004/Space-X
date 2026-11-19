@@ -16,6 +16,15 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-19 — Chạy đủ mọi test, commit và đẩy nhánh `feat/ui-redesign`
+- **Đã làm:** chạy lại toàn bộ test theo yêu cầu của người dùng rồi cập nhật tài liệu, commit, gộp nhánh `feat/google-production` (tài liệu CP6.5) vào để PR không xung đột, đẩy lên GitHub.
+- **Kiểm tra (đủ, chạy ngày 2026-11-19):**
+  - Frontend (PowerShell): `npx tsc -b` sạch, `npm run lint` sạch, `npx vitest run` 31 file **474 test qua**, `npm run build` thành công (1,87 giây).
+  - Backend: 404 test không cần Docker qua (`Failures: 0, Errors: 0`); 168 test tích hợp trên MySQL 8.4 thật qua (`Failures: 0, Errors: 0`, `BUILD SUCCESS`). Cuối log có nhiều dòng `Communications link failure` lúc tắt kết nối (nhiễu đã gặp trước đây, không ảnh hưởng kết quả). Lệnh đếm: backend 572, frontend 474.
+  - Quét bí mật trên toàn bộ thay đổi trước khi commit (email, Client ID, secret, MSSV, mật khẩu thử): không có.
+- **Chưa kiểm:** CI trên GitHub cho nhánh này (chưa đẩy tới lúc viết mục này); production (chưa nạp nội dung, chưa deploy V4); chân trang và câu hỏi thường gặp ở chế độ tối và cỡ 375 px.
+- **Việc còn lại cho người dùng:** mở Pull Request, chờ CI xanh rồi gộp; sau khi Render deploy xong thì tự nạp nội dung lên production (`scripts/seed-sample-data.ps1 -BaseUrl https://space-x-47f1.onrender.com -FromEnv`, gõ `yes`), sửa `sortOrder` ba khóa 10–12 thành 5, 6, 7, tải ảnh thử và đặt ảnh bìa; đọc lại ba trang chính sách và nội dung 25 bài mới.
+
 ## 2026-11-19 — Làm lại trang chủ theo cấu trúc trang khóa học thực tế, thêm chính sách và hỏi đáp
 - **Nhánh:** `feat/ui-redesign` (chưa commit).
 - **Yêu cầu của người dùng:** trang chủ chưa ưng, nhất là phần khóa học và phần chính sách bên dưới; tham khảo otth.vn: header chỉnh chu, khóa học chia thành từng ô, có chính sách và câu hỏi thường gặp (không cần sao chép).
@@ -76,6 +85,21 @@ Mẫu một mục:
 - **Lỗi gặp và cách sửa:** một lệnh shell ghi file bằng heredoc bị lỗi cú pháp nên chưa ghi gì (phát hiện nhờ kiểm tra lại nội dung file); ghi lại bằng công cụ ghi file. Công tắc vai trò của máy chủ giả phải gọi thẳng cổng 8080 vì Vite chỉ chuyển tiếp `/api`.
 - **Học được:** đặt màu theo vai trò (nền, chữ, đường kẻ, màu nhấn) thay vì theo màu cụ thể giúp đổi cả giao diện ở một nơi và bỏ được `dark:` khỏi từng thành phần; cấu trúc trang (cái gì ở đâu) quan trọng hơn màu sắc để giao diện không "giống mẫu có sẵn".
 - **Tiếp theo:** xem các trang quản trị còn lại, `/ho-so` và chế độ tối bằng mắt (hoặc với backend thật); người dùng tự xem và góp ý chỉnh; commit, mở PR; sau khi PR tài liệu CP6.5 gộp thì cập nhật nhánh này theo `main`.
+
+## 2026-11-19 — Tuần 6, CP6.5: thử Google thật trên production, đồng bộ tài liệu
+- **Nhánh:** `feat/google-production` (tạo từ `main` ở `3530c52`, sau khi PR #44 gộp). Chỉ sửa tài liệu, không đổi mã. Chưa commit.
+- **Đã làm:** kiểm cấu hình Google trên Render bằng lệnh gọi đọc; người dùng tự đăng nhập Google thật trên production; đồng bộ `README.md` (trạng thái, các dòng Google/Hồ sơ/Dashboard/Admin, Tuần 6 từ `Planned` sang `Done`), `docs/TESTING.md` (mục "Kiểm Google trên production (CP6.5)"), `docs/PLAN.md`.
+- **Đăng nhập Google thật trên production (người dùng thử, có ảnh chụp):** thành công và về trang chủ; `/ho-so` hiện "Học sinh", "Đăng nhập bằng: Google", không có Đổi mật khẩu; F5 vẫn đăng nhập; cookie `SESSION` (`HttpOnly`, `Secure`, `SameSite=Lax`) và `XSRF-TOKEN` (`Secure`). Như vậy secret đặt trên Render đúng. Email của tài khoản thử không ghi vào repo.
+- **Kiểm tra:**
+  - Frontend: `npx vitest run` 30 file, **439 test qua**; `npx tsc -b` và `npm run lint` không báo gì. Lệnh đếm của `docs/TESTING.md`: backend **553**, frontend **439**, khớp bảng "Tổng quan" và lần chạy backend đủ ngày 2026-11-18 (390 + 163, mã nguồn không đổi từ đó nên không chạy lại; máy chỉ còn khoảng 1 GB RAM trống).
+  - Production `https://space-x-47f1.onrender.com`: `GET /api/health` 200. `GET /oauth2/authorization/google` trả 302 sang `accounts.google.com` với `redirect_uri=https://space-x-47f1.onrender.com/login/oauth2/code/google` (đúng `https`), kèm `state` và PKCE (`S256`). Vậy `GOOGLE_CLIENT_ID` đã có trên Render.
+  - Google chấp nhận redirect URI đó: gọi thẳng địa chỉ xác thực của Google với URI production và với `http://localhost:8080/...` đều được chuyển tới trang đăng nhập (`/v3/signin/identifier`), còn URI giả (đối chứng) bị chuyển tới `/signin/oauth/error`. Nghĩa là không có `redirect_uri_mismatch`.
+  - `GOOGLE_CLIENT_ID` và `GOOGLE_CLIENT_SECRET` trong `.env` ở máy là cặp hợp lệ (người dùng cho phép đọc `.env`): gửi mã giả tới `https://oauth2.googleapis.com/token` thì Google trả `invalid_grant` ("Malformed auth code"), còn secret giả (đối chứng) trả `invalid_client`. Giá trị không in ra màn hình hay ghi vào file.
+  - **Thử tay bổ sung trên production (người dùng tự làm, báo đạt cả 5 mục, chưa ghi chi tiết từng bước):** các trang Admin (Dashboard, khóa học, bài học, tạo/đăng/ảnh/xóa bài thử); Admin khóa tài khoản Google → bị đăng xuất, đăng nhập lại về `loi=google-bi-khoa`, mở khóa vào lại được; đăng nhập lại không tạo thêm dòng; email trùng tài khoản mật khẩu → `loi=google-email-mat-khau`; điện thoại thật.
+  - **Chưa kiểm trên production:** hủy ở màn hình xin quyền của Google (chỉ có test tự động). Còn thêm một tài khoản email-mật khẩu thử trong database production (không có API xóa người dùng). `.env` không có tài khoản Google nào và mình không tự đăng nhập vào tài khoản Google của người dùng, nên lần đăng nhập thật do người dùng làm.
+- **Lỗi gặp và cách sửa:** `README.md` còn ghi Tuần 6, Dashboard, Google ở trạng thái `Planned` và "chưa có giao diện quản lý khóa học" dù đã gộp từ PR #39 đến #44; đã sửa.
+- **Học được:** có thể kiểm redirect URI ở Google mà không cần đăng nhập, bằng cách so phản hồi với một URI giả; lỗi sai URI hiện ra trước bước nhập tài khoản. Gửi mã giả tới endpoint token của Google phân biệt được secret đúng (`invalid_grant`) với secret sai (`invalid_client`).
+- **Tiếp theo:** quét bí mật và email trước khi commit; commit, mở PR, chờ CI xanh rồi gộp; sau đó nội dung bảo vệ Tuần 6 và sang Tuần 7 (chia đoạn, truy xuất, chatbot RAG).
 
 ## 2026-11-18 — Tuần 6, CP6.4: giao diện Admin nội dung (khóa học, bài học, ảnh)
 - **Nhánh:** `feat/admin-content-ui` (tạo từ `main` sau khi PR #42 và #43 đã gộp). Chưa commit.
