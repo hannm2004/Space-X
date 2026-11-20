@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router'
 import AdminLayout from './AdminLayout'
 import { AuthProvider } from './AuthContext'
 import Layout from './Layout'
+import AboutPage from './pages/AboutPage'
 import AdminCoursesPage from './pages/AdminCoursesPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
 import AdminLessonEditPage from './pages/AdminLessonEditPage'
@@ -31,6 +32,7 @@ function App() {
           <Route path="dang-ky" element={<RegisterPage />} />
           <Route path="ho-so" element={<ProfilePage />} />
           <Route path="doi-mat-khau" element={<ChangePasswordPage />} />
+          <Route path="gioi-thieu" element={<AboutPage />} />
           <Route path="chinh-sach-bao-mat" element={<PrivacyPage />} />
           <Route path="dieu-khoan-su-dung" element={<TermsPage />} />
           <Route path="ban-quyen" element={<CopyrightPage />} />

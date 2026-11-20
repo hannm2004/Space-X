@@ -16,6 +16,20 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-20 — Favicon, thẻ mô tả/chia sẻ, robots.txt và trang Giới thiệu
+- **Nhánh:** `feat/seo-about-favicon` (tạo từ `main` ở `2dfbcc7`, sau khi PR #49 đã gộp). Chưa commit.
+- **Lý do:** so với website của một viện nghiên cứu (AIDT), Space-X còn thiếu phần "đầu trang" mà trình duyệt, Google và mạng xã hội đọc, và chưa có trang nói dự án là gì.
+- **Đã làm:**
+  - `favicon.svg`: thay tia sét tím mặc định của Vite bằng logo `</>` màu nhấn của giao diện; xóa `icons.svg` mẫu không dùng.
+  - `index.html`: thêm meta description và thẻ Open Graph (tiêu đề, mô tả, loại, ngôn ngữ, tên site). Chưa có `og:image` vì ảnh phải là PNG/JPEG có địa chỉ tuyệt đối, sẽ thêm khi chốt địa chỉ chính thức.
+  - `public/robots.txt`: chặn `/api/` và `/quan-tri`, còn lại cho vào.
+  - Trang `/gioi-thieu` (`AboutPage.tsx`) và liên kết "Giới thiệu" ở chân trang. Chatbot và trợ lý AI ghi rõ là "chưa có trên bản hiện tại"; trang không chứa email hay mã số sinh viên.
+- **Kiểm tra:** test viết trước và chạy đỏ (thiếu `robots.txt`, thiếu `AboutPage`, thiếu liên kết chân trang), rồi xanh. `siteMetadata.test.ts` 7 test, `AboutPage.test.tsx` 5 test, `App.test.tsx` +1. Chạy đủ bằng PowerShell: 38 file, 555 test qua (lệnh đếm trong `docs/TESTING.md` ra 555), lint và build sạch, `dist` có `favicon.svg` và `robots.txt`. Xem bằng trình duyệt ở máy (Vite): trang Giới thiệu đúng bố cục, không tràn ngang, thẻ meta và favicon đúng. Backend không đổi (608).
+- **Lỗi gặp và cách sửa:** lần chạy đủ đầu có 1 test của `AdminUsersPage.test.tsx` đỏ (mong đợi `vi.fn()` được gọi với `['', 0]`); chạy riêng 3 lần đều xanh. Đây là lần thứ hai tệp này đỏ một lần khi chạy đủ, chưa tìm ra nguyên nhân chắc chắn.
+- **Học được:** `meta description` nên dài khoảng 70–160 ký tự; thẻ Open Graph dùng khi dán liên kết lên Zalo hay Facebook; `robots.txt` chỉ là lời nhắc cho công cụ tìm kiếm, không thay thế phân quyền (trang quản trị vẫn do backend chặn).
+- **Chưa kiểm tra:** `robots.txt` và favicon trên bản deploy (cần deploy rồi mở `/robots.txt`).
+- **Tiếp theo:** nhóm 4–6 (bài trước/sau, "Tiếp tục học", số bài trên thẻ khóa học) khi người dùng chốt.
+
 ## 2026-11-20 — Làm lại giao diện cho chuyên nghiệp hơn, bỏ phong cách giống giao diện của Claude
 - **Nhánh:** `feat/ui-professional` (tạo từ `main` ở `6b7634e`; PR #48, đã gộp vào `main` ở `7838ae0` và deploy).
 - **Yêu cầu của người dùng:** giao diện trông như bản sao của Claude, quá giống AI và thiếu chuyên nghiệp.

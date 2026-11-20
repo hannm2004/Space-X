@@ -182,6 +182,11 @@ export default function Layout() {
           </FooterColumn>
           <FooterColumn title="Hỗ trợ">
             <li>
+              <Link to="/gioi-thieu" className={FOOTER_LINK}>
+                Giới thiệu
+              </Link>
+            </li>
+            <li>
               <Link to="/#hoi-dap" className={FOOTER_LINK}>
                 Câu hỏi thường gặp
               </Link>

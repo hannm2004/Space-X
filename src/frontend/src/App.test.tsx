@@ -425,6 +425,16 @@ describe('App — chân trang và trang chính sách', () => {
     expect(href('Câu hỏi thường gặp')).toBe('/#hoi-dap')
   })
 
+  it('chân trang có liên kết Giới thiệu và /gioi-thieu hiện đúng trang', async () => {
+    renderAt('/khong-co-trang-nay')
+
+    const footer = await screen.findByRole('contentinfo')
+    expect(within(footer).getByRole('link', { name: 'Giới thiệu' }).getAttribute('href')).toBe('/gioi-thieu')
+    cleanup()
+    renderAt('/gioi-thieu')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Giới thiệu Space-X' })).not.toBeNull()
+  })
+
   it('chân trang có liên kết góp ý, báo lỗi mở sang trang ngoài an toàn', async () => {
     renderAt('/khong-co-trang-nay')
 
