@@ -16,6 +16,14 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-20 — Chốt Tuần 6: chạy test lần cuối, rà soát, bản nộp, rút gọn README
+- **Nhánh:** `feat/week6-docs-sync` (tạo từ `main` ở `6b7634e` sau khi gộp PR #47; chưa commit, chưa mở PR).
+- **Đã làm:** chạy lại toàn bộ test trên `main`; kiểm production; đối chiếu `docs/PLAN.md` (Tuần 6 và CP6.5 chuyển sang Done/Deployed, tệp chỉ ở máy); viết lại `README.md` gọn hơn (từ 15 KB xuống 5,8 KB: bỏ đoạn trạng thái dài và lịch sử PR trong bảng, sửa phần dữ liệu mẫu còn ghi "3 khóa, 6 bài", đưa nhãn trạng thái về đúng thực tế); viết báo cáo `docs/reports/week-06.md` và dựng bản nộp `nop-bai/…_Tuan6.docx` và `.pdf` (10 trang; chỉ ở máy).
+- **Kiểm tra (2026-11-20, trên `main`):** backend 430 test không cần Docker qua + 178 test tích hợp MySQL 8.4 thật qua = 608 (`Failures: 0, Errors: 0`, `BUILD SUCCESS`); frontend `tsc` và lint sạch, 35 tệp 530 test qua; lệnh đếm 608 và 530 khớp. CI, CodeQL, Security của cả 8 lần gộp trong tuần đều `success` (đọc từ API công khai của GitHub). Production: `/api/health` 200; `/api/courses` có 7 khóa và trường `coverImageUrl` (V5 đã chạy); `/api/courses/<slug>/cover` trả 404 khi chưa có ảnh; ba trang chính sách và `/quan-tri` trả 200; tệp JS đang chạy `index-C0MvSxRD.js` trùng tên với bản build ở máy và chứa các chuỗi của tính năng mới.
+- **Rà soát, còn thiếu (đã ghi vào mục "Hạn chế" của báo cáo):** chưa khóa nào trên production có ảnh bìa tải lên; `sortOrder` của Tin học 10, 11, 12 chưa đổi nên thứ tự khóa còn xen kẽ; 31 bài chưa được giáo viên bộ môn đối chiếu; ba trang chính sách chưa có người am hiểu pháp lý xem; chưa thử "Hủy" ở màn hình Google trên production; chưa quét khả năng truy cập toàn bộ trang bằng công cụ tự động.
+- **Lỗi gặp và cách sửa:** (1) Word báo lỗi RPC khi đóng sau khi xuất PDF, nhưng tệp PDF đã đúng (10 trang); không còn tiến trình Word nào. (2) Hệ thống chặn lệnh buộc dừng mọi tiến trình Word (có thể đóng tài liệu đang mở của người dùng); không làm lại cách khác. (3) Máy chưa có PyMuPDF để xem trước PDF nên mở PDF bằng Chrome và xem từng trang chính (1, 2, 5, 9, 10).
+- **Tiếp theo:** người dùng xem bản nộp, rồi nhờ commit và mở PR cho `feat/week6-docs-sync` (README, `current-state.md`); nộp hai tệp `…_Tuan6.docx` và `.pdf` trong `nop-bai/` lên LMS và OneDrive; sau đó làm hai việc thủ công ở trang Admin (tải ảnh bìa khóa, đổi `sortOrder` Tin học 10, 11, 12 thành 5, 6, 7) và bắt đầu Tuần 7 (chia đoạn, truy xuất, chatbot RAG; đo lại Hit@3 với 31 bài thật).
+
 ## 2026-11-20 — Ảnh bìa khóa học (D35), nút chọn ảnh, liên kết thành nút, thẩm định skill giao diện
 - **Nhánh:** `feat/ui-nut-bam` (cùng nhánh với mục dưới; chưa commit, chưa mở PR).
 - **Yêu cầu của người dùng (kèm ảnh chụp trang):** (1) chưa có nút tải ảnh, chỉ có ô chọn tệp mặc định; (2) các chữ liên kết như "Danh sách bài học" cũng phải là nút; (3) "phải thấy ảnh bìa của các khóa học". Sau đó nhờ bổ sung 5 skill thiết kế giao diện.
