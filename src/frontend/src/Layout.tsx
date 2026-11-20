@@ -7,9 +7,20 @@ import ThemeToggle from './ThemeToggle'
 import { FEEDBACK_URL } from './links'
 import { useAuth } from './useAuth'
 
-// Mục điều hướng ở đầu trang: gạch chân màu nhấn khi đang ở khu vực đó (aria-current báo cho trình đọc màn hình).
+// Mục điều hướng ở đầu trang: nền nhạt màu nhấn khi đang ở khu vực đó (aria-current báo cho trình đọc màn hình).
 const NAV_LINK =
-  'border-b-2 border-transparent py-1 text-[0.9375rem] font-medium hover:border-line-strong aria-[current=page]:border-accent'
+  'rounded-md px-3 py-2 text-[0.9375rem] font-medium text-muted hover:bg-sunken hover:text-ink aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent'
+
+// Biểu tượng thương hiệu: dấu ngoặc nhọn của mã nguồn trong khung vuông bo góc. Chỉ trang trí nên ẩn với trình đọc màn hình.
+function BrandMark() {
+  return (
+    <span aria-hidden="true" className="grid size-8 place-items-center rounded-lg bg-accent text-on-accent">
+      <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 7l-5 5 5 5M15 7l5 5-5 5" />
+      </svg>
+    </span>
+  )
+}
 
 function PrimaryNav({ isAdmin }: { isAdmin: boolean }) {
   const { pathname } = useLocation()
@@ -18,7 +29,7 @@ function PrimaryNav({ isAdmin }: { isAdmin: boolean }) {
   const inAdmin = pathname.startsWith('/quan-tri')
 
   return (
-    <nav aria-label="Chính" className="flex items-center gap-5">
+    <nav aria-label="Chính" className="flex items-center gap-1">
       <Link to="/" className={NAV_LINK} aria-current={inCourses ? 'page' : undefined}>
         Khóa học
       </Link>
@@ -45,8 +56,8 @@ function AccountNav() {
 
   if (state.status === 'anonymous') {
     return (
-      <nav aria-label="Tài khoản" className="flex items-center gap-4">
-        <Link to="/dang-nhap" className="text-[0.9375rem] font-medium hover:underline hover:underline-offset-4">
+      <nav aria-label="Tài khoản" className="flex items-center gap-2">
+        <Link to="/dang-nhap" className={NAV_LINK}>
           Đăng nhập
         </Link>
         <Link to="/dang-ky" className="btn btn-primary btn-sm">
@@ -69,13 +80,14 @@ function AccountNav() {
     }
   }
 
+  const initial = state.user.displayName.trim().charAt(0).toUpperCase() || '?'
   return (
     <nav aria-label="Tài khoản" className="flex flex-wrap items-center gap-x-3 gap-y-1">
-      <Link
-        to="/ho-so"
-        className="max-w-36 truncate text-[0.9375rem] font-medium hover:underline hover:underline-offset-4"
-      >
-        {state.user.displayName}
+      <Link to="/ho-so" className="flex items-center gap-2 rounded-md py-1 pr-2 hover:bg-sunken">
+        <span aria-hidden="true" className="grid size-8 place-items-center rounded-full bg-accent-soft text-sm font-bold text-accent">
+          {initial}
+        </span>
+        <span className="max-w-32 truncate text-[0.9375rem] font-medium">{state.user.displayName}</span>
       </Link>
       <button type="button" onClick={handleLogout} className={SECONDARY}>
         Đăng xuất
@@ -92,11 +104,13 @@ function AccountNav() {
 function FooterColumn({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
-      <h2 className="eyebrow">{title}</h2>
+      <h2 className="text-sm font-semibold text-ink">{title}</h2>
       <ul className="mt-3 space-y-2">{children}</ul>
     </div>
   )
 }
+
+const FOOTER_LINK = 'text-muted hover:text-ink hover:underline'
 
 // Khung chung của mọi trang: thanh đầu trang, vùng nội dung của trang đang mở và chân trang.
 export default function Layout() {
@@ -105,10 +119,20 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b border-line">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-8 gap-y-3 px-4 py-4 sm:px-6">
-          <Link to="/" className="font-serif text-2xl font-bold tracking-tight">
-            Space-<span className="text-accent">X</span>
+      {/* Mục đầu tiên khi bấm Tab: nhảy thẳng tới nội dung, khỏi đi qua cả thanh đầu trang ở mỗi trang. Chỉ hiện khi có focus. */}
+      <a
+        href="#noi-dung"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface focus:px-4 focus:py-2 focus:font-semibold focus:shadow-lift"
+      >
+        Bỏ qua tới nội dung
+      </a>
+      <header className="sticky top-0 z-30 border-b border-line bg-surface/90 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
+          <Link to="/" className="flex items-center gap-2 text-xl font-bold tracking-tight">
+            <BrandMark />
+            <span translate="no">
+              Space-<span className="text-accent">X</span>
+            </span>
           </Link>
           <PrimaryNav isAdmin={isAdmin} />
           <div className="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
@@ -121,24 +145,27 @@ export default function Layout() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 sm:px-6">
+      <main id="noi-dung" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
         <Outlet />
       </main>
 
-      <footer className="border-t border-line bg-sunken">
-        <div className="mx-auto grid max-w-5xl gap-8 px-4 py-10 text-sm sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]">
+      <footer className="border-t border-line bg-surface">
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm sm:px-6 md:grid-cols-[1.5fr_1fr_1fr_1fr_1fr]">
           <div>
-            <p className="font-serif text-xl font-bold tracking-tight">
-              Space-<span className="text-accent">X</span>
+            <p className="flex items-center gap-2 text-lg font-bold tracking-tight">
+              <BrandMark />
+              <span translate="no">
+                Space-<span className="text-accent">X</span>
+              </span>
             </p>
-            <p className="mt-2 max-w-xs text-muted">
+            <p className="mt-3 max-w-xs text-muted">
               Học liệu Tin học lớp 6 đến lớp 12 theo Chương trình GDPT 2018. Dự án học tập, miễn phí.
             </p>
           </div>
           <FooterColumn title="Trung học cơ sở">
             {[6, 7, 8, 9].map((grade) => (
               <li key={grade}>
-                <Link to={`/khoa-hoc/tin-hoc-${grade}`} className="hover:underline">
+                <Link to={`/khoa-hoc/tin-hoc-${grade}`} className={FOOTER_LINK}>
                   Lớp {grade}
                 </Link>
               </li>
@@ -147,7 +174,7 @@ export default function Layout() {
           <FooterColumn title="Trung học phổ thông">
             {[10, 11, 12].map((grade) => (
               <li key={grade}>
-                <Link to={`/khoa-hoc/tin-hoc-${grade}`} className="hover:underline">
+                <Link to={`/khoa-hoc/tin-hoc-${grade}`} className={FOOTER_LINK}>
                   Lớp {grade}
                 </Link>
               </li>
@@ -155,36 +182,36 @@ export default function Layout() {
           </FooterColumn>
           <FooterColumn title="Hỗ trợ">
             <li>
-              <Link to="/#hoi-dap" className="hover:underline">
+              <Link to="/#hoi-dap" className={FOOTER_LINK}>
                 Câu hỏi thường gặp
               </Link>
             </li>
             <li>
-              <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" className="hover:underline">
+              <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" className={FOOTER_LINK}>
                 Góp ý, báo lỗi
               </a>
             </li>
           </FooterColumn>
           <FooterColumn title="Pháp lý">
             <li>
-              <Link to="/chinh-sach-bao-mat" className="hover:underline">
+              <Link to="/chinh-sach-bao-mat" className={FOOTER_LINK}>
                 Chính sách bảo mật
               </Link>
             </li>
             <li>
-              <Link to="/dieu-khoan-su-dung" className="hover:underline">
+              <Link to="/dieu-khoan-su-dung" className={FOOTER_LINK}>
                 Điều khoản sử dụng
               </Link>
             </li>
             <li>
-              <Link to="/ban-quyen" className="hover:underline">
+              <Link to="/ban-quyen" className={FOOTER_LINK}>
                 Bản quyền
               </Link>
             </li>
           </FooterColumn>
         </div>
         <div className="border-t border-line">
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-4 text-sm text-muted sm:px-6">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-4 text-sm text-muted sm:px-6">
             <p>© 2026 Space-X</p>
             <HealthStatus />
           </div>

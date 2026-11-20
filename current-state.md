@@ -16,6 +16,23 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-20 — Làm lại giao diện cho chuyên nghiệp hơn, bỏ phong cách giống giao diện của Claude
+- **Nhánh:** `feat/ui-professional` (tạo từ `main` ở `6b7634e`; chưa commit, chưa mở PR).
+- **Yêu cầu của người dùng:** giao diện trông như bản sao của Claude, quá giống AI và thiếu chuyên nghiệp.
+- **Nhận định nguyên nhân:** phong cách "giáo trình hiện đại" đã chọn ở đợt trước (nền giấy kem, chữ có chân, một màu cam đất) gần trùng bảng nhận diện của Claude; thêm các dấu hiệu quen thuộc của giao diện sinh tự động: đánh số 01–04, nhãn chữ hoa nhỏ, gạch chân đen dày dưới tiêu đề mục, khung cảnh báo vạch trái, góc gần vuông, không có chiều sâu.
+- **Đã làm:**
+  - `index.css`: bảng màu mới (nền xám xanh nhạt, thẻ trắng, một màu nhấn xanh lam, chế độ tối xanh đậm); bỏ chữ có chân (tiêu đề dùng chung font không chân); bán kính góc 8–16 px; bóng nhẹ cho thẻ; nút phụ nền trắng thay cho kiểu đảo màu; thêm `btn-light`; cuộn mượt và tôn trọng "giảm chuyển động"; `text-wrap: balance` cho tiêu đề.
+  - Khung chung (`Layout.tsx`): thanh đầu trang trắng dính khi cuộn, biểu tượng thương hiệu, mục đang chọn là nền nhạt, ảnh đại diện chữ cái đầu; chân trang sạch; nội dung rộng 6xl.
+  - Trang chủ (`HomePage.tsx`): hero hai cột có lưới ô "Bạn đang học lớp mấy?", thẻ khóa kiểu nền tảng học (ảnh bìa, huy hiệu cấp học, hiệu ứng nổi khi di chuột), mục tính năng bằng thẻ có biểu tượng thay cho số 01–04, hỏi đáp trong khung, dải đăng ký nền màu nhấn.
+  - Hình bìa mặc định (`CourseCover.tsx`): khối màu phẳng thay giấy kẻ ô và dãy 0/1; THCS nền xanh nhạt, THPT nền xanh đậm.
+  - Đồng bộ các trang còn lại: thẻ bo góc có bóng nhẹ, khung cảnh báo có viền thay vạch trái, thanh tiến độ bo tròn, danh sách bài của khóa và kết quả tìm kiếm là thẻ có huy hiệu số tròn, tab quản trị, bảng và khối mã trong bài học, trang đăng nhập và đăng ký, Dashboard thành thẻ số liệu, Hồ sơ chia ba thẻ.
+  - `designSystem.test.ts` (mới, 10 test): đọc `index.css`, tính độ tương phản (chữ tối thiểu 4,5:1, viền ô nhập tối thiểu 3:1) ở cả hai chế độ, chặn quay lại chữ có chân và kiểu cũ.
+- **Rà lại bằng bộ luật Web Interface Guidelines (bản cố định ở máy, hash đã kiểm):** ra 6 điểm thật, đã sửa kèm test (test viết trước, chạy đỏ 6 chỗ rồi xanh): thêm liên kết "Bỏ qua tới nội dung" và `id` cho `main`; `scroll-padding-top` để thanh đầu trang dính không che phần tử đang focus; `<meta name="theme-color">` cho cả hai chế độ; `translate="no"` cho tên thương hiệu; `-webkit-tap-highlight-color` đặt có chủ ý; hàng thống kê ở trang chủ đổi về thứ tự `dt` rồi `dd` (hiển thị vẫn số ở trên nhờ `flex-col-reverse`). Các luật còn lại đạt.
+- **Kiểm tra:** `tsc` và lint sạch; `npx vitest run` 36 tệp, **542 test qua** (530 cũ không phải sửa + 12 mới); lệnh đếm = 542; `npm run build` thành công. Độ tương phản đã tính: thấp nhất 5,14:1 (sáng) và 5,88:1 (tối). Thử phá có chủ ý (làm chữ phụ nhạt đi) thì test màu báo đỏ 1,84:1, rồi đã khôi phục. Xem bằng Chrome với backend và MySQL thật: trang chủ (sáng, tối, cỡ điện thoại, không tràn ngang), trang khóa, trang đọc bài, đăng nhập, quản lý khóa học và bài học, Dashboard, hồ sơ (trước khi bọc thẻ), tìm kiếm, chính sách.
+- **Chưa kiểm:** production (chưa deploy); điện thoại thật; trang hồ sơ sau khi bọc thẻ, đổi mật khẩu, đăng ký, quản lý người dùng, trang sửa bài chưa xem lại bằng mắt (chỉ chạy test); chưa quét khả năng truy cập bằng công cụ tự động.
+- **Lỗi gặp và cách xử lý:** sau khi thử phá có chủ ý, máy chủ Vite đang chạy vẫn giữ bản CSS đã phá dù tệp đã khôi phục (Tailwind lưu đệm), làm chữ phụ trông nhạt trong ảnh chụp; đã đo màu thực tế (`#a6b3c5` thay vì `#475972`) để phát hiện và khởi động lại riêng Vite. Bản build và test không bị ảnh hưởng vì chạy từ tệp trên đĩa. Ô đỏ-xanh ở khóa Tin học 10 trong ảnh chụp là ảnh thử trong database ở máy, không có trên production.
+- **Tiếp theo:** người dùng xem thử và nói chỗ nào chưa ưng (đổi màu nhấn hay kiểu thẻ chỉ cần sửa ở `index.css` và `HomePage.tsx`); sau đó commit, mở PR. Lưu ý: nhánh `feat/week6-docs-sync` cũng thêm mục vào đầu `current-state.md`, gộp hai PR có thể xung đột ở đúng chỗ này (giữ cả hai mục).
+
 ## 2026-11-20 — Ảnh bìa khóa học (D35), nút chọn ảnh, liên kết thành nút, thẩm định skill giao diện
 - **Nhánh:** `feat/ui-nut-bam` (cùng nhánh với mục dưới; chưa commit, chưa mở PR).
 - **Yêu cầu của người dùng (kèm ảnh chụp trang):** (1) chưa có nút tải ảnh, chỉ có ô chọn tệp mặc định; (2) các chữ liên kết như "Danh sách bài học" cũng phải là nút; (3) "phải thấy ảnh bìa của các khóa học". Sau đó nhờ bổ sung 5 skill thiết kế giao diện.

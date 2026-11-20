@@ -26,7 +26,7 @@ npm run build      # tsc -b rồi vite build, kết quả ở dist/
 | Đọc bài | `MarkdownContent.tsx` (không cho HTML thô, chỉ ảnh `/api/images/{id}`), `HeaderSearch.tsx`, `SearchForm.tsx` |
 | Tiến độ học | `ProgressBar.tsx`, `LessonProgressControl.tsx`, `CourseProgressPanel.tsx`, `useMyProgress.ts` |
 | Giao diện sáng/tối | `theme.ts` (hàm thuần), `ThemeToggle.tsx`, script chống nháy màu trong `index.html` |
-| Hệ thiết kế | `index.css`: màu theo vai trò (`bg-paper`, `bg-surface`, `bg-sunken`, `text-ink`, `text-muted`, `border-line`, `bg-accent`, `text-danger`, `text-success`...) khai báo bằng `@theme`, giá trị chế độ tối đổi ở khối `.dark` nên thành phần không cần `dark:`; lớp dùng lại `btn btn-primary/secondary/danger`, `btn-sm`, `btn-icon`, `field`, `link`, `eyebrow`; tiêu đề dùng `font-serif`. Không dùng màu mặc định của Tailwind (`slate-*`, `blue-*`...) trong thành phần. |
+| Hệ thiết kế | `index.css`: màu theo vai trò (`bg-paper`, `bg-surface`, `bg-sunken`, `text-ink`, `text-muted`, `border-line`, `bg-accent`, `text-danger`, `text-success`...) khai báo bằng `@theme`, giá trị chế độ tối đổi ở khối `.dark` nên thành phần không cần `dark:`; lớp dùng lại `btn btn-primary/secondary/danger/light`, `btn-sm`, `btn-icon`, `field`, `link`, `eyebrow`. Phong cách: nền xám xanh nhạt, thẻ trắng bo góc 12 px có bóng nhẹ (`shadow-card`, `shadow-lift`), một màu nhấn xanh lam, chữ không chân cho cả tiêu đề. Không dùng màu mặc định của Tailwind (`slate-*`, `blue-*`...) trong thành phần. `designSystem.test.ts` tính độ tương phản của bảng màu (WCAG AA) ở cả hai chế độ và chặn quay lại chữ có chân. |
 
 Phần lớn file `X.ts(x)` có `X.test.ts(x)` cạnh nó.
 

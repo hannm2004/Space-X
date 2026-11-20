@@ -255,7 +255,11 @@ describe('HomePage — bố cục như trang khóa học thực tế', () => {
 
     renderHome()
 
-    expect(await screen.findByText('4 khóa học')).not.toBeNull()
+    const soKhoa = await screen.findByText('4 khóa học')
+    expect(soKhoa).not.toBeNull()
+    // Thuật ngữ (dt) đứng trước định nghĩa (dd) để trình đọc màn hình đọc đúng thứ tự; hiển thị đảo lại bằng CSS.
+    expect(soKhoa.tagName).toBe('DD')
+    expect(soKhoa.previousElementSibling?.tagName).toBe('DT')
   })
 
   it('có phần "Mỗi bài học có gì" nêu những thứ có thật: kiểm tra nhanh, tiến độ, tìm kiếm', async () => {

@@ -11,9 +11,9 @@ const CELL = 'px-3 py-2'
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div>
-      <dt className="text-sm text-muted">{label}</dt>
-      <dd className="font-serif text-4xl font-bold tabular-nums">{value.toLocaleString('vi-VN')}</dd>
+    <div className="rounded-xl border border-line bg-surface p-5 shadow-card">
+      <dt className="text-sm font-medium text-muted">{label}</dt>
+      <dd className="mt-1 text-4xl font-bold tabular-nums">{value.toLocaleString('vi-VN')}</dd>
     </div>
   )
 }
@@ -22,11 +22,11 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   // Id sinh tự động: tiêu đề tiếng Việt có dấu cách nên không dùng được làm id cho aria-labelledby.
   const headingId = useId()
   return (
-    <section aria-labelledby={headingId} className="border-t-2 border-ink pt-3">
-      <h2 id={headingId} className="eyebrow">
+    <section aria-labelledby={headingId}>
+      <h2 id={headingId} className="text-lg font-semibold">
         {title}
       </h2>
-      <dl className="mt-4 grid grid-cols-2 gap-6 sm:grid-cols-3">{children}</dl>
+      <dl className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3">{children}</dl>
     </section>
   )
 }
@@ -36,10 +36,10 @@ function CourseTable({ courses }: { courses: AdminDashboard['courses'] }) {
     return <p className="mt-3">Chưa có khóa học nào.</p>
   }
   return (
-    <div className="mt-3 overflow-x-auto">
+    <div className="mt-3 overflow-x-auto rounded-xl border border-line bg-surface shadow-card">
       <table aria-label="Số bài theo khóa" className="w-full text-left">
         <thead>
-          <tr className="border-b border-line-strong">
+          <tr className="border-b border-line bg-sunken">
             <th scope="col" className={CELL}>
               Khóa
             </th>
@@ -53,7 +53,7 @@ function CourseTable({ courses }: { courses: AdminDashboard['courses'] }) {
         </thead>
         <tbody>
           {courses.map((course) => (
-            <tr key={course.courseId} className="border-b border-line">
+            <tr key={course.courseId} className="border-b border-line last:border-b-0">
               <td className={CELL}>{course.title}</td>
               <td className={`${CELL} text-right tabular-nums`}>{course.published}</td>
               <td className={`${CELL} text-right tabular-nums`}>{course.draft}</td>
@@ -98,8 +98,8 @@ function DashboardContent() {
         <Stat label="Học sinh đã bắt đầu học" value={learning.activeLearners} />
         <Stat label="Lượt hoàn thành bài" value={learning.completedLessons} />
       </Section>
-      <section className="border-t-2 border-ink pt-3">
-        <h2 className="eyebrow">Bài học theo khóa</h2>
+      <section>
+        <h2 className="text-lg font-semibold">Bài học theo khóa</h2>
         <CourseTable courses={courses} />
       </section>
     </div>
@@ -126,7 +126,7 @@ export default function AdminDashboardPage() {
 
   return (
     <>
-      <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Tổng quan</h1>
+      <h1 className="text-4xl font-bold leading-tight tracking-tight">Tổng quan</h1>
       <DashboardContent />
     </>
   )

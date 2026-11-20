@@ -45,7 +45,7 @@ export default function LessonPage() {
     if (error instanceof ApiError && error.status === 404) {
       return (
         <>
-          <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Không tìm thấy bài học</h1>
+          <h1 className="text-4xl font-bold leading-tight tracking-tight">Không tìm thấy bài học</h1>
           <Link to="/" className={`${SECONDARY} mt-6`}>
             Về trang chủ
           </Link>
@@ -67,9 +67,9 @@ export default function LessonPage() {
         <span aria-hidden="true">← </span>
         {from ? `Quay lại ${from.courseTitle}` : 'Trang chủ'}
       </Link>
-      <h1 className="mt-5 font-serif text-4xl font-bold leading-tight tracking-tight sm:text-5xl">{lesson.title}</h1>
+      <h1 className="mt-5 text-4xl font-bold leading-tight tracking-tight sm:text-5xl">{lesson.title}</h1>
       {lesson.summary && (
-        <p data-testid="lesson-summary" className="mt-4 font-serif text-xl leading-relaxed text-muted">
+        <p data-testid="lesson-summary" className="mt-4 text-xl leading-relaxed text-muted">
           {lesson.summary}
         </p>
       )}
@@ -78,14 +78,14 @@ export default function LessonPage() {
           data-testid="lesson-cover"
           src={lesson.coverImageUrl}
           alt=""
-          className="mt-6 max-h-80 w-full border border-line object-cover"
+          className="mt-6 max-h-80 w-full rounded-xl border border-line object-cover"
         />
       )}
       <div className="mt-6">
         <MarkdownContent source={withoutLeadingTitle(lesson.contentMd, lesson.title)} />
       </div>
       {/* Bài chỉ tải được khi đã đăng nhập nên ở đây chắc chắn có tài khoản. key để sang bài khác thì gắn lại từ đầu. */}
-      <div className="mt-12 border-t-2 border-ink pt-6">
+      <div className="mt-12 border-t border-line pt-6">
         <LessonProgressControl key={lesson.id} lessonId={lesson.id} />
       </div>
     </article>

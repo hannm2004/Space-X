@@ -16,7 +16,7 @@ function PolicyPage({ title, intro, children }: { title: string; intro: ReactNod
   return (
     <article className="mx-auto max-w-2xl">
       <p className="eyebrow">Thông tin pháp lý</p>
-      <h1 className="mt-3 font-serif text-4xl font-bold leading-tight tracking-tight">{title}</h1>
+      <h1 className="mt-3 text-4xl font-bold leading-tight tracking-tight">{title}</h1>
       <p className="mt-3 text-sm text-muted">Cập nhật lần cuối: {UPDATED}</p>
       <p className="mt-6 text-lg">{intro}</p>
       {children}
@@ -27,7 +27,7 @@ function PolicyPage({ title, intro, children }: { title: string; intro: ReactNod
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-10">
-      <h2 className="border-t-2 border-ink pt-3 font-serif text-2xl font-bold tracking-tight">{title}</h2>
+      <h2 className="border-t border-line pt-4 text-2xl font-bold tracking-tight">{title}</h2>
       <div className="mt-3 space-y-3 leading-[1.75]">{children}</div>
     </section>
   )
@@ -221,7 +221,7 @@ export function CopyrightPage() {
       </Section>
 
       <section aria-labelledby="report-title" className="mt-10">
-        <h2 id="report-title" className="border-t-2 border-ink pt-3 font-serif text-2xl font-bold tracking-tight">
+        <h2 id="report-title" className="border-t border-line pt-4 text-2xl font-bold tracking-tight">
           Báo vi phạm
         </h2>
         <div className="mt-3 space-y-3 leading-[1.75]">

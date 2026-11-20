@@ -49,7 +49,7 @@ export default function CourseProgressPanel({ progress, courseSlug, linkState, o
   const finished = course.continueLesson === null && course.completedLessons >= course.totalLessons
 
   return (
-    <section aria-label="Tiến độ học" className="border border-line bg-surface p-5">
+    <section aria-label="Tiến độ học" className="rounded-xl border border-line bg-surface p-5 shadow-card">
       <ProgressBar percent={course.percent} label={`Tiến độ ${course.courseTitle}`} />
       <p className={`mt-2 ${MUTED}`}>
         {course.completedLessons}/{course.totalLessons} bài hoàn thành
@@ -78,7 +78,7 @@ export default function CourseProgressPanel({ progress, courseSlug, linkState, o
       </div>
 
       {confirming && (
-        <div className="mt-4 border border-line bg-surface p-3">
+        <div className="mt-4 rounded-lg border border-line bg-paper p-3">
           <p>Xóa toàn bộ tiến độ của khóa này? Việc này không hoàn tác được.</p>
           {failed && (
             <p role="alert" className="mt-2 text-sm text-danger">

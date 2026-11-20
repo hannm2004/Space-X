@@ -193,7 +193,7 @@ function SearchBox({ onClose }: { onClose: CloseHandler }) {
         className="field w-44 py-1.5 text-sm sm:w-64"
       />
       {(options.length > 0 || status !== null) && (
-        <div className="absolute right-0 top-full z-20 mt-2 w-[min(20rem,calc(100vw-2rem))] overflow-hidden border border-line-strong bg-surface text-sm">
+        <div className="absolute right-0 top-full z-20 mt-2 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-line bg-surface shadow-lift text-sm">
           {status !== null && (
             <p role="status" className="px-3 py-2 text-muted">
               {status}

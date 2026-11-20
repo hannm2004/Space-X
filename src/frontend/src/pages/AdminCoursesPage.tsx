@@ -196,7 +196,7 @@ function CourseRow({ course, onChanged }: { course: AdminCourse; onChanged: (mes
           <CourseCover
             slug={course.slug}
             coverImageUrl={course.coverImageUrl}
-            className="w-full shrink-0 border border-line sm:w-44 sm:self-start"
+            className="w-full shrink-0 rounded-lg border border-line sm:w-44 sm:self-start"
           />
           <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -246,7 +246,7 @@ function CourseRow({ course, onChanged }: { course: AdminCourse; onChanged: (mes
           )}
           {/* Bỏ ảnh bìa là xóa ảnh đã tải lên (không hoàn tác được), nên cũng phải xác nhận như xóa khóa. */}
           {mode === 'removeCover' && (
-            <div className="mt-3 border border-line bg-surface p-3">
+            <div className="mt-3 rounded-lg border border-line bg-paper p-3">
               <p>{`Bỏ ảnh bìa của khóa "${course.title}"? Ảnh đã tải lên sẽ bị xóa và khóa quay về hình mặc định theo lớp. Việc này không hoàn tác được.`}</p>
               <div className="mt-3 flex gap-3">
                 <button type="button" disabled={busy} onClick={handleRemoveCover} className={DANGER}>
@@ -259,7 +259,7 @@ function CourseRow({ course, onChanged }: { course: AdminCourse; onChanged: (mes
             </div>
           )}
           {mode === 'delete' && (
-            <div className="mt-3 border border-line bg-surface p-3">
+            <div className="mt-3 rounded-lg border border-line bg-paper p-3">
               <p>{`Xóa khóa học "${course.title}"? Chỉ xóa được khi khóa không còn bài học. Việc này không hoàn tác được.`}</p>
               <div className="mt-3 flex gap-3">
                 <button type="button" disabled={busy} onClick={handleDelete} className={DANGER}>
@@ -326,7 +326,7 @@ function CourseManager() {
 
   return (
     <>
-      <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Quản lý khóa học</h1>
+      <h1 className="text-4xl font-bold leading-tight tracking-tight">Quản lý khóa học</h1>
       <p className="mt-3">
         <Link to="/quan-tri/bai-hoc" className={SECONDARY}>
           Quản lý bài học
