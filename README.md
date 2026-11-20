@@ -6,7 +6,7 @@ Website học **Tin học từ lớp 6 đến lớp 12** (Chương trình GDPT 2
 
 **Bản chạy thật:** https://space-x-47f1.onrender.com — gói Free tự ngủ, lần mở đầu có thể chậm 30–60 giây.
 
-**Hiện tại (Tuần 6 đã chốt):** bản chưa có AI đã deploy. 7 khóa, 31 bài; 608 test backend và 555 test frontend, CI xanh. Chatbot RAG và AI Agent là việc của Tuần 7–8.
+**Hiện tại (Tuần 6 đã chốt):** bản chưa có AI đã deploy. 7 khóa, 31 bài; 618 test backend và 569 test frontend, CI xanh. Chatbot RAG và AI Agent là việc của Tuần 7–8.
 
 ## Tính năng
 
@@ -16,6 +16,7 @@ Website học **Tin học từ lớp 6 đến lớp 12** (Chương trình GDPT 2
 | | Hồ sơ cá nhân, đổi mật khẩu | Deployed |
 | Học tập | Khóa học theo lớp (6–12) kèm ảnh bìa, danh sách bài | Deployed |
 | | Đọc bài (Markdown, bảng, ảnh), tìm kiếm bài | Deployed |
+| | Bài trước/sau, đường dẫn, thời gian đọc, số bài của khóa | Tested |
 | | Tiến độ học: hoàn thành bài, phần trăm theo khóa, học tiếp, học lại | Deployed |
 | | Chatbot RAG trả lời kèm trích dẫn bài học | Planned |
 | | AI Agent gọi công cụ chỉ đọc để gợi ý bài | Planned |

@@ -246,8 +246,9 @@
   }
 }
 
-/* Viền nổi khi dùng bàn phím: cùng một kiểu ở mọi phần tử tương tác. */
-:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+/* Viền nổi khi dùng bàn phím: cùng một kiểu ở mọi phần tử tương tác. Phần tử tabindex="-1" (vùng nội dung chính, tiêu đề
+   bài) chỉ nhận focus bằng mã sau khi đổi trang nên không có viền. */
+:where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }

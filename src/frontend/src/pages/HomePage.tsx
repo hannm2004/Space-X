@@ -24,14 +24,16 @@ function CourseCard({ course, mine }: { course: Course; mine: CourseProgress | u
         {/* Ảnh bìa công khai (khách cũng thấy). Khóa chưa có ảnh thì CourseCover vẽ hình mặc định theo lớp. */}
         <CourseCover slug={course.slug} coverImageUrl={course.coverImageUrl} />
         <span className="flex flex-1 flex-col p-5">
-          {(level || grade !== null) && (
-            <span className="mb-3 flex items-center gap-2">
-              {level && (
-                <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent">{level}</span>
-              )}
-              {grade !== null && <span className="text-xs font-medium text-muted">Lớp {grade}</span>}
+          <span className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1">
+            {level && (
+              <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent">{level}</span>
+            )}
+            {grade !== null && <span className="text-xs font-medium text-muted">Lớp {grade}</span>}
+            {/* Số bài đã đăng; khóa chưa có bài ghi "Sắp có bài" thay vì "0 bài" để không giống một lỗi. */}
+            <span className="ml-auto text-xs font-medium text-muted">
+              {course.lessonCount > 0 ? `${course.lessonCount} bài` : 'Sắp có bài'}
             </span>
-          )}
+          </span>
           <h4 className="text-lg font-bold tracking-tight group-hover:text-accent">{course.title}</h4>
           {course.description && <span className="mt-2 block text-sm text-muted">{course.description}</span>}
           <span className="mt-auto block pt-5">
@@ -146,9 +148,9 @@ function Hero({ courses }: { courses: Course[] | null }) {
           <dl className="mt-8 grid max-w-xl grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
             {[
               [`${courses.length} khóa học`, 'từ lớp 6 đến lớp 12'],
+              [`${courses.reduce((sum, course) => sum + course.lessonCount, 0)} bài học`, 'đã đăng, thêm dần'],
               ['Miễn phí', 'không có thanh toán'],
               ['Theo chương trình', 'GDPT 2018'],
-              ['Lưu tiến độ', 'khi đã đăng nhập'],
             ].map(([value, label]) => (
               // Đọc theo thứ tự thuật ngữ rồi định nghĩa (dt trước dd); flex-col-reverse đảo lại để số nổi bật ở trên.
               <div key={value} className="flex flex-col-reverse border-l-2 border-accent pl-3">

@@ -5,10 +5,12 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.spacex.image.CourseCoverService;
 import vn.spacex.image.CoverImageLookup;
 import vn.spacex.lesson.Lesson;
+import vn.spacex.lesson.LessonCountByCourse;
 import vn.spacex.lesson.LessonRepository;
 import vn.spacex.lesson.LessonStatus;
 import vn.spacex.lesson.LessonSummaryResponse;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,15 +31,23 @@ public class CourseService {
         this.courseCoverService = courseCoverService;
     }
 
-    // Mỗi khóa kèm đường dẫn ảnh bìa (null nếu chưa có), lấy bằng một truy vấn cho cả danh sách.
+    // Mỗi khóa kèm đường dẫn ảnh bìa (null nếu chưa có) và số bài đã đăng, mỗi thứ lấy bằng một truy vấn cho cả danh sách.
     @Transactional(readOnly = true)
     public List<CourseResponse> listCourses() {
         List<Course> courses = courseRepository.findAllByOrderBySortOrderAscIdAsc();
         Map<Long, String> slugsById = new LinkedHashMap<>();
         courses.forEach(course -> slugsById.put(course.getId(), course.getSlug()));
         Map<Long, String> covers = courseCoverService.urlsByCourseId(slugsById);
+        // Học sinh chỉ thấy bài đã đăng, nên chỉ đếm PUBLISHED; khóa chưa có dòng nào thì là 0 bài.
+        Map<Long, Long> publishedCounts = new HashMap<>();
+        for (LessonCountByCourse row : lessonRepository.countLessonsByCourseAndStatus()) {
+            if (row.getStatus() == LessonStatus.PUBLISHED) {
+                publishedCounts.put(row.getCourseId(), row.getTotal());
+            }
+        }
         return courses.stream()
-                .map(course -> CourseResponse.from(course, covers.get(course.getId())))
+                .map(course -> CourseResponse.from(course, covers.get(course.getId()),
+                        publishedCounts.getOrDefault(course.getId(), 0L).intValue()))
                 .toList();
     }
 

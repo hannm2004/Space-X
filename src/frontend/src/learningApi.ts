@@ -3,7 +3,17 @@ import { asList, asNullableString, asNumber, asRecord, asString, BAD_SHAPE } fro
 
 // coverImageUrl: ảnh bìa khóa do Admin tải lên (công khai, khách cũng xem được); null khi chưa có, giao diện khi đó vẽ
 // hình mặc định theo lớp.
-export type Course = { id: number; slug: string; title: string; description: string | null; coverImageUrl?: string | null }
+// lessonCount: số bài đã đăng của khóa (không tính bài nháp).
+export type Course = {
+  id: number
+  slug: string
+  title: string
+  description: string | null
+  coverImageUrl?: string | null
+  lessonCount: number
+}
+// Tham chiếu gọn tới một khóa hoặc một bài: đủ để dựng liên kết và tên hiển thị.
+export type ContentRef = { slug: string; title: string }
 // coverImageUrl: ảnh bìa do Admin chọn (máy chủ bỏ trường khi bài chưa có ảnh bìa, nên thiếu trường nghĩa là null).
 export type LessonSummary = {
   id: number
@@ -12,7 +22,13 @@ export type LessonSummary = {
   summary: string | null
   coverImageUrl?: string | null
 }
-export type Lesson = LessonSummary & { contentMd: string }
+// course: khóa chứa bài. previous/next: bài đã đăng liền trước/sau trong khóa, null ở bài đầu/cuối khóa.
+export type Lesson = LessonSummary & {
+  contentMd: string
+  course: ContentRef
+  previous: ContentRef | null
+  next: ContentRef | null
+}
 // Trang kết quả tìm kiếm: cùng hình dạng phân trang chung của API (docs/API.md); trang đếm từ 0.
 export type LessonSearchPage = { items: LessonSummary[]; page: number; size: number; totalItems: number }
 
@@ -48,7 +64,13 @@ function parseCourse(value: unknown): Course {
     description: asNullableString(record.description),
     // Máy chủ cũ chưa có trường này: thiếu coi như null.
     coverImageUrl: record.coverImageUrl === undefined ? null : asNullableString(record.coverImageUrl),
+    lessonCount: asNumber(record.lessonCount),
   }
+}
+
+function parseContentRef(value: unknown): ContentRef {
+  const record = asRecord(value)
+  return { slug: asString(record.slug), title: asString(record.title) }
 }
 
 function parseLessonSummary(value: unknown): LessonSummary {
@@ -64,7 +86,13 @@ function parseLessonSummary(value: unknown): LessonSummary {
 
 function parseLesson(value: unknown): Lesson {
   const record = asRecord(value)
-  return { ...parseLessonSummary(record), contentMd: asString(record.contentMd) }
+  return {
+    ...parseLessonSummary(record),
+    contentMd: asString(record.contentMd),
+    course: parseContentRef(record.course),
+    previous: record.previous === null ? null : parseContentRef(record.previous),
+    next: record.next === null ? null : parseContentRef(record.next),
+  }
 }
 
 function parseSearchPage(value: unknown): LessonSearchPage {

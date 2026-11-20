@@ -68,11 +68,28 @@ class LessonControllerTest {
                 new LessonDetailResponse(11L, "may-tinh-la-gi", "Máy tính là gì", "Tóm tắt", "Nội dung"));
 
         mockMvc.perform(get("/api/lessons/may-tinh-la-gi").with(user("hocsinh")))
-                .andExpect(jsonPath("$.*", hasSize(6)))
+                .andExpect(jsonPath("$.*", hasSize(9)))
                 .andExpect(jsonPath("$.coverImageUrl").doesNotExist())
                 .andExpect(jsonPath("$.status").doesNotExist())
                 .andExpect(jsonPath("$.courseId").doesNotExist())
                 .andExpect(jsonPath("$.createdBy").doesNotExist());
+    }
+
+    @Test
+    void phanHoiCoKhoaVaBaiTruocBaiSauChiGomSlugVaTieuDe() throws Exception {
+        when(lessonService.getPublishedLesson("bai-giua")).thenReturn(new LessonDetailResponse(12L, "bai-giua",
+                "Bài giữa", null, "Nội dung", null, new ContentRef("tin-hoc-10", "Tin học 10"),
+                new ContentRef("bai-dau", "Bài đầu"), null));
+
+        mockMvc.perform(get("/api/lessons/bai-giua").with(user("hocsinh")))
+                .andExpect(jsonPath("$.course.slug").value("tin-hoc-10"))
+                .andExpect(jsonPath("$.course.title").value("Tin học 10"))
+                .andExpect(jsonPath("$.course.*", hasSize(2)))
+                .andExpect(jsonPath("$.previous.slug").value("bai-dau"))
+                .andExpect(jsonPath("$.previous.title").value("Bài đầu"))
+                .andExpect(jsonPath("$.previous.*", hasSize(2)))
+                // Bài cuối khóa: trường next vẫn có mặt và là null để giao diện biết không hiện nút "Bài sau".
+                .andExpect(jsonPath("$.next").value(org.hamcrest.Matchers.nullValue()));
     }
 
     @Test

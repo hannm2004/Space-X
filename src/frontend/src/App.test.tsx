@@ -33,7 +33,7 @@ beforeEach(() => {
   vi.mocked(logout).mockResolvedValue(undefined)
   vi.mocked(fetchHealth).mockResolvedValue('UP')
   vi.mocked(fetchCourses).mockResolvedValue([
-    { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: null },
+    { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: null, lessonCount: 1 },
   ])
   vi.mocked(fetchLessons).mockResolvedValue([
     { id: 1, slug: 'thong-tin-va-du-lieu', title: 'Thông tin và dữ liệu', summary: null },
@@ -44,6 +44,9 @@ beforeEach(() => {
     title: 'Thông tin và dữ liệu',
     summary: null,
     contentMd: 'Nội dung bài',
+    course: { slug: 'tin-hoc-10', title: 'Tin học 10' },
+    previous: null,
+    next: null,
   })
   vi.mocked(fetchProgress).mockResolvedValue([])
   vi.mocked(recordProgress).mockResolvedValue({ lessonId: 1, status: 'IN_PROGRESS' })
@@ -92,7 +95,9 @@ describe('App — định tuyến', () => {
     fireEvent.click(await screen.findByRole('link', { name: /Thông tin và dữ liệu/ }))
     expect(await screen.findByText('Nội dung bài')).not.toBeNull()
 
-    fireEvent.click(screen.getByRole('link', { name: /Quay lại Tin học 10/ }))
+    // Đường dẫn trên trang bài đưa về đúng khóa; khóa lấy từ API nên không phụ thuộc việc đi từ đâu tới.
+    const duongDan = screen.getByRole('navigation', { name: 'Đường dẫn' })
+    fireEvent.click(within(duongDan).getByRole('link', { name: 'Tin học 10' }))
     expect(await screen.findByRole('heading', { level: 1, name: 'Tin học 10' })).not.toBeNull()
   })
 

@@ -16,6 +16,29 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-20 — Bài trước/sau, đường dẫn và thời gian đọc ở trang bài; số bài của khóa
+- **Nhánh:** `feat/lesson-navigation` (tạo từ `main` ở `c06e0c9`).
+- **Lý do:** người dùng chọn nhóm 4 và 6 trong danh sách cải tiến sau khi so với một website đào tạo khác ("làm 4 và 6 trên một nhánh, 5 để sau"). Quyết định ghi ở D37 (chỉ ở máy).
+- **Đã làm:**
+  - Backend (chỉ thêm trường, chỉ đọc, không đổi database): `GET /api/courses` thêm `lessonCount` (số bài Đã đăng, một truy vấn đếm cho cả danh sách); `GET /api/lessons/{slug}` thêm `course`, `previous`, `next` (chỉ `slug`, `title`), lấy từ các bài Đã đăng cùng khóa theo `sort_order` rồi `id` nên bài Nháp và bài khóa khác không lọt vào. `LessonContent` ánh xạ thêm cột `course_id` có sẵn; record mới `ContentRef`.
+  - Frontend: trang bài có đường dẫn Trang chủ › khóa › bài (khóa lấy từ API nên mở thẳng bài vẫn đúng), "Khoảng N phút đọc" (`readingTime.ts`, 200 từ/phút), cặp Bài trước/Bài sau (bài cuối khóa có liên kết về khóa); đổi bài thì cuộn về đầu và focus vào tên bài. Thẻ khóa ghi "N bài" hoặc "Sắp có bài"; hàng số liệu ở trang chủ có tổng số bài thật. Bỏ cơ chế `LessonLinkState` (xóa `lessonLinkState.ts`).
+  - Sửa lỗi tìm ra khi xem thật: tiêu đề bài bị bao khung viền xanh khi nhận focus bằng mã, vì viền focus toàn cục (CSS không thuộc lớp nào) thắng `focus:outline-none` của Tailwind; luật nay loại phần tử `tabindex="-1"`.
+  - Tài liệu: `docs/API.md`, `docs/TESTING.md` (thêm dòng danh mục và đổi số liệu), `README.md`.
+- **Kiểm tra:**
+  - Test viết trước: backend lỗi biên dịch vì chưa có `ContentRef`, `getCourseId`, `lessonCount`; frontend nhiều chỗ đỏ; test CSS mới đỏ với đúng lý do, rồi xanh.
+  - Backend, đợt 1 (`.\mvnw test "-Dtest=!*IntegrationTest"`): `Tests run: 436, Failures: 0, Errors: 0`, `BUILD SUCCESS`. Test tích hợp MySQL 8.4 thật đã chạy riêng cho `CourseIntegrationTest` (9 test) và `LessonIntegrationTest` (8 test): qua. Đợt tích hợp đầy đủ (`-Dtest=*IntegrationTest`): `Tests run: 182`, 1 lỗi ở `CourseCoverIntegrationTest` (xem mục lỗi, đã sửa); chạy riêng lớp đó sau khi sửa: `Tests run: 10, Failures: 0`, `BUILD SUCCESS`. Vậy cả 182 test tích hợp đều qua.
+  - Frontend bằng PowerShell: `npx vitest run` 39 file, 569 test qua (lệnh đếm = 569), `tsc`, lint và build sạch.
+  - Xem bằng trình duyệt ở máy với backend và MySQL thật (Vite + Spring Boot): `/api/courses` trả đủ `lessonCount` (tổng 31 bài); trang chủ hiện "7 khóa học, 31 bài học" và "N bài" ở từng thẻ; trang bài có đường dẫn, thời gian đọc, Bài trước/Bài sau; bấm Bài sau thì cuộn từ 1947 về 0 và focus vào tên bài; bài cuối khóa có "Về khóa"; màn hình hẹp không tràn ngang.
+- **Lỗi gặp và cách sửa:**
+  - CI backend của PR #51 đỏ: `CourseCoverIntegrationTest` khẳng định mỗi khóa có đúng 5 trường (`$[0].length()` = 5), nay là 6 vì thêm `lessonCount`. Tôi chỉ tìm kiểu `hasSize(5)` nên sót cách viết `length()`, và chưa chạy riêng lớp này trước khi commit. Sửa thành 6; quét lại mọi chỗ đếm trường trong test backend, đây là chỗ duy nhất.
+  - Mockito `UnfinishedStubbing`: gọi hàm dựng mock ngay trong `when(...)`; sửa bằng dựng ra biến trước. Strict stubs báo khai báo thừa; dùng `lenient` có chú thích lý do.
+  - Test mới của trang chủ không tìm thấy thẻ khóa vì script chèn test của tôi làm lọt ký tự điều khiển (backspace) vào biểu thức; gỡ ký tự đó.
+  - Test danh mục `buttonStyles.test.ts` đỏ vì breadcrumb dùng class `link` ở trang bài; đổi sang kiểu chữ như liên kết chân trang thay vì nới lỏng test.
+  - File cài đặt test gán `window.scrollTo` làm ba test chạy ở môi trường node vỡ; thêm điều kiện `typeof window`.
+- **Học được:** thêm một trường vào JSON thì phải tìm mọi chỗ khẳng định "đúng N trường" bằng mọi cách viết (`hasSize`, `length()`, `.*`) và sửa mọi fixture, rồi chạy cả đợt test tích hợp trước khi commit chứ không chỉ các lớp liên quan; CSS không thuộc lớp nào thắng mọi tiện ích Tailwind bất kể độ đặc hiệu; nhờ xem bằng trình duyệt thật mới thấy khung viền xanh mà test không bắt được.
+- **Chưa kiểm tra:** các trang mới trên bản deploy.
+- **Tiếp theo:** mục 5 ("Tiếp tục học" ở trang chủ) khi người dùng chốt; mở Pull Request, chờ CI xanh.
+
 ## 2026-11-20 — Favicon, thẻ mô tả/chia sẻ, robots.txt và trang Giới thiệu
 - **Nhánh:** `feat/seo-about-favicon` (tạo từ `main` ở `2dfbcc7`, sau khi PR #49 đã gộp). Chưa commit.
 - **Lý do:** so với website của một viện nghiên cứu (AIDT), Space-X còn thiếu phần "đầu trang" mà trình duyệt, Google và mạng xã hội đọc, và chưa có trang nói dự án là gì.
@@ -27,7 +50,7 @@ Mẫu một mục:
 - **Kiểm tra:** test viết trước và chạy đỏ (thiếu `robots.txt`, thiếu `AboutPage`, thiếu liên kết chân trang), rồi xanh. `siteMetadata.test.ts` 7 test, `AboutPage.test.tsx` 5 test, `App.test.tsx` +1. Chạy đủ bằng PowerShell: 38 file, 555 test qua (lệnh đếm trong `docs/TESTING.md` ra 555), lint và build sạch, `dist` có `favicon.svg` và `robots.txt`. Xem bằng trình duyệt ở máy (Vite): trang Giới thiệu đúng bố cục, không tràn ngang, thẻ meta và favicon đúng. Backend không đổi (608).
 - **Lỗi gặp và cách sửa:** lần chạy đủ đầu có 1 test của `AdminUsersPage.test.tsx` đỏ (mong đợi `vi.fn()` được gọi với `['', 0]`); chạy riêng 3 lần đều xanh. Đây là lần thứ hai tệp này đỏ một lần khi chạy đủ, chưa tìm ra nguyên nhân chắc chắn.
 - **Học được:** `meta description` nên dài khoảng 70–160 ký tự; thẻ Open Graph dùng khi dán liên kết lên Zalo hay Facebook; `robots.txt` chỉ là lời nhắc cho công cụ tìm kiếm, không thay thế phân quyền (trang quản trị vẫn do backend chặn).
-- **Chưa kiểm tra:** `robots.txt` và favicon trên bản deploy (cần deploy rồi mở `/robots.txt`).
+- **Kiểm tra sau deploy (2026-11-20):** bằng `curl` trên bản chạy thật: `/robots.txt` 200 đúng nội dung, `/favicon.svg` 200 (`image/svg+xml`), `/gioi-thieu` 200, trang chủ có `meta description` và 5 thẻ Open Graph, `/icons.svg` 404.
 - **Tiếp theo:** nhóm 4–6 (bài trước/sau, "Tiếp tục học", số bài trên thẻ khóa học) khi người dùng chốt.
 
 ## 2026-11-20 — Làm lại giao diện cho chuyên nghiệp hơn, bỏ phong cách giống giao diện của Claude

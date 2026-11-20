@@ -86,11 +86,24 @@ class CourseIntegrationTest {
     }
 
     @Test
-    void moiKhoaChiCoNamTruongVaMoTaVaAnhBiaDeTrongThiLaNull() throws Exception {
+    void moiKhoaKemSoBaiDaDangKhongTinhBaiNhapVaKhoaChuaCoBaiLaKhong() throws Exception {
+        long coBai = themKhoa("a", "khoa a", 1);
+        themKhoa("b", "khoa b", 2);
+        themBai(coBai, "a-1", "PUBLISHED", 1, "x");
+        themBai(coBai, "a-2", "PUBLISHED", 2, "x");
+        themBai(coBai, "a-nhap", "DRAFT", 3, "x");
+
+        mockMvc.perform(get("/api/courses"))
+                .andExpect(jsonPath("$[0].lessonCount").value(2))
+                .andExpect(jsonPath("$[1].lessonCount").value(0));
+    }
+
+    @Test
+    void moiKhoaChiCoSauTruongVaMoTaVaAnhBiaDeTrongThiLaNull() throws Exception {
         long id = themKhoa("tin-hoc-10", null, 1);
 
         mockMvc.perform(get("/api/courses"))
-                .andExpect(jsonPath("$[0].*", hasSize(5)))
+                .andExpect(jsonPath("$[0].*", hasSize(6)))
                 .andExpect(jsonPath("$[0].coverImageUrl").value(nullValue()))
                 .andExpect(jsonPath("$[0].id").value(id))
                 .andExpect(jsonPath("$[0].slug").value("tin-hoc-10"))

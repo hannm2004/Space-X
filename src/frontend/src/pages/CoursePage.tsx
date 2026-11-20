@@ -6,7 +6,6 @@ import CourseProgressPanel from '../CourseProgressPanel'
 import LessonThumb from '../LessonThumb'
 import LoadError from '../LoadError'
 import { fetchCourses, fetchLessons } from '../learningApi'
-import type { LessonLinkState } from '../lessonLinkState'
 import { useAuth } from '../useAuth'
 import { useLoad } from '../useLoad'
 import { useMyProgress } from '../useMyProgress'
@@ -42,7 +41,6 @@ export default function CoursePage() {
 
   const { course, lessons } = state.data
   const title = course?.title ?? courseSlug
-  const linkState: LessonLinkState = { courseSlug, courseTitle: title }
 
   return (
     <>
@@ -65,7 +63,6 @@ export default function CoursePage() {
             <CourseProgressPanel
               progress={progress.state}
               courseSlug={courseSlug}
-              linkState={linkState}
               onChanged={progress.reload}
             />
           </div>
@@ -81,7 +78,6 @@ export default function CoursePage() {
                 <li key={lesson.id}>
                   <Link
                     to={`/bai/${encodeURIComponent(lesson.slug)}`}
-                    state={linkState}
                     className="group grid grid-cols-[2.25rem_1fr_auto] items-center gap-x-4 px-4 py-4 hover:bg-sunken sm:px-5"
                   >
                     <span

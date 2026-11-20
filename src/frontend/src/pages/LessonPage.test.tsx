@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../client'
@@ -16,9 +16,12 @@ const LESSON = {
   title: 'Thông tin và dữ liệu',
   summary: 'Phân biệt thông tin và dữ liệu',
   contentMd: '# Thông tin và dữ liệu\n\n## Hai khái niệm\n\nNội dung **quan trọng**.',
+  course: { slug: 'tin-hoc-10', title: 'Tin học 10' },
+  previous: null as { slug: string; title: string } | null,
+  next: null as { slug: string; title: string } | null,
 }
 
-function renderLesson(entry: string | { pathname: string; state: unknown } = '/bai/thong-tin-va-du-lieu') {
+function renderLesson(entry = '/bai/thong-tin-va-du-lieu') {
   return render(
     <MemoryRouter initialEntries={[entry]}>
       <Routes>
@@ -28,7 +31,12 @@ function renderLesson(entry: string | { pathname: string; state: unknown } = '/b
   )
 }
 
+const scrollToMock = vi.fn()
+
 beforeEach(() => {
+  scrollToMock.mockReset()
+  // jsdom không cuộn thật; thay bằng hàm giả để kiểm tra trang bài có đưa người học về đầu trang hay không.
+  window.scrollTo = scrollToMock as unknown as typeof window.scrollTo
   fetchLessonMock.mockReset()
   recordProgressMock.mockReset()
   recordProgressMock.mockResolvedValue({ lessonId: 1, status: 'IN_PROGRESS' })
@@ -84,39 +92,89 @@ describe('LessonPage — đọc bài', () => {
   })
 })
 
-describe('LessonPage — liên kết quay lại', () => {
-  it('đi từ trang khóa sang thì có liên kết quay lại đúng khóa đó', async () => {
-    fetchLessonMock.mockResolvedValue(LESSON)
-
-    renderLesson({
-      pathname: '/bai/thong-tin-va-du-lieu',
-      state: { courseSlug: 'tin-hoc-10', courseTitle: 'Tin học 10' },
-    })
-
-    const back = await screen.findByRole('link', { name: /Quay lại Tin học 10/ })
-    expect(back.getAttribute('href')).toBe('/khoa-hoc/tin-hoc-10')
-  })
-
-  it('mở thẳng bài (không có thông tin khóa) thì quay về trang chủ', async () => {
+describe('LessonPage — đường dẫn, thời gian đọc', () => {
+  it('có đường dẫn Trang chủ › khóa › bài, lấy khóa từ API nên mở thẳng bài vẫn đúng', async () => {
     fetchLessonMock.mockResolvedValue(LESSON)
 
     renderLesson()
 
-    const back = await screen.findByRole('link', { name: /Trang chủ/ })
-    expect(back.getAttribute('href')).toBe('/')
+    const nav = await screen.findByRole('navigation', { name: 'Đường dẫn' })
+    expect(within(nav).getByRole('link', { name: 'Trang chủ' }).getAttribute('href')).toBe('/')
+    expect(within(nav).getByRole('link', { name: 'Tin học 10' }).getAttribute('href')).toBe('/khoa-hoc/tin-hoc-10')
+    // Bài đang đọc là chữ thường, không phải liên kết, và được đánh dấu là trang hiện tại.
+    const current = within(nav).getByText('Thông tin và dữ liệu')
+    expect(current.getAttribute('aria-current')).toBe('page')
+    expect(current.closest('a')).toBeNull()
   })
 
-  it('thông tin khóa sai dạng hoặc có ký tự lạ thì bị bỏ qua', async () => {
-    fetchLessonMock.mockResolvedValue(LESSON)
+  it('tên khóa trong đường dẫn đi qua encodeURIComponent, không dựng địa chỉ từ ký tự lạ', async () => {
+    fetchLessonMock.mockResolvedValue({ ...LESSON, course: { slug: 'a b/../admin', title: 'Khóa lạ' } })
 
-    renderLesson({
-      pathname: '/bai/thong-tin-va-du-lieu',
-      state: { courseSlug: '../admin', courseTitle: 'Khóa giả' },
-    })
+    renderLesson()
 
-    const back = await screen.findByRole('link', { name: /Trang chủ/ })
-    expect(back.getAttribute('href')).toBe('/')
-    expect(screen.queryByText(/Khóa giả/)).toBeNull()
+    const link = await screen.findByRole('link', { name: 'Khóa lạ' })
+    expect(link.getAttribute('href')).toBe('/khoa-hoc/a%20b%2F..%2Fadmin')
+  })
+
+  it('hiện thời gian đọc ước tính theo độ dài bài', async () => {
+    const dai = Array.from({ length: 450 }, (_, i) => `từ${i}`).join(' ')
+    fetchLessonMock.mockResolvedValue({ ...LESSON, contentMd: dai })
+
+    renderLesson()
+
+    expect(await screen.findByText('Khoảng 3 phút đọc')).not.toBeNull()
+  })
+})
+
+describe('LessonPage — bài trước, bài sau', () => {
+  const TRUOC = { slug: 'bai-truoc', title: 'Bài trước đó' }
+  const SAU = { slug: 'bai-sau', title: 'Bài kế tiếp' }
+
+  it('bài giữa khóa có cả hai liên kết, kèm tên bài và đúng địa chỉ', async () => {
+    fetchLessonMock.mockResolvedValue({ ...LESSON, previous: TRUOC, next: SAU })
+
+    renderLesson()
+
+    const nav = await screen.findByRole('navigation', { name: 'Chuyển bài' })
+    expect(within(nav).getByRole('link', { name: /Bài trước.*Bài trước đó/ }).getAttribute('href')).toBe('/bai/bai-truoc')
+    expect(within(nav).getByRole('link', { name: /Bài sau.*Bài kế tiếp/ }).getAttribute('href')).toBe('/bai/bai-sau')
+  })
+
+  it('bài đầu khóa không có liên kết Bài trước', async () => {
+    fetchLessonMock.mockResolvedValue({ ...LESSON, previous: null, next: SAU })
+
+    renderLesson()
+
+    const nav = await screen.findByRole('navigation', { name: 'Chuyển bài' })
+    expect(within(nav).queryByRole('link', { name: /Bài trước/ })).toBeNull()
+    expect(within(nav).getByRole('link', { name: /Bài sau/ })).not.toBeNull()
+  })
+
+  it('bài cuối khóa không có Bài sau, thay vào đó có liên kết về trang khóa để không bị cụt đường', async () => {
+    fetchLessonMock.mockResolvedValue({ ...LESSON, previous: TRUOC, next: null })
+
+    renderLesson()
+
+    const nav = await screen.findByRole('navigation', { name: 'Chuyển bài' })
+    expect(within(nav).queryByRole('link', { name: /Bài sau/ })).toBeNull()
+    expect(within(nav).getByRole('link', { name: /Về khóa Tin học 10/ }).getAttribute('href')).toBe('/khoa-hoc/tin-hoc-10')
+  })
+
+  it('bấm Bài sau thì tải bài đó và đưa người học về đầu trang', async () => {
+    fetchLessonMock.mockImplementation(async (slug: string) =>
+      slug === 'bai-sau'
+        ? { ...LESSON, id: 2, slug: 'bai-sau', title: 'Bài kế tiếp', previous: { slug: 'thong-tin-va-du-lieu', title: 'Thông tin và dữ liệu' }, next: null }
+        : { ...LESSON, next: SAU },
+    )
+
+    renderLesson()
+    fireEvent.click(await screen.findByRole('link', { name: /Bài sau/ }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Bài kế tiếp' })).not.toBeNull()
+    expect(fetchLessonMock).toHaveBeenCalledWith('bai-sau')
+    await waitFor(() => expect(scrollToMock).toHaveBeenLastCalledWith(0, 0))
+    // Tiêu đề bài mới nhận focus để người dùng bàn phím và trình đọc màn hình biết trang đã đổi.
+    await waitFor(() => expect(document.activeElement?.textContent).toBe('Bài kế tiếp'))
   })
 })
 

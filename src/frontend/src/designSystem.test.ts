@@ -81,6 +81,16 @@ describe('hệ thống thiết kế — bàn phím, cảm ứng và thanh trình
     expect(css).toMatch(/html\s*\{[^}]*scroll-padding-top:\s*[\d.]+rem/)
   })
 
+  // Phần tử tabindex="-1" (vùng nội dung chính, tiêu đề bài) chỉ nhận focus bằng mã sau khi đổi trang, người dùng không
+  // Tab tới được. Viền focus toàn cục là CSS không thuộc lớp nào nên thắng cả focus:outline-none của Tailwind, vì vậy
+  // phải loại các phần tử này ngay trong luật, nếu không tiêu đề bài bị bao khung xanh mỗi lần mở bài.
+  it('viền focus bàn phím không áp cho phần tử tabindex="-1" chỉ nhận focus bằng mã', () => {
+    const rule = css.match(/^:where\((.*)\):focus-visible\s*\{/m)
+    expect(rule).not.toBeNull()
+    expect(rule![1]).toContain('[tabindex]:not([tabindex="-1"])')
+    expect(rule![1]).not.toMatch(/(^|,\s*)\[tabindex\](,|$)/)
+  })
+
   it('đặt màu nháy khi chạm trên điện thoại có chủ ý', () => {
     expect(css).toContain('-webkit-tap-highlight-color')
   })
