@@ -1,6 +1,6 @@
 # Thiết kế cơ sở dữ liệu Space-X
 
-Trạng thái (cập nhật 2026-11-19): **đã có 4 migration** (`V4__add_lesson_image_cover.sql` thêm cột `lesson_images.is_cover`, D33; phần mô tả bên dưới viết đến `V3`). Trước đó (2026-11-15): **đã có 3 migration** — `V1__create_tables.sql` (6 bảng), `V2__create_spring_session_tables.sql` (bảng session) và `V3__add_lessons_fulltext_index.sql` (chỉ mục FULLTEXT cho `lessons`) — đã kiểm trên MySQL 8.4 bằng Testcontainers. `V1` chạy trên Aiven từ 2026-10-31; ứng dụng trên Render khởi động được và tìm kiếm FULLTEXT chạy đúng trên production ngày 2026-11-13 nên `V2`, `V3` cũng đã áp dụng ở đó. Schema thật tạo bằng Flyway; khi viết hoặc sửa migration phải cập nhật file này trong cùng nhánh.
+Trạng thái (cập nhật 2026-11-20): **đã có 5 migration** (`V5__create_course_covers.sql` tạo bảng `course_covers` cho ảnh bìa khóa học, D35; mô tả ở bảng bên dưới). Trước đó (2026-11-19): **đã có 4 migration** (`V4__add_lesson_image_cover.sql` thêm cột `lesson_images.is_cover`, D33; phần mô tả bên dưới viết đến `V3`). Trước đó (2026-11-15): **đã có 3 migration** — `V1__create_tables.sql` (6 bảng), `V2__create_spring_session_tables.sql` (bảng session) và `V3__add_lessons_fulltext_index.sql` (chỉ mục FULLTEXT cho `lessons`) — đã kiểm trên MySQL 8.4 bằng Testcontainers. `V1` chạy trên Aiven từ 2026-10-31; ứng dụng trên Render khởi động được và tìm kiếm FULLTEXT chạy đúng trên production ngày 2026-11-13 nên `V2`, `V3` cũng đã áp dụng ở đó. Schema thật tạo bằng Flyway; khi viết hoặc sửa migration phải cập nhật file này trong cùng nhánh.
 Hệ quản trị: MySQL 8.4, `utf8mb4`, collation `utf8mb4_0900_ai_ci` (so sánh không phân biệt hoa/thường và dấu).
 
 ## 1. Sơ đồ ERD
@@ -82,6 +82,7 @@ Bảng lưu session (Spring Session JDBC, từ việc 3.6) và bảng lịch s�
 |---|---|---|
 | `users` | Tài khoản học sinh và quản trị | `email` duy nhất; mật khẩu băm BCrypt, không bao giờ lưu rõ; `password_hash` NULL với tài khoản tạo bằng Google; `enabled = false` là bị khóa |
 | `courses` | Khóa học: Tin học 10, 11, 12 | `slug` duy nhất để dùng trong URL |
+| `course_covers` | Ảnh bìa khóa học (`V5`, D35), tách bảng để danh sách khóa không tải dữ liệu ảnh | Khóa chính chính là `course_id` nên mỗi khóa tối đa một ảnh do database giữ (đặt ảnh mới là ghi đè dòng cũ); cột `content_type`, `size_bytes`, `data` (`MEDIUMBLOB`), `updated_at` (dùng làm mốc `?v=` trong đường dẫn ảnh); chỉ PNG/JPEG/WebP, tối đa 1 MB (kiểm bằng nội dung file như ảnh bài học). Khác ảnh bài học: ảnh bìa khóa **công khai** vì trang chủ hiện cho khách |
 | `lessons` | Bài học viết bằng Markdown | Thuộc đúng một khóa; `created_by` là Admin tạo bài; chỉ bài `PUBLISHED` hiện với học sinh và được đưa vào chỉ mục tìm kiếm |
 | `lesson_images` | Ảnh chèn trong bài; cột `is_cover` (`V4`, D33) đánh dấu ảnh bìa | Thuộc đúng một bài; mỗi bài tối đa một ảnh `is_cover = 1` (do `ImageService` giữ, không có ràng buộc UNIQUE); chỉ PNG/JPEG/WebP, tối đa 1 MB (kiểm ở backend bằng nội dung file, không chỉ dựa vào đuôi) |
 | `lesson_progress` | Tiến độ của một học sinh với một bài | Cặp `(user_id, lesson_id)` duy nhất: mỗi học sinh có đúng một dòng cho mỗi bài |
@@ -92,6 +93,7 @@ Bảng lưu session (Spring Session JDBC, từ việc 3.6) và bảng lịch s�
 | Quan hệ | Kiểu | Khi xóa bản ghi cha |
 |---|---|---|
 | `courses` → `lessons` | 1–N | `RESTRICT`: không xóa khóa còn bài (API trả 409) |
+| `courses` → `course_covers` | 1–1 | `CASCADE`: xóa khóa thì xóa ảnh bìa |
 | `users` → `lessons` (`created_by`) | 1–N | Không xóa người dùng, chỉ khóa tài khoản |
 | `lessons` → `lesson_images` | 1–N | `CASCADE`: xóa bài thì xóa ảnh |
 | `lessons` → `lesson_progress` | 1–N | `CASCADE` |

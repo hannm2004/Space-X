@@ -118,7 +118,8 @@ Người dùng hiện tại luôn lấy từ session. `userId` gửi lên (đư�
 
 | Method | Đường dẫn | Quyền | Mô tả |
 |---|---|---|---|
-| GET | `/api/courses` | Công khai | Danh sách khóa học, sắp theo `sort_order` rồi `id`. Mỗi khóa: `id`, `slug`, `title`, `description` (`null` nếu để trống). Chưa có khóa nào → `[]` |
+| GET | `/api/courses` | Công khai | Danh sách khóa học, sắp theo `sort_order` rồi `id`. Mỗi khóa: `id`, `slug`, `title`, `description` (`null` nếu để trống), `coverImageUrl` (ảnh bìa khóa do Admin tải lên, dạng `/api/courses/{slug}/cover?v=<mốc thời gian>`; `null` nếu chưa có, khi đó giao diện vẽ hình mặc định theo lớp). Chưa có khóa nào → `[]` |
+| GET | `/api/courses/{slug}/cover` | Công khai | Ảnh bìa của khóa (D35): trả byte ảnh với `Content-Type` là loại do máy chủ nhận diện lúc tải lên (PNG, JPEG hoặc WebP), `Cache-Control: public, max-age=3600`, `X-Content-Type-Options: nosniff`. Công khai vì trang chủ cho khách thấy khóa học; khác ảnh trong bài (`/api/images/{id}`) vẫn cần đăng nhập. Khóa không tồn tại hoặc chưa có ảnh bìa → `404` |
 | GET | `/api/courses/{slug}/lessons` | Công khai | Danh sách bài Đã đăng của khóa, sắp theo `sort_order` rồi `id`. Mỗi bài: `id`, `slug`, `title`, `summary`, `coverImageUrl` (ảnh bìa do Admin chọn, `null` nếu chưa có); không có nội dung và không có trạng thái. Bài Nháp không bao giờ có mặt. Khóa chưa có bài đã đăng → `[]`; khóa không tồn tại → `404` |
 | GET | `/api/lessons/{slug}` | Đăng nhập | Nội dung một bài Đã đăng: `id`, `slug`, `title`, `summary`, `contentMd` (Markdown), `coverImageUrl` (`null` nếu chưa có ảnh bìa). Không có trạng thái, mã khóa hay người tạo. Bài không tồn tại và bài Nháp trả **cùng một** `404` (`detail`: "Không tìm thấy bài học") nên không dò được bài nháp. Chưa đăng nhập → `401` |
 | GET | `/api/lessons?q=từ khóa&page=0&size=20` | Đăng nhập | Tìm bài Đã đăng bằng FULLTEXT (D29), phân trang. Xem "Tìm bài" bên dưới |
@@ -210,10 +211,12 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
 | GET | `/api/admin/dashboard` | Số người dùng (tổng, mới trong 7 ngày), số bài theo trạng thái và theo khóa, số học sinh đang học, số lượt hoàn thành bài |
-| GET | `/api/admin/courses` | Danh sách khóa cho trang quản trị, sắp theo `sortOrder` rồi `id`. Mỗi khóa: `id`, `slug`, `title`, `description` (`null` nếu để trống), `sortOrder`. Khác `GET /api/courses` (công khai, không có `sortOrder`). Chưa có khóa nào → `[]`. Xem "Khóa học (Admin)" bên dưới |
+| GET | `/api/admin/courses` | Danh sách khóa cho trang quản trị, sắp theo `sortOrder` rồi `id`. Mỗi khóa: `id`, `slug`, `title`, `description` (`null` nếu để trống), `sortOrder`, `coverImageUrl` (`null` nếu chưa có ảnh bìa). Khác `GET /api/courses` (công khai, không có `sortOrder`). Chưa có khóa nào → `[]`. Xem "Khóa học (Admin)" bên dưới |
 | POST | `/api/admin/courses` | Tạo khóa. `201` kèm khóa vừa tạo; `400` dữ liệu sai (kèm `errors`); `409` slug trùng. Xem "Khóa học (Admin)" bên dưới |
 | PUT | `/api/admin/courses/{id}` | Sửa khóa. `200`; `400`; `404` không có khóa; `409` slug trùng với khóa khác |
-| DELETE | `/api/admin/courses/{id}` | Xóa khóa. `204`; `404`; `409` khóa còn bài (kể cả bài Nháp) |
+| DELETE | `/api/admin/courses/{id}` | Xóa khóa. `204`; `404`; `409` khóa còn bài (kể cả bài Nháp). Ảnh bìa của khóa bị xóa theo (`CASCADE`) |
+| POST | `/api/admin/courses/{id}/cover` | Đặt ảnh bìa khóa (D35). `multipart/form-data`, phần tên `file`. Mỗi khóa một ảnh: đặt ảnh mới thì thay ảnh cũ. `200` kèm `{ "coverImageUrl": "/api/courses/{slug}/cover?v=..." }`; `404` không có khóa; `413` ảnh lớn hơn 1 MB; `415` không phải PNG, JPEG hoặc WebP (nhận diện bằng nội dung tệp, không tin đuôi tệp hay `Content-Type` do trình duyệt khai báo). Khách → `401`, học sinh → `403`, thiếu CSRF → `403` |
+| DELETE | `/api/admin/courses/{id}/cover` | Bỏ ảnh bìa khóa. `204` (cũng `204` khi khóa chưa có ảnh); `404` không có khóa |
 | GET | `/api/admin/lessons` | Mọi bài kể cả Nháp; lọc `?courseId=&status=`, phân trang. Xem "Bài học (Admin)" bên dưới |
 | GET | `/api/admin/lessons/{id}` | Chi tiết một bài để sửa (kể cả Nháp), có `contentMd`. `404` nếu không có |
 | POST | `/api/admin/lessons` | Tạo bài, luôn là `DRAFT`, người tạo lấy từ session. `201`; `400`; `404` không có khóa; `409` slug trùng |
@@ -248,7 +251,7 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 
 ### Khóa học (Admin) — `GET`, `POST`, `PUT`, `DELETE /api/admin/courses`
 
-`GET /api/admin/courses` trả mảng khóa (`id`, `slug`, `title`, `description`, `sortOrder`) sắp theo `sortOrder` rồi `id`. Có endpoint riêng vì `GET /api/courses` (công khai) không có `sortOrder` mà form sửa khóa cần giá trị hiện tại. Khách → `401`, học sinh → `403`. Mục dưới mô tả thân của `POST` và `PUT`:
+`GET /api/admin/courses` trả mảng khóa (`id`, `slug`, `title`, `description`, `sortOrder`, `coverImageUrl`) sắp theo `sortOrder` rồi `id`. Có endpoint riêng vì `GET /api/courses` (công khai) không có `sortOrder` mà form sửa khóa cần giá trị hiện tại. Khách → `401`, học sinh → `403`. Mục dưới mô tả thân của `POST` và `PUT`:
 
 ```json
 { "slug": "tin-hoc-10", "title": "Tin học 10", "description": "Chương trình lớp 10", "sortOrder": 1 }
