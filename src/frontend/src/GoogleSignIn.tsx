@@ -33,7 +33,7 @@ export default function GoogleSignIn({ label }: { label: string }) {
       <p className="mb-5 flex items-center gap-4 text-sm text-muted before:h-px before:flex-1 before:bg-line after:h-px after:flex-1 after:bg-line">
         hoặc
       </p>
-      <a href="/oauth2/authorization/google" className="btn w-full border-line-strong bg-surface text-ink hover:bg-sunken">
+      <a href="/oauth2/authorization/google" className="btn btn-neutral w-full">
         <GoogleLogo />
         {label}
       </a>

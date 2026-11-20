@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation } from 'react-router'
 import { fetchProfile, updateDisplayName, type LoginMethod, type Profile, type Role } from '../authApi'
+import { SECONDARY } from '../buttons'
 import { errorMessages } from '../formErrors'
 import { ErrorAlert, SubmitButton, TextField } from '../FormParts'
 import LoadError from '../LoadError'
@@ -11,8 +12,6 @@ const MAX_NAME_LENGTH = 100
 
 const ROLE_LABEL: Record<Role, string> = { LEARNER: 'Học sinh', ADMIN: 'Quản trị viên' }
 const METHOD_LABEL: Record<LoginMethod, string> = { LOCAL: 'Email và mật khẩu', GOOGLE: 'Google' }
-
-const LINK = 'link'
 
 // Cắt thẳng từ chuỗi ISO của máy chủ (yyyy-MM-dd...) để không phụ thuộc múi giờ hay ICU của trình duyệt.
 function formatDate(iso: string): string | null {
@@ -101,7 +100,7 @@ function ProfileDetails({ profile }: { profile: Profile }) {
         <h2 className="font-serif text-2xl font-bold tracking-tight">Mật khẩu</h2>
         {profile.authProvider === 'LOCAL' ? (
           <p className="mt-2">
-            <Link to="/doi-mat-khau" className={LINK}>
+            <Link to="/doi-mat-khau" className={SECONDARY}>
               Đổi mật khẩu
             </Link>
           </p>

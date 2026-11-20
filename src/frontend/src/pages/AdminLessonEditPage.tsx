@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import {
   createLesson,
@@ -18,18 +18,18 @@ import {
   type LessonStatus,
 } from '../adminApi'
 import AdminGate from '../AdminGate'
-import { CARD, DANGER, LINK, NO_PERMISSION, SECONDARY, SUCCESS_BOX } from '../adminUi'
+import { CARD, DANGER, NO_PERMISSION, SECONDARY, SUCCESS_BOX } from '../adminUi'
 import { ApiError } from '../client'
+import FilePickButton from '../FilePickButton'
 import { errorMessages } from '../formErrors'
 import { ErrorAlert, SubmitButton, TextField } from '../FormParts'
+import { IMAGE_ACCEPT, IMAGE_HINT, imageProblem } from '../imageUpload'
 import LoadError from '../LoadError'
 import MarkdownContent from '../MarkdownContent'
 import { useLoad } from '../useLoad'
 
 const LIST_PATH = '/quan-tri/bai-hoc'
 const MAX_CONTENT_LENGTH = 100000
-const MAX_IMAGE_BYTES = 1024 * 1024
-const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp']
 const FIELD = `mt-1 field`
 const STATUS_LABEL: Record<LessonStatus, string> = { DRAFT: 'Nháp', PUBLISHED: 'Đã đăng' }
 
@@ -210,30 +210,34 @@ function ImagePanel({ lessonId, onInsert }: { lessonId: number; onInsert: (snipp
   const [uploading, setUploading] = useState(false)
   const [messages, setMessages] = useState<string[]>([])
   const [notice, setNotice] = useState<string | null>(null)
+  const sectionRef = useRef<HTMLElement>(null)
+  const { hash } = useLocation()
 
-  async function handleFile(event: ChangeEvent<HTMLInputElement>) {
-    const input = event.target
-    const file = input.files?.[0]
-    if (!file || uploading) return
+  // Liên kết "Ảnh" ở danh sách bài mở trang này kèm #anh-cua-bai: mục ảnh nằm cuối trang nên cuộn tới đó cho người dùng.
+  // ImagePanel chỉ hiện khi bài đã tải xong, nên lúc nó gắn vào trang là lúc có chỗ để cuộn tới.
+  useEffect(() => {
+    if (hash === '#anh-cua-bai') sectionRef.current?.scrollIntoView?.({ block: 'start' })
+  }, [hash])
+
+  async function handleFile(file: File) {
+    if (uploading) return
     setNotice(null)
     // Kiểm ở trình duyệt chỉ để báo sớm; máy chủ kiểm lại loại tệp thật và cỡ (415, 413).
-    if (!IMAGE_TYPES.includes(file.type)) {
-      setMessages(['Chỉ nhận ảnh PNG, JPEG hoặc WebP.'])
-    } else if (file.size > MAX_IMAGE_BYTES) {
-      setMessages(['Ảnh lớn hơn 1 MB. Hãy chọn ảnh nhỏ hơn.'])
-    } else {
-      setMessages([])
-      setUploading(true)
-      try {
-        await uploadLessonImage(lessonId, file)
-        setNotice('Đã tải ảnh. Bấm "Chèn vào bài" để thêm ảnh vào nội dung, hoặc "Đặt làm ảnh bìa" để ảnh hiện ở danh sách bài và kết quả tìm kiếm.')
-        reload()
-      } catch (error) {
-        setMessages(errorMessages(error, 'Không tải được ảnh. Hãy thử lại.'))
-      }
-      setUploading(false)
+    const problem = imageProblem(file)
+    if (problem !== null) {
+      setMessages([problem])
+      return
     }
-    input.value = ''
+    setMessages([])
+    setUploading(true)
+    try {
+      await uploadLessonImage(lessonId, file)
+      setNotice('Đã tải ảnh. Bấm "Chèn vào bài" để thêm ảnh vào nội dung, hoặc "Đặt làm ảnh bìa" để ảnh hiện ở danh sách bài và kết quả tìm kiếm.')
+      reload()
+    } catch (error) {
+      setMessages(errorMessages(error, 'Không tải được ảnh. Hãy thử lại.'))
+    }
+    setUploading(false)
   }
 
   let list
@@ -254,22 +258,19 @@ function ImagePanel({ lessonId, onInsert }: { lessonId: number; onInsert: (snipp
   }
 
   return (
-    <section aria-labelledby="images-heading" className="mt-8">
+    <section ref={sectionRef} id="anh-cua-bai" aria-labelledby="images-heading" className="mt-8 scroll-mt-6">
       <h2 id="images-heading" className="text-xl font-semibold">
         Ảnh của bài
       </h2>
-      <div className="mt-3">
-        <label htmlFor="image-upload" className="block text-sm font-medium">
-          Tải ảnh lên (PNG, JPEG hoặc WebP, tối đa 1 MB)
-        </label>
-        <input
-          id="image-upload"
-          type="file"
-          accept={IMAGE_TYPES.join(',')}
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <FilePickButton
+          label="Chọn ảnh từ máy"
+          inputLabel={`Tải ảnh lên (${IMAGE_HINT})`}
+          accept={IMAGE_ACCEPT}
           disabled={uploading}
-          onChange={handleFile}
-          className={`mt-1 block w-full text-sm`}
+          onFile={handleFile}
         />
+        <p className="text-sm text-muted">{IMAGE_HINT}.</p>
       </div>
       {uploading && <p className="mt-2 text-muted">Đang tải ảnh lên...</p>}
       {messages.length > 0 && (
@@ -345,7 +346,7 @@ function LessonForm({ courses, lesson, flash }: { courses: AdminCourse[]; lesson
     <>
       <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">{lesson ? 'Sửa bài học' : 'Thêm bài học'}</h1>
       <p className="mt-3">
-        <Link to={LIST_PATH} className={LINK}>
+        <Link to={LIST_PATH} className={SECONDARY}>
           Danh sách bài học
         </Link>
       </p>
@@ -394,10 +395,9 @@ function LessonForm({ courses, lesson, flash }: { courses: AdminCourse[]; lesson
           {courses.length === 0 && (
             <p className="mt-1 text-sm text-muted">
               Chưa có khóa học nào.{' '}
-              <Link to="/quan-tri/khoa-hoc" className={LINK}>
+              <Link to="/quan-tri/khoa-hoc" className={SECONDARY}>
                 Tạo khóa học trước
               </Link>
-              .
             </p>
           )}
         </div>
@@ -511,7 +511,7 @@ function NotFound() {
     <>
       <p className="text-lg">Không tìm thấy bài học.</p>
       <p className="mt-3">
-        <Link to={LIST_PATH} className={LINK}>
+        <Link to={LIST_PATH} className={SECONDARY}>
           Về danh sách bài học
         </Link>
       </p>

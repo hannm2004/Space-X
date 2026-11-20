@@ -47,6 +47,33 @@ beforeEach(() => {
   restartCourseMock.mockResolvedValue(undefined)
 })
 
+describe('CoursePage — ảnh bìa khóa học', () => {
+  it('đầu trang khóa hiện ảnh bìa của khóa', async () => {
+    fetchCoursesMock.mockResolvedValue([
+      { ...COURSES[0], coverImageUrl: '/api/courses/tin-hoc-10/cover?v=3' },
+      COURSES[1],
+    ])
+    fetchLessonsMock.mockResolvedValue([])
+
+    renderCourse()
+
+    await screen.findByRole('heading', { level: 1, name: 'Tin học 10' })
+    const cover = screen.getByTestId('course-cover')
+    expect(cover.querySelector('img')?.getAttribute('src')).toBe('/api/courses/tin-hoc-10/cover?v=3')
+    // Ảnh nằm ngay màn hình đầu: tải ngay, không tải lười.
+    expect(cover.querySelector('img')?.getAttribute('loading')).toBe('eager')
+  })
+
+  it('khóa chưa có ảnh bìa thì đầu trang hiện hình mặc định theo lớp', async () => {
+    fetchLessonsMock.mockResolvedValue([])
+
+    renderCourse()
+
+    await screen.findByRole('heading', { level: 1, name: 'Tin học 10' })
+    expect(screen.getByTestId('course-cover').getAttribute('data-kind')).toBe('generated')
+  })
+})
+
 describe('CoursePage', () => {
   it('hiện "đang tải" trong lúc chờ', () => {
     fetchLessonsMock.mockReturnValue(new Promise(() => {}))

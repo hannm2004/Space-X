@@ -1,4 +1,5 @@
 import { Link, useLocation, useParams } from 'react-router'
+import { SECONDARY } from '../buttons'
 import { ApiError } from '../client'
 import LessonProgressControl from '../LessonProgressControl'
 import LoadError from '../LoadError'
@@ -34,7 +35,7 @@ export default function LessonPage() {
           <Link
             to="/dang-nhap"
             state={{ from: location.pathname }}
-            className="mt-4 inline-block btn btn-primary"
+            className="btn btn-primary mt-4"
           >
             Đăng nhập
           </Link>
@@ -45,7 +46,7 @@ export default function LessonPage() {
       return (
         <>
           <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Không tìm thấy bài học</h1>
-          <Link to="/" className="link mt-6 inline-block">
+          <Link to="/" className={`${SECONDARY} mt-6`}>
             Về trang chủ
           </Link>
         </>
@@ -61,7 +62,7 @@ export default function LessonPage() {
     <article className="mx-auto max-w-2xl">
       <Link
         to={from ? `/khoa-hoc/${from.courseSlug}` : '/'}
-        className="link text-sm"
+        className={SECONDARY}
       >
         <span aria-hidden="true">← </span>
         {from ? `Quay lại ${from.courseTitle}` : 'Trang chủ'}

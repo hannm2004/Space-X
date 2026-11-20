@@ -1,5 +1,6 @@
 import { useEffect, useId, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
+import CourseCover from '../CourseCover'
 import { gradeOf, groupCourses, levelOf, type CourseGroup } from '../courseGroups'
 import LoadError from '../LoadError'
 import { fetchCourses, type Course, type CourseProgress } from '../learningApi'
@@ -20,16 +21,15 @@ function CourseCard({ course, mine }: { course: Course; mine: CourseProgress | u
         to={`/khoa-hoc/${encodeURIComponent(course.slug)}`}
         className="group flex h-full flex-col border border-line bg-surface hover:border-accent"
       >
-        <span className="flex items-end justify-between border-b border-line bg-sunken px-5 py-5">
-          <span aria-hidden="true" className="font-serif text-6xl font-bold leading-none text-accent">
-            {grade ?? '·'}
-          </span>
-          <span className="text-right">
-            {level && <span className="block border border-ink px-2 py-0.5 text-xs font-bold tracking-wider">{level}</span>}
-            {grade !== null && <span className="mt-1 block text-sm text-muted">Lớp {grade}</span>}
-          </span>
-        </span>
+        {/* Ảnh bìa công khai (khách cũng thấy). Khóa chưa có ảnh thì CourseCover vẽ hình mặc định theo lớp. */}
+        <CourseCover slug={course.slug} coverImageUrl={course.coverImageUrl} className="border-b border-line" />
         <span className="flex flex-1 flex-col p-5">
+          {(level || grade !== null) && (
+            <span className="eyebrow mb-2 flex items-center gap-2">
+              {level && <span className="border border-ink px-1.5 py-0.5 text-ink">{level}</span>}
+              {grade !== null && <span>Lớp {grade}</span>}
+            </span>
+          )}
           <h4 className="font-serif text-xl font-bold tracking-tight group-hover:underline group-hover:underline-offset-4">
             {course.title}
           </h4>

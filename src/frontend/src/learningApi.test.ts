@@ -32,9 +32,27 @@ describe('fetchCourses', () => {
 
     expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/courses')
     expect(courses).toEqual([
-      { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Khóa lớp 10' },
-      { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null },
+      { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Khóa lớp 10', coverImageUrl: null },
+      { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, coverImageUrl: null },
     ])
+  })
+
+  it('giữ đường dẫn ảnh bìa của khóa; thiếu trường (máy chủ cũ) hay null đều thành null', async () => {
+    apiRequestMock.mockResolvedValue([
+      { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: null, coverImageUrl: '/api/courses/tin-hoc-10/cover?v=1' },
+      { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, coverImageUrl: null },
+      { id: 3, slug: 'tin-hoc-12', title: 'Tin học 12', description: null },
+    ])
+
+    const courses = await fetchCourses()
+
+    expect(courses.map((course) => course.coverImageUrl)).toEqual(['/api/courses/tin-hoc-10/cover?v=1', null, null])
+  })
+
+  it('ném lỗi khi coverImageUrl của khóa không phải chuỗi', async () => {
+    apiRequestMock.mockResolvedValue([{ id: 1, slug: 'a', title: 'A', description: null, coverImageUrl: 5 }])
+
+    await expect(fetchCourses()).rejects.toThrow('không đúng dạng')
   })
 
   it('chưa có khóa nào thì trả về mảng rỗng', async () => {

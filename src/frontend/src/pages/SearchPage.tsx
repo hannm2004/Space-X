@@ -1,12 +1,11 @@
 import { Link, useLocation, useSearchParams } from 'react-router'
+import { SECONDARY } from '../buttons'
 import { ApiError } from '../client'
 import LessonThumb from '../LessonThumb'
 import LoadError from '../LoadError'
 import { searchLessons } from '../learningApi'
 import SearchForm from '../SearchForm'
 import { useLoad } from '../useLoad'
-
-const LINK = 'btn btn-secondary btn-sm'
 
 // Chỉ nhận số nguyên không âm; chữ, số âm hay số thập phân coi như trang 0.
 function parsePage(raw: string | null): number {
@@ -59,7 +58,7 @@ function SearchResults({ query, page }: { query: string; page: number }) {
     return (
       <p className="mt-6">
         Không có kết quả ở trang này.{' '}
-        <Link to={pageHref(query, 0)} className={LINK}>
+        <Link to={pageHref(query, 0)} className={SECONDARY}>
           Về trang đầu
         </Link>
       </p>
@@ -91,13 +90,13 @@ function SearchResults({ query, page }: { query: string; page: number }) {
       {totalPages > 1 && (
         <nav aria-label="Phân trang" className="mt-6 flex items-center gap-4 text-sm">
           {result.page > 0 && (
-            <Link to={pageHref(query, result.page - 1)} className={LINK}>
+            <Link to={pageHref(query, result.page - 1)} className={SECONDARY}>
               Trang trước
             </Link>
           )}
           <span>{`Trang ${result.page + 1} / ${totalPages}`}</span>
           {result.page + 1 < totalPages && (
-            <Link to={pageHref(query, result.page + 1)} className={LINK}>
+            <Link to={pageHref(query, result.page + 1)} className={SECONDARY}>
               Trang sau
             </Link>
           )}

@@ -59,7 +59,7 @@ class AdminCourseControllerTest {
     }
 
     private static AdminCourseResponse khoa() {
-        return new AdminCourseResponse(5L, "tin-hoc-10", "Tin học 10", "Chương trình lớp 10", 1);
+        return new AdminCourseResponse(5L, "tin-hoc-10", "Tin học 10", "Chương trình lớp 10", 1, null);
     }
 
     // ---- Phân quyền và CSRF: luật /api/admin/** thật của SecurityConfig ----
@@ -123,7 +123,7 @@ class AdminCourseControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content(BODY_HOP_LE))
                 .andExpect(status().isCreated())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.*", hasSize(5)))
+                .andExpect(jsonPath("$.*", hasSize(6)))
                 .andExpect(jsonPath("$.id").value(5))
                 .andExpect(jsonPath("$.slug").value("tin-hoc-10"))
                 .andExpect(jsonPath("$.title").value("Tin học 10"))
@@ -286,7 +286,7 @@ class AdminCourseControllerTest {
     void adminXemDanhSachKhoaCoDayDuCacTruongKemSortOrder() throws Exception {
         when(service.findAll()).thenReturn(List.of(
                 khoa(),
-                new AdminCourseResponse(6L, "tin-hoc-11", "Tin học 11", null, 2)));
+                new AdminCourseResponse(6L, "tin-hoc-11", "Tin học 11", null, 2, "/api/courses/tin-hoc-11/cover?v=2")));
 
         mockMvc.perform(get("/api/admin/courses").with(user(admin())))
                 .andExpect(status().isOk())

@@ -1,5 +1,7 @@
 import { Link, useParams } from 'react-router'
+import { SECONDARY } from '../buttons'
 import { ApiError } from '../client'
+import CourseCover from '../CourseCover'
 import CourseProgressPanel from '../CourseProgressPanel'
 import LessonThumb from '../LessonThumb'
 import LoadError from '../LoadError'
@@ -29,7 +31,7 @@ export default function CoursePage() {
       return (
         <>
           <h1 className="font-serif text-4xl font-bold tracking-tight">Không tìm thấy khóa học</h1>
-          <Link to="/" className="link mt-6 inline-block">
+          <Link to="/" className={`${SECONDARY} mt-6`}>
             Về trang chủ
           </Link>
         </>
@@ -44,11 +46,17 @@ export default function CoursePage() {
 
   return (
     <>
-      <Link to="/" className="link text-sm">
+      <Link to="/" className={SECONDARY}>
         <span aria-hidden="true">← </span>Tất cả khóa học
       </Link>
-      <h1 className="mt-5 max-w-3xl font-serif text-4xl font-bold leading-tight tracking-tight sm:text-5xl">{title}</h1>
-      {course?.description && <p className="mt-4 max-w-2xl text-lg text-muted">{course.description}</p>}
+      {/* Đầu trang: tên và mô tả bên trái, ảnh bìa bên phải (xếp dọc ở màn hẹp). Ảnh bìa khóa công khai, khách cũng thấy. */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_22rem] lg:items-center">
+        <div>
+          <h1 className="max-w-3xl font-serif text-4xl font-bold leading-tight tracking-tight sm:text-5xl">{title}</h1>
+          {course?.description && <p className="mt-4 max-w-2xl text-lg text-muted">{course.description}</p>}
+        </div>
+        <CourseCover slug={courseSlug} coverImageUrl={course?.coverImageUrl} className="border border-line" priority />
+      </div>
 
       {/* Hai cột ở màn rộng: mục lục bài bên trái, tiến độ bên phải. Ở màn hẹp tiến độ lên trước danh sách. */}
       <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_19rem]">

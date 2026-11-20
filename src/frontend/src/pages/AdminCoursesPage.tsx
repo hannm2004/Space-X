@@ -1,11 +1,23 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
-import { createCourse, deleteCourse, fetchAdminCourses, updateCourse, type AdminCourse, type CourseInput } from '../adminApi'
+import {
+  createCourse,
+  deleteCourse,
+  deleteCourseCover,
+  fetchAdminCourses,
+  updateCourse,
+  uploadCourseCover,
+  type AdminCourse,
+  type CourseInput,
+} from '../adminApi'
 import AdminGate from '../AdminGate'
-import { CARD, DANGER, LINK, NO_PERMISSION, SECONDARY, SUCCESS_BOX } from '../adminUi'
+import { CARD, DANGER, NO_PERMISSION, SECONDARY, SUCCESS_BOX } from '../adminUi'
 import { ApiError } from '../client'
+import CourseCover from '../CourseCover'
+import FilePickButton from '../FilePickButton'
 import { errorMessages } from '../formErrors'
 import { ErrorAlert, SubmitButton, TextField } from '../FormParts'
+import { IMAGE_ACCEPT, IMAGE_HINT, imageProblem } from '../imageUpload'
 import LoadError from '../LoadError'
 import { useLoad } from '../useLoad'
 
@@ -108,7 +120,7 @@ function CourseForm({ idPrefix, initial, submitLabel, pendingLabel, clearOnSucce
   )
 }
 
-type Mode = 'view' | 'edit' | 'delete'
+type Mode = 'view' | 'edit' | 'delete' | 'removeCover'
 
 function CourseRow({ course, onChanged }: { course: AdminCourse; onChanged: (message: string) => void }) {
   const [mode, setMode] = useState<Mode>('view')
@@ -128,6 +140,42 @@ function CourseRow({ course, onChanged }: { course: AdminCourse; onChanged: (mes
     setBusy(false)
   }
 
+  // Ảnh bìa khóa: kiểm ở trình duyệt chỉ để báo sớm, máy chủ kiểm lại loại tệp thật và cỡ. Tải ảnh mới là thay ảnh cũ.
+  async function handleCoverFile(file: File) {
+    if (busy) return
+    const problem = imageProblem(file)
+    if (problem !== null) {
+      setMessages([problem])
+      return
+    }
+    setBusy(true)
+    setMessages([])
+    try {
+      await uploadCourseCover(course.id, file)
+      onChanged('Đã đặt ảnh bìa.')
+    } catch (error) {
+      setMessages(errorMessages(error, 'Không đặt được ảnh bìa. Hãy thử lại.'))
+    }
+    setBusy(false)
+  }
+
+  async function handleRemoveCover() {
+    if (busy) return
+    setBusy(true)
+    setMessages([])
+    try {
+      await deleteCourseCover(course.id)
+      onChanged('Đã bỏ ảnh bìa.')
+    } catch (error) {
+      setMessages(errorMessages(error, 'Không bỏ được ảnh bìa. Hãy thử lại.'))
+    }
+    setMode('view')
+    setBusy(false)
+  }
+
+  const hasCover = Boolean(course.coverImageUrl)
+  const coverLabel = hasCover ? 'Đổi ảnh bìa' : 'Tải ảnh bìa'
+
   return (
     <li className={CARD}>
       {mode === 'edit' ? (
@@ -143,7 +191,14 @@ function CourseRow({ course, onChanged }: { course: AdminCourse; onChanged: (mes
           onCancel={() => setMode('view')}
         />
       ) : (
-        <>
+        <div className="flex flex-col gap-4 sm:flex-row">
+          {/* Ảnh bìa hiện cho mọi khóa: ảnh đã tải lên, hoặc hình mặc định theo lớp khi chưa có. */}
+          <CourseCover
+            slug={course.slug}
+            coverImageUrl={course.coverImageUrl}
+            className="w-full shrink-0 border border-line sm:w-44 sm:self-start"
+          />
+          <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <span className="font-semibold">{course.title}</span>
             <code className="text-sm text-muted">{course.slug}</code>
@@ -168,6 +223,39 @@ function CourseRow({ course, onChanged }: { course: AdminCourse; onChanged: (mes
               >
                 Xóa
               </button>
+              <FilePickButton
+                label={coverLabel}
+                ariaLabel={`${coverLabel} ${course.title}`}
+                inputLabel={`Tệp ảnh bìa ${course.title} (${IMAGE_HINT})`}
+                accept={IMAGE_ACCEPT}
+                disabled={busy}
+                onFile={handleCoverFile}
+              />
+              {hasCover && (
+                <button
+                  type="button"
+                  aria-label={`Bỏ ảnh bìa ${course.title}`}
+                  disabled={busy}
+                  onClick={() => setMode('removeCover')}
+                  className={SECONDARY}
+                >
+                  Bỏ ảnh bìa
+                </button>
+              )}
+            </div>
+          )}
+          {/* Bỏ ảnh bìa là xóa ảnh đã tải lên (không hoàn tác được), nên cũng phải xác nhận như xóa khóa. */}
+          {mode === 'removeCover' && (
+            <div className="mt-3 border border-line bg-surface p-3">
+              <p>{`Bỏ ảnh bìa của khóa "${course.title}"? Ảnh đã tải lên sẽ bị xóa và khóa quay về hình mặc định theo lớp. Việc này không hoàn tác được.`}</p>
+              <div className="mt-3 flex gap-3">
+                <button type="button" disabled={busy} onClick={handleRemoveCover} className={DANGER}>
+                  Xác nhận bỏ ảnh bìa
+                </button>
+                <button type="button" disabled={busy} onClick={() => setMode('view')} className={SECONDARY}>
+                  Hủy
+                </button>
+              </div>
             </div>
           )}
           {mode === 'delete' && (
@@ -196,7 +284,8 @@ function CourseRow({ course, onChanged }: { course: AdminCourse; onChanged: (mes
               <ErrorAlert messages={messages} />
             </div>
           )}
-        </>
+          </div>
+        </div>
       )}
     </li>
   )
@@ -239,7 +328,7 @@ function CourseManager() {
     <>
       <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Quản lý khóa học</h1>
       <p className="mt-3">
-        <Link to="/quan-tri/bai-hoc" className={LINK}>
+        <Link to="/quan-tri/bai-hoc" className={SECONDARY}>
           Quản lý bài học
         </Link>
       </p>

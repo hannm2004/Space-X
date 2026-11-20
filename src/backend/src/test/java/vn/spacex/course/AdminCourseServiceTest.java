@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -29,8 +30,42 @@ class AdminCourseServiceTest {
     @Mock
     private LessonRepository lessonRepository;
 
+    @Mock
+    private vn.spacex.image.CourseCoverService courseCoverService;
+
     @InjectMocks
     private AdminCourseService service;
+
+    @Test
+    void danhSachChoAdminGanDuongDanAnhBiaChoKhoaCoAnh() {
+        Course coAnh = mock(Course.class);
+        when(coAnh.getId()).thenReturn(5L);
+        when(coAnh.getSlug()).thenReturn("tin-hoc-10");
+        Course chuaCoAnh = mock(Course.class);
+        when(chuaCoAnh.getId()).thenReturn(6L);
+        when(chuaCoAnh.getSlug()).thenReturn("tin-hoc-11");
+        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(coAnh, chuaCoAnh));
+        when(courseCoverService.urlsByCourseId(java.util.Map.of(5L, "tin-hoc-10", 6L, "tin-hoc-11")))
+                .thenReturn(java.util.Map.of(5L, "/api/courses/tin-hoc-10/cover?v=1"));
+
+        List<AdminCourseResponse> ketQua = service.findAll();
+
+        assertThat(ketQua.get(0).coverImageUrl()).isEqualTo("/api/courses/tin-hoc-10/cover?v=1");
+        assertThat(ketQua.get(1).coverImageUrl()).isNull();
+    }
+
+    @Test
+    void suaKhoaTraVeDuongDanAnhBiaHienCoCuaKhoaDo() {
+        Course khoa = Course.create("tin-hoc-10", "Tin học 10", null, 1);
+        when(courseRepository.findById(5L)).thenReturn(Optional.of(khoa));
+        when(courseRepository.existsBySlugAndIdNot("tin-hoc-10", 5L)).thenReturn(false);
+        when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(courseCoverService.urlOfCourse(5L, "tin-hoc-10")).thenReturn("/api/courses/tin-hoc-10/cover?v=2");
+
+        AdminCourseResponse response = service.update(5L, request("tin-hoc-10"));
+
+        assertThat(response.coverImageUrl()).isEqualTo("/api/courses/tin-hoc-10/cover?v=2");
+    }
 
     private static AdminCourseRequest request(String slug) {
         return new AdminCourseRequest(slug, "Tin học 10", "Chương trình lớp 10", 1);

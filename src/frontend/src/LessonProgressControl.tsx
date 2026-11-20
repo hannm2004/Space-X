@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ApiError } from './client'
+import { PRIMARY } from './buttons'
 import { recordProgress } from './learningApi'
-
-const BUTTON =
-  'btn btn-primary'
 
 type State =
   | { kind: 'loading' } // đang ghi "đã mở bài"; chưa biết bài đã hoàn thành hay chưa
@@ -69,7 +67,7 @@ export default function LessonProgressControl({ lessonId }: { lessonId: number }
       <div role="alert" className="text-sm text-danger">
         <p>{failureText(state.unauthorized, 'Không lưu được tiến độ.')}</p>
         {!state.unauthorized && (
-          <button type="button" onClick={retry} className="mt-2 underline">
+          <button type="button" onClick={retry} className="link mt-2">
             Thử lại
           </button>
         )}
@@ -85,7 +83,7 @@ export default function LessonProgressControl({ lessonId }: { lessonId: number }
           {failureText(state.unauthorized, 'Không ghi nhận được, hãy thử lại.')}
         </p>
       )}
-      <button type="button" disabled={busy} aria-busy={busy} onClick={complete} className={BUTTON}>
+      <button type="button" disabled={busy} aria-busy={busy} onClick={complete} className={PRIMARY}>
         Hoàn thành bài
       </button>
     </div>
