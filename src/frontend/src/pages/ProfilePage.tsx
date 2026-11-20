@@ -56,8 +56,8 @@ function ProfileDetails({ profile }: { profile: Profile }) {
   }
 
   return (
-    <>
-      <dl className="mt-8 grid max-w-lg grid-cols-[8rem_1fr] gap-x-6 gap-y-3 border-y border-line py-5">
+    <div className="mt-8 max-w-2xl space-y-6">
+      <dl className="grid grid-cols-[8rem_1fr] gap-x-6 gap-y-3 rounded-xl border border-line bg-surface p-6 shadow-card">
         <dt className="text-muted">Email</dt>
         <dd className="break-all">{profile.email}</dd>
         <dt className="text-muted">Vai trò</dt>
@@ -72,11 +72,11 @@ function ProfileDetails({ profile }: { profile: Profile }) {
         )}
       </dl>
 
-      <form noValidate onSubmit={handleSubmit} className="mt-8 max-w-lg space-y-4">
+      <form noValidate onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-line bg-surface p-6 shadow-card">
         {saved && (
           <p
             role="status"
-            className="border-l-4 border-success bg-success-soft px-4 py-3 text-success"
+            className="rounded-lg border border-success/40 bg-success-soft px-4 py-3 text-success"
           >
             Đã lưu tên hiển thị.
           </p>
@@ -96,8 +96,8 @@ function ProfileDetails({ profile }: { profile: Profile }) {
         <SubmitButton pending={submitting} label="Lưu thay đổi" pendingLabel="Đang lưu..." />
       </form>
 
-      <section className="mt-10 max-w-lg border-t border-line pt-6">
-        <h2 className="font-serif text-2xl font-bold tracking-tight">Mật khẩu</h2>
+      <section className="rounded-xl border border-line bg-surface p-6 shadow-card">
+        <h2 className="text-xl font-bold tracking-tight">Mật khẩu</h2>
         {profile.authProvider === 'LOCAL' ? (
           <p className="mt-2">
             <Link to="/doi-mat-khau" className={SECONDARY}>
@@ -110,7 +110,7 @@ function ProfileDetails({ profile }: { profile: Profile }) {
           </p>
         )}
       </section>
-    </>
+    </div>
   )
 }
 
@@ -140,7 +140,7 @@ export default function ProfilePage() {
   // Tách ProfileContent để chỉ tải hồ sơ khi đã chắc chắn đăng nhập (khách bị chuyển đi mà không gọi API).
   return (
     <>
-      <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Hồ sơ cá nhân</h1>
+      <h1 className="text-4xl font-bold leading-tight tracking-tight">Hồ sơ cá nhân</h1>
       <ProfileContent />
     </>
   )

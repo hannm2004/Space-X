@@ -176,7 +176,7 @@ function ImageItem({ image, onInsert, onChanged }: { image: LessonImage; onInser
         </div>
       )}
       {confirming && (
-        <div className="mt-3 border border-line bg-surface p-3">
+        <div className="mt-3 rounded-lg border border-line bg-paper p-3">
           <p>Xóa ảnh này? Nếu bài còn chèn ảnh, ảnh sẽ không hiện nữa. Không hoàn tác được.</p>
           <div className="mt-3 flex gap-3">
             <button type="button" disabled={busy} onClick={handleDelete} className={DANGER}>
@@ -344,7 +344,7 @@ function LessonForm({ courses, lesson, flash }: { courses: AdminCourse[]; lesson
 
   return (
     <>
-      <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">{lesson ? 'Sửa bài học' : 'Thêm bài học'}</h1>
+      <h1 className="text-4xl font-bold leading-tight tracking-tight">{lesson ? 'Sửa bài học' : 'Thêm bài học'}</h1>
       <p className="mt-3">
         <Link to={LIST_PATH} className={SECONDARY}>
           Danh sách bài học

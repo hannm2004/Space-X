@@ -69,15 +69,15 @@ function SearchResults({ query, page }: { query: string; page: number }) {
   return (
     <>
       <p className="mt-6 text-muted">{`Tìm thấy ${result.totalItems} bài`}</p>
-      <ul className="mt-4 divide-y divide-line border-y border-line">
+      <ul className="mt-4 divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface shadow-card">
         {result.items.map((lesson) => (
           <li key={lesson.id}>
             <Link
               to={`/bai/${encodeURIComponent(lesson.slug)}`}
-              className="group flex items-center gap-4 px-2 py-4 hover:bg-sunken"
+              className="group flex items-center gap-4 px-4 py-4 hover:bg-sunken sm:px-5"
             >
               <span className="min-w-0 flex-1">
-                <span className="block font-serif text-xl font-bold group-hover:underline group-hover:underline-offset-4">
+                <span className="block text-lg font-semibold group-hover:text-accent">
                   {lesson.title}
                 </span>
                 {lesson.summary && <span className="mt-1 block text-sm text-muted">{lesson.summary}</span>}
@@ -113,7 +113,7 @@ export default function SearchPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Tìm bài học</h1>
+      <h1 className="text-4xl font-bold leading-tight tracking-tight">Tìm bài học</h1>
       <div className="mt-6">
         {/* key theo từ khóa để ô nhập đồng bộ lại khi từ khóa trong địa chỉ đổi */}
         <SearchForm key={query} initialQuery={query} />

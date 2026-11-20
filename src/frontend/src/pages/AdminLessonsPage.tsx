@@ -191,7 +191,7 @@ function LessonRow({ initial, courseTitle, onDeleted }: RowProps) {
       )}
 
       {confirming && (
-        <div className="mt-3 border border-line bg-surface p-3">
+        <div className="mt-3 rounded-lg border border-line bg-paper p-3">
           <p>{`Xóa bài học "${lesson.title}"? Ảnh, tiến độ học của học sinh và nội dung bài sẽ mất, không hoàn tác được.`}</p>
           <div className="mt-3 flex gap-3">
             <button type="button" disabled={busy} onClick={handleDelete} className={DANGER}>
@@ -306,7 +306,7 @@ function LessonManager() {
 
   return (
     <>
-      <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Quản lý bài học</h1>
+      <h1 className="text-4xl font-bold leading-tight tracking-tight">Quản lý bài học</h1>
       <div className="mt-4 flex flex-wrap gap-3">
         <Link to={`${PATH}/moi`} className={`${PRIMARY} btn-sm`}>
           Thêm bài học

@@ -9,9 +9,9 @@ export default function ProgressBar({ percent, label }: { percent: number; label
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={value}
-      className="h-1.5 w-full overflow-hidden bg-sunken"
+      className="h-2 w-full overflow-hidden rounded-full bg-sunken"
     >
-      <div data-testid="progress-fill" className="h-full bg-accent" style={{ width: `${value}%` }} />
+      <div data-testid="progress-fill" className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${value}%` }} />
     </div>
   )
 }

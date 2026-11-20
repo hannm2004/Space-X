@@ -116,15 +116,15 @@ function UserRow({ initial, isMe }: { initial: AdminUser; isMe: boolean }) {
   const canReset = user.authProvider === 'LOCAL'
 
   return (
-    <li className="border border-line bg-surface p-4">
+    <li className="rounded-xl border border-line bg-surface p-4 shadow-card">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="font-semibold">{user.displayName}</span>
         {isMe && <span className="text-sm text-muted">(bạn)</span>}
-        <span className="border border-line bg-sunken px-2 py-0.5 text-xs">
+        <span className="rounded-full bg-sunken px-2.5 py-0.5 text-xs font-medium">
           {user.role === 'ADMIN' ? 'Quản trị viên' : 'Học sinh'}
         </span>
         {user.authProvider === 'GOOGLE' && (
-          <span className="border border-line bg-sunken px-2 py-0.5 text-xs">Google</span>
+          <span className="rounded-full bg-sunken px-2.5 py-0.5 text-xs font-medium">Google</span>
         )}
         {/* Trạng thái bằng chữ, không chỉ bằng màu. */}
         <span
@@ -176,7 +176,7 @@ function UserRow({ initial, isMe }: { initial: AdminUser; isMe: boolean }) {
       )}
 
       {confirming === 'lock' && (
-        <div className="mt-3 border border-line bg-surface p-3">
+        <div className="mt-3 rounded-lg border border-line bg-paper p-3">
           <p>{`Khóa tài khoản ${user.email}? Người này sẽ không đăng nhập được và bị đăng xuất khỏi mọi thiết bị.`}</p>
           <div className="mt-3 flex gap-3">
             <button type="button" disabled={busy} onClick={() => changeEnabled(false)} className={DANGER}>
@@ -190,7 +190,7 @@ function UserRow({ initial, isMe }: { initial: AdminUser; isMe: boolean }) {
       )}
 
       {confirming === 'reset' && (
-        <div className="mt-3 border border-line bg-surface p-3">
+        <div className="mt-3 rounded-lg border border-line bg-paper p-3">
           <p>
             {`Đặt lại mật khẩu của ${user.email}? Mật khẩu cũ sẽ không dùng được và người này bị đăng xuất khỏi mọi thiết bị.`}
           </p>
@@ -214,7 +214,7 @@ function UserRow({ initial, isMe }: { initial: AdminUser; isMe: boolean }) {
       {temporaryPassword !== null && (
         <div
           role="status"
-          className="mt-3 border-l-4 border-warn bg-sunken p-3 text-ink"
+          className="mt-3 rounded-lg border border-warn/50 bg-sunken p-3 text-ink"
         >
           <p>
             {`Mật khẩu tạm của ${user.email}: `}
@@ -320,7 +320,7 @@ export default function AdminUsersPage() {
   const page = parsePage(params.get('page'))
   return (
     <>
-      <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Quản lý người dùng</h1>
+      <h1 className="text-4xl font-bold leading-tight tracking-tight">Quản lý người dùng</h1>
       <div className="mt-6">
         {/* key theo từ khóa để ô nhập đồng bộ lại khi từ khóa trong địa chỉ đổi */}
         <UserSearchForm key={query} initialQuery={query} />

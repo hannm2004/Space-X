@@ -36,7 +36,7 @@ export function TextField({ id, label, value, onChange, type = 'text', autoCompl
 export function ErrorAlert({ messages }: { messages: string[] }) {
   if (messages.length === 0) return null
   return (
-    <div role="alert" className="border-l-4 border-danger bg-danger-soft px-4 py-3 text-danger">
+    <div role="alert" className="rounded-lg border border-danger/40 bg-danger-soft px-4 py-3 text-danger">
       {messages.length === 1 ? (
         <p>{messages[0]}</p>
       ) : (
