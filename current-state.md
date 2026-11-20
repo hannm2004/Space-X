@@ -26,16 +26,17 @@ Mẫu một mục:
   - Tài liệu: `docs/API.md`, `docs/TESTING.md` (thêm dòng danh mục và đổi số liệu), `README.md`.
 - **Kiểm tra:**
   - Test viết trước: backend lỗi biên dịch vì chưa có `ContentRef`, `getCourseId`, `lessonCount`; frontend nhiều chỗ đỏ; test CSS mới đỏ với đúng lý do, rồi xanh.
-  - Backend, đợt 1 (`.\mvnw test "-Dtest=!*IntegrationTest"`): `Tests run: 436, Failures: 0, Errors: 0`, `BUILD SUCCESS`. Test tích hợp MySQL 8.4 thật đã chạy riêng cho `CourseIntegrationTest` (9 test) và `LessonIntegrationTest` (8 test): qua. Đợt tích hợp đầy đủ (182 test theo lệnh đếm) còn đang chạy lúc commit, chưa có tổng kết; CI sẽ chạy lại toàn bộ.
+  - Backend, đợt 1 (`.\mvnw test "-Dtest=!*IntegrationTest"`): `Tests run: 436, Failures: 0, Errors: 0`, `BUILD SUCCESS`. Test tích hợp MySQL 8.4 thật đã chạy riêng cho `CourseIntegrationTest` (9 test) và `LessonIntegrationTest` (8 test): qua. Đợt tích hợp đầy đủ (`-Dtest=*IntegrationTest`): `Tests run: 182`, 1 lỗi ở `CourseCoverIntegrationTest` (xem mục lỗi, đã sửa); chạy riêng lớp đó sau khi sửa: `Tests run: 10, Failures: 0`, `BUILD SUCCESS`. Vậy cả 182 test tích hợp đều qua.
   - Frontend bằng PowerShell: `npx vitest run` 39 file, 569 test qua (lệnh đếm = 569), `tsc`, lint và build sạch.
   - Xem bằng trình duyệt ở máy với backend và MySQL thật (Vite + Spring Boot): `/api/courses` trả đủ `lessonCount` (tổng 31 bài); trang chủ hiện "7 khóa học, 31 bài học" và "N bài" ở từng thẻ; trang bài có đường dẫn, thời gian đọc, Bài trước/Bài sau; bấm Bài sau thì cuộn từ 1947 về 0 và focus vào tên bài; bài cuối khóa có "Về khóa"; màn hình hẹp không tràn ngang.
 - **Lỗi gặp và cách sửa:**
+  - CI backend của PR #51 đỏ: `CourseCoverIntegrationTest` khẳng định mỗi khóa có đúng 5 trường (`$[0].length()` = 5), nay là 6 vì thêm `lessonCount`. Tôi chỉ tìm kiểu `hasSize(5)` nên sót cách viết `length()`, và chưa chạy riêng lớp này trước khi commit. Sửa thành 6; quét lại mọi chỗ đếm trường trong test backend, đây là chỗ duy nhất.
   - Mockito `UnfinishedStubbing`: gọi hàm dựng mock ngay trong `when(...)`; sửa bằng dựng ra biến trước. Strict stubs báo khai báo thừa; dùng `lenient` có chú thích lý do.
   - Test mới của trang chủ không tìm thấy thẻ khóa vì script chèn test của tôi làm lọt ký tự điều khiển (backspace) vào biểu thức; gỡ ký tự đó.
   - Test danh mục `buttonStyles.test.ts` đỏ vì breadcrumb dùng class `link` ở trang bài; đổi sang kiểu chữ như liên kết chân trang thay vì nới lỏng test.
   - File cài đặt test gán `window.scrollTo` làm ba test chạy ở môi trường node vỡ; thêm điều kiện `typeof window`.
-- **Học được:** thêm một trường vào JSON thì phải sửa mọi chỗ khẳng định "đúng N trường" và mọi fixture; CSS không thuộc lớp nào thắng mọi tiện ích Tailwind bất kể độ đặc hiệu; nhờ xem bằng trình duyệt thật mới thấy khung viền xanh mà test không bắt được.
-- **Chưa kiểm tra:** đợt test tích hợp đầy đủ và các trang mới trên bản deploy.
+- **Học được:** thêm một trường vào JSON thì phải tìm mọi chỗ khẳng định "đúng N trường" bằng mọi cách viết (`hasSize`, `length()`, `.*`) và sửa mọi fixture, rồi chạy cả đợt test tích hợp trước khi commit chứ không chỉ các lớp liên quan; CSS không thuộc lớp nào thắng mọi tiện ích Tailwind bất kể độ đặc hiệu; nhờ xem bằng trình duyệt thật mới thấy khung viền xanh mà test không bắt được.
+- **Chưa kiểm tra:** các trang mới trên bản deploy.
 - **Tiếp theo:** mục 5 ("Tiếp tục học" ở trang chủ) khi người dùng chốt; mở Pull Request, chờ CI xanh.
 
 ## 2026-11-20 — Favicon, thẻ mô tả/chia sẻ, robots.txt và trang Giới thiệu
