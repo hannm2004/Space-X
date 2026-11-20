@@ -13,9 +13,9 @@ function heading(Tag: 'h2' | 'h3' | 'h4' | 'h5' | 'h6', className: string) {
 }
 
 const components: Components = {
-  h1: heading('h2', 'mt-12 font-serif text-3xl font-bold tracking-tight'),
-  h2: heading('h3', 'mt-10 border-t border-line pt-6 font-serif text-2xl font-bold tracking-tight'),
-  h3: heading('h4', 'mt-8 font-serif text-xl font-bold'),
+  h1: heading('h2', 'mt-12 text-3xl font-bold tracking-tight'),
+  h2: heading('h3', 'mt-10 border-t border-line pt-6 text-2xl font-bold tracking-tight'),
+  h3: heading('h4', 'mt-8 text-xl font-bold'),
   h4: heading('h5', 'mt-6 font-semibold'),
   h5: heading('h6', 'mt-4 font-semibold'),
   h6: heading('h6', 'mt-4 font-semibold'),
@@ -23,15 +23,15 @@ const components: Components = {
   ul: ({ children }) => <ul className="mt-4 list-disc space-y-1.5 pl-6 marker:text-accent">{children}</ul>,
   ol: ({ children }) => <ol className="mt-4 list-decimal space-y-1.5 pl-6 marker:font-semibold marker:text-accent">{children}</ol>,
   blockquote: ({ children }) => (
-    <blockquote className="mt-6 border-l-4 border-accent bg-sunken px-5 py-1 text-muted">{children}</blockquote>
+    <blockquote className="mt-6 rounded-r-lg border-l-4 border-accent bg-sunken px-5 py-1 text-muted">{children}</blockquote>
   ),
   pre: ({ children }) => (
-    <pre className="mt-5 overflow-x-auto border border-line bg-sunken p-4 text-sm [&>code]:border-0 [&>code]:bg-transparent [&>code]:p-0">
+    <pre className="mt-5 overflow-x-auto rounded-lg border border-line bg-sunken p-4 text-sm [&>code]:border-0 [&>code]:bg-transparent [&>code]:p-0">
       {children}
     </pre>
   ),
   code: ({ children }) => (
-    <code className="border border-line bg-sunken px-1 py-0.5 font-mono text-[0.9em]">{children}</code>
+    <code className="rounded border border-line bg-sunken px-1 py-0.5 font-mono text-[0.9em]">{children}</code>
   ),
   table: ({ children }) => (
     <div className="mt-5 overflow-x-auto">
@@ -39,9 +39,9 @@ const components: Components = {
     </div>
   ),
   th: ({ children }) => (
-    <th className="border border-line-strong bg-sunken px-3 py-2 text-sm font-semibold">{children}</th>
+    <th className="border border-line bg-sunken px-3 py-2 text-sm font-semibold">{children}</th>
   ),
-  td: ({ children }) => <td className="border border-line-strong px-3 py-2">{children}</td>,
+  td: ({ children }) => <td className="border border-line px-3 py-2">{children}</td>,
   hr: () => <hr className="my-10 border-line" />,
   a: ({ href, children }) => {
     // react-markdown đã bỏ địa chỉ javascript:/data:, khi đó href rỗng và chỉ giữ chữ.
@@ -59,7 +59,7 @@ const components: Components = {
   },
   img: ({ src, alt }) => {
     if (typeof src === 'string' && OWN_IMAGE.test(src)) {
-      return <img src={src} alt={alt ?? ''} loading="lazy" className="mt-5 h-auto max-w-full border border-line" />
+      return <img src={src} alt={alt ?? ''} loading="lazy" className="mt-5 h-auto max-w-full rounded-lg border border-line" />
     }
     return <span className="italic text-muted">{alt}</span>
   },

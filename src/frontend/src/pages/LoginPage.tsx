@@ -62,12 +62,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md border border-line bg-surface p-6 sm:p-8">
-      <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Đăng nhập</h1>
+    <div className="mx-auto max-w-md rounded-2xl border border-line bg-surface p-6 shadow-card sm:p-8">
+      <h1 className="text-4xl font-bold leading-tight tracking-tight">Đăng nhập</h1>
       {justRegistered(location.state) && (
         <p
           role="status"
-          className="mt-4 border-l-4 border-success bg-success-soft px-4 py-3 text-success"
+          className="mt-4 rounded-lg border border-success/40 bg-success-soft px-4 py-3 text-success"
         >
           Đăng ký thành công. Hãy đăng nhập để bắt đầu học.
         </p>

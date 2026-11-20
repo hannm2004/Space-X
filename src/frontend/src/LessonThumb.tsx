@@ -2,5 +2,5 @@
 // Không có ảnh bìa thì không vẽ gì để dòng bài vẫn gọn như trước.
 export default function LessonThumb({ url }: { url?: string | null }) {
   if (!url) return null
-  return <img src={url} alt="" loading="lazy" className="h-14 w-20 shrink-0 border border-line object-cover sm:h-16 sm:w-24" />
+  return <img src={url} alt="" loading="lazy" className="h-14 w-20 shrink-0 rounded-md border border-line object-cover sm:h-16 sm:w-24" />
 }

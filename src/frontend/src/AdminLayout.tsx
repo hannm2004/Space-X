@@ -23,7 +23,7 @@ export default function AdminLayout() {
               key={item.to}
               to={item.to}
               end={item.end}
-              className="-mb-px border-b-2 border-transparent py-2 text-[0.9375rem] font-medium hover:border-line-strong aria-[current=page]:border-accent"
+              className="-mb-px border-b-2 border-transparent py-2 text-[0.9375rem] font-medium text-muted hover:border-line-strong hover:text-ink aria-[current=page]:border-accent aria-[current=page]:text-accent"
             >
               {item.label}
             </NavLink>

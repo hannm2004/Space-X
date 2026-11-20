@@ -49,8 +49,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md border border-line bg-surface p-6 sm:p-8">
-      <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Đăng ký</h1>
+    <div className="mx-auto max-w-md rounded-2xl border border-line bg-surface p-6 shadow-card sm:p-8">
+      <h1 className="text-4xl font-bold leading-tight tracking-tight">Đăng ký</h1>
       <form noValidate onSubmit={handleSubmit} className="mt-6 space-y-4">
         <ErrorAlert messages={messages} />
         <TextField

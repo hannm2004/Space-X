@@ -112,6 +112,26 @@ describe('App — định tuyến', () => {
     expect(screen.getByRole('button', { name: 'Chuyển sang giao diện tối' })).not.toBeNull()
   })
 
+  it('có liên kết "Bỏ qua tới nội dung" là mục đầu tiên để người dùng bàn phím khỏi Tab qua cả thanh đầu trang', () => {
+    renderAt('/khong-co-trang-nay')
+
+    const skip = screen.getByRole('link', { name: 'Bỏ qua tới nội dung' })
+    expect(skip.getAttribute('href')).toBe('#noi-dung')
+    // Đích của liên kết là vùng nội dung chính và nhận được focus khi bấm.
+    const main = screen.getByRole('main')
+    expect(main.id).toBe('noi-dung')
+    expect(main.getAttribute('tabindex')).toBe('-1')
+    // Là phần tử đầu tiên trong trang nên Tab một lần là tới.
+    expect(document.body.querySelector('a, button')).toBe(skip)
+  })
+
+  it('tên thương hiệu Space-X không bị trình duyệt dịch tự động', () => {
+    renderAt('/khong-co-trang-nay')
+
+    const brand = screen.getByRole('link', { name: 'Space-X' })
+    expect(brand.querySelector('[translate="no"]')).not.toBeNull()
+  })
+
   it('tìm bài từ trang chủ: nhập từ khóa, bấm Tìm, sang trang kết quả và thấy bài khớp', async () => {
     vi.mocked(searchLessons).mockResolvedValue({
       items: [{ id: 1, slug: 'thong-tin-va-du-lieu', title: 'Thông tin và dữ liệu', summary: null }],
