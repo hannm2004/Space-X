@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { PRIMARY, SECONDARY } from './buttons'
-import type { LessonLinkState } from './lessonLinkState'
 import { restartCourse, type CourseProgress } from './learningApi'
 import ProgressBar from './ProgressBar'
 import type { LoadState } from './useLoad'
@@ -11,13 +10,12 @@ const MUTED = 'text-sm text-muted'
 type Props = {
   progress: LoadState<CourseProgress[] | null>
   courseSlug: string
-  linkState: LessonLinkState
   // Gọi sau khi học lại thành công để trang tải lại tiến độ.
   onChanged: () => void
 }
 
 // Khối tiến độ ở trang khóa. Khách (kết quả null), khóa chưa có bài đã đăng hoặc chưa có trong danh sách thì không hiện gì.
-export default function CourseProgressPanel({ progress, courseSlug, linkState, onChanged }: Props) {
+export default function CourseProgressPanel({ progress, courseSlug, onChanged }: Props) {
   const [confirming, setConfirming] = useState(false)
   const [restarting, setRestarting] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -57,11 +55,7 @@ export default function CourseProgressPanel({ progress, courseSlug, linkState, o
 
       <div className="mt-5 flex flex-col items-stretch gap-3">
         {course.continueLesson && (
-          <Link
-            to={`/bai/${encodeURIComponent(course.continueLesson.slug)}`}
-            state={linkState}
-            className={`${PRIMARY} w-full`}
-          >
+          <Link to={`/bai/${encodeURIComponent(course.continueLesson.slug)}`} className={`${PRIMARY} w-full`}>
             Học tiếp: {course.continueLesson.title}
           </Link>
         )}

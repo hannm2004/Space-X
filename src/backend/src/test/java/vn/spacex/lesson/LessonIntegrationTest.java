@@ -70,6 +70,56 @@ class LessonIntegrationTest {
                 khoaId, tacGiaId, slug, "Bài " + slug, "Tóm tắt " + slug, noiDung, trangThai);
     }
 
+    private long themBaiThuTu(long maKhoa, String slug, String trangThai, int thuTu) {
+        jdbc.update("""
+                INSERT INTO lessons (course_id, created_by, slug, title, summary, content_md, status, sort_order)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                maKhoa, tacGiaId, slug, "Bài " + slug, "Tóm tắt " + slug, "x", trangThai, thuTu);
+        return jdbc.queryForObject("SELECT id FROM lessons WHERE slug = ?", Long.class, slug);
+    }
+
+    @Test
+    void baiTraKemKhoaVaBaiTruocBaiSauTheoSortOrderBoQuaBaiNhapVaBaiKhoaKhac() throws Exception {
+        themBaiThuTu(khoaId, "bai-1", "PUBLISHED", 1);
+        themBaiThuTu(khoaId, "bai-nhap", "DRAFT", 2);
+        themBaiThuTu(khoaId, "bai-2", "PUBLISHED", 3);
+        themBaiThuTu(khoaId, "bai-3", "PUBLISHED", 4);
+        jdbc.update("INSERT INTO courses (slug, title, description, sort_order) VALUES ('tin-hoc-11', 'Tin học 11', 'x', 2)");
+        long khoaKhac = jdbc.queryForObject("SELECT id FROM courses WHERE slug = 'tin-hoc-11'", Long.class);
+        themBaiThuTu(khoaKhac, "bai-lop-11", "PUBLISHED", 3);
+
+        mockMvc.perform(get("/api/lessons/bai-2").with(user("hocsinh")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.course.slug").value("tin-hoc-10"))
+                .andExpect(jsonPath("$.course.title").value("Tin học 10"))
+                // Bài nháp nằm giữa bài 1 và bài 2 nhưng không được tính là "bài trước".
+                .andExpect(jsonPath("$.previous.slug").value("bai-1"))
+                .andExpect(jsonPath("$.previous.title").value("Bài bai-1"))
+                .andExpect(jsonPath("$.next.slug").value("bai-3"));
+    }
+
+    @Test
+    void baiDauVaBaiCuoiKhoaCoTruongTruocHoacSauLaNull() throws Exception {
+        themBaiThuTu(khoaId, "bai-1", "PUBLISHED", 1);
+        themBaiThuTu(khoaId, "bai-2", "PUBLISHED", 2);
+
+        mockMvc.perform(get("/api/lessons/bai-1").with(user("hocsinh")))
+                .andExpect(jsonPath("$.previous").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.next.slug").value("bai-2"));
+        mockMvc.perform(get("/api/lessons/bai-2").with(user("hocsinh")))
+                .andExpect(jsonPath("$.previous.slug").value("bai-1"))
+                .andExpect(jsonPath("$.next").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
+    void baiBangSortOrderThiXepTheoIdNhuTrangKhoaHoc() throws Exception {
+        themBaiThuTu(khoaId, "bai-a", "PUBLISHED", 1);
+        themBaiThuTu(khoaId, "bai-b", "PUBLISHED", 1);
+
+        mockMvc.perform(get("/api/lessons/bai-a").with(user("hocsinh")))
+                .andExpect(jsonPath("$.next.slug").value("bai-b"));
+    }
+
     @Test
     void baiDaDangTraNoiDungMarkdownNguyenVanVaTiengVietCoDauKhongBiHong() throws Exception {
         String markdown = "# Máy tính là gì?\n\nMáy tính xử lý **thông tin** theo chương trình.\n\n- Phần cứng\n- Phần mềm";
@@ -88,7 +138,10 @@ class LessonIntegrationTest {
         themBai("may-tinh-la-gi", "PUBLISHED", "x");
 
         mockMvc.perform(get("/api/lessons/may-tinh-la-gi").with(user("hocsinh")))
-                .andExpect(jsonPath("$.*", hasSize(6)));
+                .andExpect(jsonPath("$.*", hasSize(9)))
+                .andExpect(jsonPath("$.status").doesNotExist())
+                .andExpect(jsonPath("$.courseId").doesNotExist())
+                .andExpect(jsonPath("$.createdBy").doesNotExist());
     }
 
     @Test

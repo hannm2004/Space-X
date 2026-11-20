@@ -21,8 +21,8 @@ const restartCourseMock = vi.mocked(restartCourse)
 const ANONYMOUS: AuthState = { status: 'anonymous' }
 
 const COURSES = [
-  { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Khóa học lớp 10' },
-  { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null },
+  { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Khóa học lớp 10', lessonCount: 2 },
+  { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, lessonCount: 0 },
 ]
 
 function renderCourse(path = '/khoa-hoc/tin-hoc-10', auth: AuthState = ANONYMOUS) {

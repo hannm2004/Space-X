@@ -24,24 +24,24 @@ beforeEach(() => {
 describe('fetchCourses', () => {
   it('gọi GET /api/courses và trả về danh sách khóa', async () => {
     apiRequestMock.mockResolvedValue([
-      { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Khóa lớp 10' },
-      { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null },
+      { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Khóa lớp 10', lessonCount: 4 },
+      { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, lessonCount: 0 },
     ])
 
     const courses = await fetchCourses()
 
     expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/courses')
     expect(courses).toEqual([
-      { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Khóa lớp 10', coverImageUrl: null },
-      { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, coverImageUrl: null },
+      { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Khóa lớp 10', coverImageUrl: null, lessonCount: 4 },
+      { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, coverImageUrl: null, lessonCount: 0 },
     ])
   })
 
   it('giữ đường dẫn ảnh bìa của khóa; thiếu trường (máy chủ cũ) hay null đều thành null', async () => {
     apiRequestMock.mockResolvedValue([
-      { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: null, coverImageUrl: '/api/courses/tin-hoc-10/cover?v=1' },
-      { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, coverImageUrl: null },
-      { id: 3, slug: 'tin-hoc-12', title: 'Tin học 12', description: null },
+      { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: null, coverImageUrl: '/api/courses/tin-hoc-10/cover?v=1', lessonCount: 1 },
+      { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, coverImageUrl: null, lessonCount: 1 },
+      { id: 3, slug: 'tin-hoc-12', title: 'Tin học 12', description: null, lessonCount: 1 },
     ])
 
     const courses = await fetchCourses()
@@ -50,8 +50,16 @@ describe('fetchCourses', () => {
   })
 
   it('ném lỗi khi coverImageUrl của khóa không phải chuỗi', async () => {
-    apiRequestMock.mockResolvedValue([{ id: 1, slug: 'a', title: 'A', description: null, coverImageUrl: 5 }])
+    apiRequestMock.mockResolvedValue([{ id: 1, slug: 'a', title: 'A', description: null, coverImageUrl: 5, lessonCount: 1 }])
 
+    await expect(fetchCourses()).rejects.toThrow('không đúng dạng')
+  })
+
+  it('ném lỗi khi lessonCount thiếu hoặc không phải số', async () => {
+    apiRequestMock.mockResolvedValue([{ id: 1, slug: 'a', title: 'A', description: null }])
+    await expect(fetchCourses()).rejects.toThrow('không đúng dạng')
+
+    apiRequestMock.mockResolvedValue([{ id: 1, slug: 'a', title: 'A', description: null, lessonCount: '4' }])
     await expect(fetchCourses()).rejects.toThrow('không đúng dạng')
   })
 
@@ -115,13 +123,18 @@ describe('fetchLessons', () => {
 })
 
 describe('fetchLesson', () => {
-  it('gọi GET /api/lessons/{slug} và trả về nội dung Markdown', async () => {
+  const KHOA = { slug: 'tin-hoc-10', title: 'Tin học 10' }
+
+  it('gọi GET /api/lessons/{slug} và trả về nội dung Markdown cùng khóa, bài trước, bài sau', async () => {
     apiRequestMock.mockResolvedValue({
       id: 5,
       slug: 'thong-tin-va-du-lieu',
       title: 'Thông tin và dữ liệu',
       summary: 'Tóm tắt',
       contentMd: '# Thông tin và dữ liệu\n\nNội dung',
+      course: KHOA,
+      previous: { slug: 'bai-dau', title: 'Bài đầu' },
+      next: { slug: 'bai-sau', title: 'Bài sau' },
     })
 
     const lesson = await fetchLesson('thong-tin-va-du-lieu')
@@ -129,6 +142,20 @@ describe('fetchLesson', () => {
     expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/lessons/thong-tin-va-du-lieu')
     expect(lesson.contentMd).toBe('# Thông tin và dữ liệu\n\nNội dung')
     expect(lesson.summary).toBe('Tóm tắt')
+    expect(lesson.course).toEqual(KHOA)
+    expect(lesson.previous).toEqual({ slug: 'bai-dau', title: 'Bài đầu' })
+    expect(lesson.next).toEqual({ slug: 'bai-sau', title: 'Bài sau' })
+  })
+
+  it('bài đầu hoặc cuối khóa: previous hay next là null', async () => {
+    apiRequestMock.mockResolvedValue({
+      id: 1, slug: 'x', title: 'X', summary: null, contentMd: '', course: KHOA, previous: null, next: null,
+    })
+
+    const lesson = await fetchLesson('x')
+
+    expect(lesson.previous).toBeNull()
+    expect(lesson.next).toBeNull()
   })
 
   it('mã hóa slug trong đường dẫn', async () => {
@@ -138,6 +165,9 @@ describe('fetchLesson', () => {
       title: 'X',
       summary: null,
       contentMd: '',
+      course: KHOA,
+      previous: null,
+      next: null,
     })
 
     await fetchLesson('../me')
@@ -146,8 +176,21 @@ describe('fetchLesson', () => {
   })
 
   it('ném lỗi khi thiếu contentMd', async () => {
-    apiRequestMock.mockResolvedValue({ id: 1, slug: 'x', title: 'X', summary: null })
+    apiRequestMock.mockResolvedValue({ id: 1, slug: 'x', title: 'X', summary: null, course: KHOA, previous: null, next: null })
 
+    await expect(fetchLesson('x')).rejects.toThrow('không đúng dạng')
+  })
+
+  it('ném lỗi khi thiếu khóa hoặc bài trước/sau sai dạng', async () => {
+    const goc = { id: 1, slug: 'x', title: 'X', summary: null, contentMd: '' }
+
+    apiRequestMock.mockResolvedValue({ ...goc, previous: null, next: null })
+    await expect(fetchLesson('x')).rejects.toThrow('không đúng dạng')
+
+    apiRequestMock.mockResolvedValue({ ...goc, course: KHOA, previous: { slug: 'a' }, next: null })
+    await expect(fetchLesson('x')).rejects.toThrow('không đúng dạng')
+
+    apiRequestMock.mockResolvedValue({ ...goc, course: KHOA, previous: null, next: 'bai-sau' })
     await expect(fetchLesson('x')).rejects.toThrow('không đúng dạng')
   })
 
@@ -347,6 +390,7 @@ describe('ảnh bìa trong dữ liệu bài', () => {
   it('fetchLesson cũng trả đường dẫn ảnh bìa', async () => {
     apiRequestMock.mockResolvedValue({
       id: 1, slug: 'a', title: 'A', summary: null, contentMd: 'x', coverImageUrl: '/api/images/5',
+      course: { slug: 'tin-hoc-10', title: 'Tin học 10' }, previous: null, next: null,
     })
 
     expect((await fetchLesson('a')).coverImageUrl).toBe('/api/images/5')

@@ -6,6 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import vn.spacex.lesson.Lesson;
+import vn.spacex.lesson.LessonCountByCourse;
 import vn.spacex.lesson.LessonRepository;
 import vn.spacex.lesson.LessonStatus;
 
@@ -14,7 +15,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -54,6 +57,37 @@ class CourseServiceTest {
         assertThat(ketQua).hasSize(2);
         assertThat(ketQua.get(0).coverImageUrl()).isEqualTo("/api/courses/tin-hoc-10/cover?v=1");
         assertThat(ketQua.get(1).coverImageUrl()).isNull();
+    }
+
+    private static LessonCountByCourse soBai(long maKhoa, LessonStatus trangThai, long tong) {
+        LessonCountByCourse dong = mock(LessonCountByCourse.class);
+        // lenient: dòng bài nháp bị bỏ qua nên dịch vụ không đọc mã khóa của nó.
+        lenient().when(dong.getCourseId()).thenReturn(maKhoa);
+        lenient().when(dong.getStatus()).thenReturn(trangThai);
+        lenient().when(dong.getTotal()).thenReturn(tong);
+        return dong;
+    }
+
+    // Học sinh chỉ thấy bài đã đăng, nên số bài trên thẻ khóa không được cộng bài nháp.
+    @Test
+    void danhSachKhoaKemSoBaiDaDangKhongTinhBaiNhapVaKhoaChuaCoBaiLaKhong() {
+        Course coBai = mock(Course.class);
+        when(coBai.getId()).thenReturn(5L);
+        when(coBai.getSlug()).thenReturn("tin-hoc-10");
+        Course chuaCoBai = mock(Course.class);
+        when(chuaCoBai.getId()).thenReturn(6L);
+        when(chuaCoBai.getSlug()).thenReturn("tin-hoc-11");
+        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(coBai, chuaCoBai));
+        // Dựng mock ra biến trước: gọi soBai() ngay trong when(...) sẽ lồng hai lần khai báo giả lập vào nhau.
+        LessonCountByCourse daDang = soBai(5L, LessonStatus.PUBLISHED, 4);
+        LessonCountByCourse nhap = soBai(5L, LessonStatus.DRAFT, 3);
+        when(lessonRepository.countLessonsByCourseAndStatus()).thenReturn(List.of(daDang, nhap));
+
+        List<CourseResponse> ketQua = courseService.listCourses();
+
+        assertThat(ketQua).extracting(CourseResponse::lessonCount).containsExactly(4, 0);
+        // Một truy vấn đếm cho cả danh sách, không phải mỗi khóa một truy vấn.
+        verify(lessonRepository, times(1)).countLessonsByCourseAndStatus();
     }
 
     @Test

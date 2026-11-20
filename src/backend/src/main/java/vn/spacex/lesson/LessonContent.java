@@ -18,6 +18,9 @@ public class LessonContent {
     @Id
     private Long id;
 
+    @Column(name = "course_id", nullable = false)
+    private Long courseId;
+
     @Column(nullable = false)
     private String slug;
 
@@ -38,6 +41,10 @@ public class LessonContent {
 
     public Long getId() {
         return id;
+    }
+
+    public Long getCourseId() {
+        return courseId;
     }
 
     public String getSlug() {

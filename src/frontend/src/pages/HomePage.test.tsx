@@ -65,8 +65,8 @@ describe('HomePage', () => {
 
   it('hiện từng khóa học có tên, mô tả và liên kết tới trang khóa', async () => {
     fetchCoursesMock.mockResolvedValue([
-      { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Khóa lớp 10' },
-      { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null },
+      { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Khóa lớp 10', lessonCount: 3 },
+      { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, lessonCount: 3 },
     ])
 
     renderHome()
@@ -87,8 +87,9 @@ describe('HomePage', () => {
         title: 'Tin học 10',
         description: null,
         coverImageUrl: '/api/courses/tin-hoc-10/cover?v=1',
+        lessonCount: 3,
       },
-      { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, coverImageUrl: null },
+      { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, coverImageUrl: null, lessonCount: 3 },
     ])
 
     renderHome()
@@ -102,7 +103,7 @@ describe('HomePage', () => {
 
   it('slug có ký tự lạ vẫn được mã hóa trong liên kết', async () => {
     fetchCoursesMock.mockResolvedValue([
-      { id: 1, slug: 'a b/c', title: 'Khóa lạ', description: null },
+      { id: 1, slug: 'a b/c', title: 'Khóa lạ', description: null, lessonCount: 3 },
     ])
 
     renderHome()
@@ -122,7 +123,7 @@ describe('HomePage', () => {
   it('lỗi tải thì báo lỗi và bấm Thử lại sẽ tải lại', async () => {
     fetchCoursesMock
       .mockRejectedValueOnce(new ApiError(0, 'Không kết nối được tới máy chủ'))
-      .mockResolvedValueOnce([{ id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: null }])
+      .mockResolvedValueOnce([{ id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: null, lessonCount: 3 }])
 
     renderHome()
 
@@ -136,8 +137,8 @@ describe('HomePage', () => {
 
 describe('HomePage — tiến độ học', () => {
   const KHOA = [
-    { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: null },
-    { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null },
+    { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: null, lessonCount: 3 },
+    { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, lessonCount: 3 },
   ]
 
   it('khách chưa đăng nhập: không gọi API tiến độ và không có thanh tiến độ', async () => {
@@ -194,10 +195,10 @@ describe('HomePage — tiến độ học', () => {
 })
 
 const KHOA_NHIEU_LOP = [
-  { id: 1, slug: 'tin-hoc-6', title: 'Tin học 6', description: 'Mô tả lớp 6' },
-  { id: 2, slug: 'tin-hoc-9', title: 'Tin học 9', description: null },
-  { id: 3, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Mô tả lớp 10' },
-  { id: 4, slug: 'tin-hoc-12', title: 'Tin học 12', description: null },
+  { id: 1, slug: 'tin-hoc-6', title: 'Tin học 6', description: 'Mô tả lớp 6', lessonCount: 5 },
+  { id: 2, slug: 'tin-hoc-9', title: 'Tin học 9', description: null, lessonCount: 4 },
+  { id: 3, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Mô tả lớp 10', lessonCount: 3 },
+  { id: 4, slug: 'tin-hoc-12', title: 'Tin học 12', description: null, lessonCount: 0 },
 ]
 
 describe('HomePage — bố cục như trang khóa học thực tế', () => {
@@ -221,7 +222,7 @@ describe('HomePage — bố cục như trang khóa học thực tế', () => {
   it('khóa có slug không theo dạng tin-hoc-<lớp> vẫn hiện, ở nhóm "Khác"', async () => {
     fetchCoursesMock.mockResolvedValue([
       ...KHOA_NHIEU_LOP,
-      { id: 9, slug: 'on-thi-hsg', title: 'Ôn thi HSG', description: null },
+      { id: 9, slug: 'on-thi-hsg', title: 'Ôn thi HSG', description: null, lessonCount: 3 },
     ])
 
     renderHome()
@@ -260,6 +261,29 @@ describe('HomePage — bố cục như trang khóa học thực tế', () => {
     // Thuật ngữ (dt) đứng trước định nghĩa (dd) để trình đọc màn hình đọc đúng thứ tự; hiển thị đảo lại bằng CSS.
     expect(soKhoa.tagName).toBe('DD')
     expect(soKhoa.previousElementSibling?.tagName).toBe('DT')
+  })
+
+  it('mỗi thẻ khóa ghi số bài đã đăng; khóa chưa có bài ghi "Sắp có bài"', async () => {
+    fetchCoursesMock.mockResolvedValue(KHOA_NHIEU_LOP)
+
+    renderHome()
+
+    const co = await screen.findByRole('link', { name: /Tin học 6/ })
+    expect(within(co).getByText('5 bài')).not.toBeNull()
+    const chua = screen.getByRole('link', { name: /Tin học 12/ })
+    expect(within(chua).getByText('Sắp có bài')).not.toBeNull()
+    expect(within(chua).queryByText('0 bài')).toBeNull()
+  })
+
+  it('hàng số liệu ở phần giới thiệu có tổng số bài tính từ dữ liệu thật', async () => {
+    fetchCoursesMock.mockResolvedValue(KHOA_NHIEU_LOP)
+
+    renderHome()
+
+    // 5 + 4 + 3 + 0 = 12
+    const tong = await screen.findByText('12 bài học')
+    expect(tong.tagName).toBe('DD')
+    expect(tong.previousElementSibling?.tagName).toBe('DT')
   })
 
   it('có phần "Mỗi bài học có gì" nêu những thứ có thật: kiểm tra nhanh, tiến độ, tìm kiếm', async () => {

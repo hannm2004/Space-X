@@ -40,8 +40,8 @@ class CourseControllerTest {
     void chuaDangNhapVanXemDuocDanhSachKhoaHoc() throws Exception {
         when(courseService.listCourses()).thenReturn(List.of(
                 new CourseResponse(1L, "tin-hoc-10", "Tin học 10", "Chương trình lớp 10",
-                        "/api/courses/tin-hoc-10/cover?v=1"),
-                new CourseResponse(2L, "tin-hoc-11", "Tin học 11", null, null)));
+                        "/api/courses/tin-hoc-10/cover?v=1", 4),
+                new CourseResponse(2L, "tin-hoc-11", "Tin học 11", null, null, 0)));
 
         mockMvc.perform(get("/api/courses"))
                 .andExpect(status().isOk())
@@ -54,7 +54,10 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$[0].coverImageUrl").value("/api/courses/tin-hoc-10/cover?v=1"))
                 // Khóa chưa có ảnh bìa: trường vẫn có mặt và là null, để giao diện biết dùng ảnh mặc định.
                 .andExpect(jsonPath("$[1].coverImageUrl").value(org.hamcrest.Matchers.nullValue()))
-                .andExpect(jsonPath("$[0].*", hasSize(5)));
+                // Số bài đã đăng của khóa; khóa chưa có bài vẫn trả 0 chứ không bỏ trường.
+                .andExpect(jsonPath("$[0].lessonCount").value(4))
+                .andExpect(jsonPath("$[1].lessonCount").value(0))
+                .andExpect(jsonPath("$[0].*", hasSize(6)));
     }
 
     @Test

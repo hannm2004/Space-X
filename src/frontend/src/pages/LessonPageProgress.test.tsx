@@ -11,7 +11,10 @@ const fetchLessonMock = vi.mocked(fetchLesson)
 const recordProgressMock = vi.mocked(recordProgress)
 
 function bai(id: number, slug: string, title: string) {
-  return { id, slug, title, summary: null, contentMd: 'Nội dung ' + title }
+  return {
+    id, slug, title, summary: null, contentMd: 'Nội dung ' + title,
+    course: { slug: 'tin-hoc-10', title: 'Tin học 10' }, previous: null, next: null,
+  }
 }
 
 function renderLesson(path = '/bai/may-tinh') {

@@ -59,7 +59,7 @@ beforeEach(() => {
   fetchLessonsMock.mockReset()
   fetchProgressMock.mockReset()
   restartCourseMock.mockReset()
-  fetchCoursesMock.mockResolvedValue([{ id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: null }])
+  fetchCoursesMock.mockResolvedValue([{ id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: null, lessonCount: 2 }])
   fetchLessonsMock.mockResolvedValue(HAI_BAI)
   fetchProgressMock.mockResolvedValue([tienDo()])
   restartCourseMock.mockResolvedValue(undefined)
