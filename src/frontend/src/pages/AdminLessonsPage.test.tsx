@@ -203,6 +203,15 @@ describe('AdminLessonsPage — danh sách và bộ lọc', () => {
     )
   })
 
+  it('mỗi bài có liên kết Ảnh dẫn thẳng tới mục ảnh trong trang sửa', async () => {
+    renderPage()
+
+    const nhap = await rowOf('Máy tính là gì')
+    expect(nhap.getByRole('link', { name: 'Ảnh của bài Máy tính là gì' }).getAttribute('href')).toBe(
+      '/quan-tri/bai-hoc/3/sua#anh-cua-bai',
+    )
+  })
+
   it('có nhiều trang thì có liên kết trang trước/sau giữ nguyên bộ lọc', async () => {
     fetchAdminLessonsMock.mockResolvedValue(lessonPage({ page: 1, size: 20, totalItems: 45 }))
 

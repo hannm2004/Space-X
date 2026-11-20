@@ -79,6 +79,27 @@ describe('HomePage', () => {
     expect(screen.queryByText('Đang tải danh sách khóa học...')).toBeNull()
   })
 
+  it('mỗi thẻ khóa có ảnh bìa: ảnh Admin tải lên nếu có, hình mặc định theo lớp nếu chưa có', async () => {
+    fetchCoursesMock.mockResolvedValue([
+      {
+        id: 1,
+        slug: 'tin-hoc-10',
+        title: 'Tin học 10',
+        description: null,
+        coverImageUrl: '/api/courses/tin-hoc-10/cover?v=1',
+      },
+      { id: 2, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, coverImageUrl: null },
+    ])
+
+    renderHome()
+
+    const co = await screen.findByRole('link', { name: /Tin học 10/ })
+    expect(co.querySelector('img')?.getAttribute('src')).toBe('/api/courses/tin-hoc-10/cover?v=1')
+    const chua = screen.getByRole('link', { name: /Tin học 11/ })
+    expect(chua.querySelector('img')).toBeNull()
+    expect(chua.querySelector('[data-testid="course-cover"]')?.getAttribute('data-kind')).toBe('generated')
+  })
+
   it('slug có ký tự lạ vẫn được mã hóa trong liên kết', async () => {
     fetchCoursesMock.mockResolvedValue([
       { id: 1, slug: 'a b/c', title: 'Khóa lạ', description: null },

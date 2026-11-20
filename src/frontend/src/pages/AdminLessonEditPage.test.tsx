@@ -339,7 +339,49 @@ describe('AdminLessonEditPage — xem trước Markdown', () => {
   })
 })
 
+describe('AdminLessonEditPage — đường dẫn tới mục ảnh', () => {
+  it('mục ảnh có id anh-cua-bai để liên kết từ danh sách trỏ tới', async () => {
+    await openEdit()
+
+    const section = await screen.findByRole('region', { name: 'Ảnh của bài' })
+    expect(section.id).toBe('anh-cua-bai')
+  })
+
+  it('mở bằng #anh-cua-bai thì cuộn tới mục ảnh', async () => {
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+
+    renderPage(`${EDIT}#anh-cua-bai`)
+    await screen.findByRole('region', { name: 'Ảnh của bài' })
+
+    // Hiệu ứng cuộn chạy ngay sau khi mục ảnh hiện ra, có thể muộn hơn một nhịp so với lúc tìm thấy phần tử.
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1))
+  })
+
+  it('mở không kèm #anh-cua-bai thì không tự cuộn', async () => {
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+
+    await openEdit()
+    // Đợi danh sách ảnh tải xong (hiệu ứng của mục ảnh đã có cơ hội chạy) rồi mới khẳng định không cuộn.
+    await screen.findByText('so-do.png')
+
+    expect(scrollIntoView).not.toHaveBeenCalled()
+  })
+})
+
 describe('AdminLessonEditPage — ảnh bài học', () => {
+  it('tải ảnh bằng một nút bấm (không phải ô chọn tệp mặc định của trình duyệt)', async () => {
+    await openEdit()
+
+    const button = await screen.findByRole('button', { name: 'Chọn ảnh từ máy' })
+    const click = vi.spyOn(screen.getByLabelText(/Tải ảnh lên/) as HTMLInputElement, 'click')
+    fireEvent.click(button)
+
+    expect(click).toHaveBeenCalledTimes(1)
+    expect(screen.getByText(/PNG, JPEG hoặc WebP, tối đa 1 MB/, { selector: 'p' })).not.toBeNull()
+  })
+
   it('liệt kê ảnh của bài kèm tên và dung lượng', async () => {
     await openEdit()
 

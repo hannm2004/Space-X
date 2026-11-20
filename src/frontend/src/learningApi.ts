@@ -1,7 +1,9 @@
 import { apiRequest } from './client'
 import { asList, asNullableString, asNumber, asRecord, asString, BAD_SHAPE } from './parse'
 
-export type Course = { id: number; slug: string; title: string; description: string | null }
+// coverImageUrl: ảnh bìa khóa do Admin tải lên (công khai, khách cũng xem được); null khi chưa có, giao diện khi đó vẽ
+// hình mặc định theo lớp.
+export type Course = { id: number; slug: string; title: string; description: string | null; coverImageUrl?: string | null }
 // coverImageUrl: ảnh bìa do Admin chọn (máy chủ bỏ trường khi bài chưa có ảnh bìa, nên thiếu trường nghĩa là null).
 export type LessonSummary = {
   id: number
@@ -44,6 +46,8 @@ function parseCourse(value: unknown): Course {
     slug: asString(record.slug),
     title: asString(record.title),
     description: asNullableString(record.description),
+    // Máy chủ cũ chưa có trường này: thiếu coi như null.
+    coverImageUrl: record.coverImageUrl === undefined ? null : asNullableString(record.coverImageUrl),
   }
 }
 

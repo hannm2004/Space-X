@@ -11,7 +11,8 @@ import {
   type LessonStatus,
 } from '../adminApi'
 import AdminGate from '../AdminGate'
-import { CARD, DANGER, LINK, NO_PERMISSION, SECONDARY, SUCCESS_BOX } from '../adminUi'
+import { CARD, DANGER, NO_PERMISSION, SECONDARY, SUCCESS_BOX } from '../adminUi'
+import { PRIMARY } from '../buttons'
 import { ApiError } from '../client'
 import { errorMessages } from '../formErrors'
 import { ErrorAlert } from '../FormParts'
@@ -149,6 +150,14 @@ function LessonRow({ initial, courseTitle, onDeleted }: RowProps) {
           <Link to={`${PATH}/${lesson.id}/sua`} aria-label={`Sửa ${lesson.title}`} className={SECONDARY}>
             Sửa
           </Link>
+          {/* Ảnh nằm ở cuối trang sửa; liên kết này mở thẳng tới mục "Ảnh của bài" để quản trị viên khỏi phải tự tìm. */}
+          <Link
+            to={`${PATH}/${lesson.id}/sua#anh-cua-bai`}
+            aria-label={`Ảnh của bài ${lesson.title}`}
+            className={SECONDARY}
+          >
+            Ảnh
+          </Link>
           {published ? (
             <button
               type="button"
@@ -248,12 +257,12 @@ function LessonList({ filter, courses }: { filter: LessonFilter; courses: AdminC
       {result.totalItems === 0 ? (
         <p className="mt-6 text-lg">Không có bài học phù hợp.</p>
       ) : result.items.length === 0 ? (
-        <p className="mt-6">
-          Không có kết quả ở trang này.{' '}
-          <Link to={hrefFor(filter, 0)} className={LINK}>
+        <div className="mt-6">
+          <p>Không có kết quả ở trang này.</p>
+          <Link to={hrefFor(filter, 0)} className={`${SECONDARY} mt-3`}>
             Về trang đầu
           </Link>
-        </p>
+        </div>
       ) : (
         <>
           <p className="mt-6 text-muted">{`Có ${result.totalItems} bài học`}</p>
@@ -272,13 +281,13 @@ function LessonList({ filter, courses }: { filter: LessonFilter; courses: AdminC
       {totalPages > 1 && (
         <nav aria-label="Phân trang" className="mt-6 flex items-center gap-4">
           {result.page > 0 && (
-            <Link to={hrefFor(filter, result.page - 1)} className={LINK}>
+            <Link to={hrefFor(filter, result.page - 1)} className={SECONDARY}>
               Trang trước
             </Link>
           )}
           <span>{`Trang ${result.page + 1} / ${totalPages}`}</span>
           {result.page + 1 < totalPages && (
-            <Link to={hrefFor(filter, result.page + 1)} className={LINK}>
+            <Link to={hrefFor(filter, result.page + 1)} className={SECONDARY}>
               Trang sau
             </Link>
           )}
@@ -298,11 +307,11 @@ function LessonManager() {
   return (
     <>
       <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight">Quản lý bài học</h1>
-      <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2">
-        <Link to={`${PATH}/moi`} className={LINK}>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Link to={`${PATH}/moi`} className={`${PRIMARY} btn-sm`}>
           Thêm bài học
         </Link>
-        <Link to="/quan-tri/khoa-hoc" className={LINK}>
+        <Link to="/quan-tri/khoa-hoc" className={SECONDARY}>
           Quản lý khóa học
         </Link>
       </div>

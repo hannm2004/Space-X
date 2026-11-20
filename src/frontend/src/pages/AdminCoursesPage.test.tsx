@@ -1,7 +1,15 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createCourse, deleteCourse, fetchAdminCourses, updateCourse, type AdminCourse } from '../adminApi'
+import {
+  createCourse,
+  deleteCourse,
+  deleteCourseCover,
+  fetchAdminCourses,
+  updateCourse,
+  uploadCourseCover,
+  type AdminCourse,
+} from '../adminApi'
 import { AuthProvider } from '../AuthContext'
 import { fetchCurrentUser } from '../authApi'
 import { ApiError } from '../client'
@@ -12,6 +20,8 @@ vi.mock('../adminApi', () => ({
   createCourse: vi.fn(),
   updateCourse: vi.fn(),
   deleteCourse: vi.fn(),
+  uploadCourseCover: vi.fn(),
+  deleteCourseCover: vi.fn(),
 }))
 vi.mock('../authApi', () => ({
   fetchCurrentUser: vi.fn(),
@@ -25,6 +35,8 @@ const fetchAdminCoursesMock = vi.mocked(fetchAdminCourses)
 const createCourseMock = vi.mocked(createCourse)
 const updateCourseMock = vi.mocked(updateCourse)
 const deleteCourseMock = vi.mocked(deleteCourse)
+const uploadCourseCoverMock = vi.mocked(uploadCourseCover)
+const deleteCourseCoverMock = vi.mocked(deleteCourseCover)
 const fetchCurrentUserMock = vi.mocked(fetchCurrentUser)
 
 const ADMIN_ME = { displayName: 'Quản trị viên', email: 'admin@example.com', role: 'ADMIN' as const }
@@ -84,9 +96,137 @@ beforeEach(() => {
   createCourseMock.mockReset()
   updateCourseMock.mockReset()
   deleteCourseMock.mockReset()
+  uploadCourseCoverMock.mockReset()
+  deleteCourseCoverMock.mockReset()
   fetchCurrentUserMock.mockReset()
   fetchCurrentUserMock.mockResolvedValue(ADMIN_ME)
   fetchAdminCoursesMock.mockResolvedValue([KHOA_10, KHOA_11])
+})
+
+const KHOA_10_BIA: AdminCourse = { ...KHOA_10, coverImageUrl: '/api/courses/tin-hoc-10/cover?v=1' }
+
+function pngFile(name = 'bia.png') {
+  return new File(['x'], name, { type: 'image/png' })
+}
+
+describe('AdminCoursesPage — ảnh bìa khóa học', () => {
+  it('khóa có ảnh hiện ảnh thật cùng nút Đổi và Bỏ; khóa chưa có hiện hình mặc định cùng nút Tải', async () => {
+    fetchAdminCoursesMock.mockResolvedValue([KHOA_10_BIA, KHOA_11])
+
+    renderPage()
+
+    const co = await rowOf('Tin học 10')
+    expect(co.getByTestId('course-cover').querySelector('img')?.getAttribute('src')).toBe(
+      '/api/courses/tin-hoc-10/cover?v=1',
+    )
+    expect(co.getByRole('button', { name: 'Đổi ảnh bìa Tin học 10' })).not.toBeNull()
+    expect(co.getByRole('button', { name: 'Bỏ ảnh bìa Tin học 10' })).not.toBeNull()
+    const chua = await rowOf('Tin học 11')
+    expect(chua.getByTestId('course-cover').getAttribute('data-kind')).toBe('generated')
+    expect(chua.getByRole('button', { name: 'Tải ảnh bìa Tin học 11' })).not.toBeNull()
+    expect(chua.queryByRole('button', { name: 'Bỏ ảnh bìa Tin học 11' })).toBeNull()
+  })
+
+  it('chọn ảnh thì tải lên đúng khóa, báo đã đặt và hiện ảnh mới sau khi tải lại danh sách', async () => {
+    uploadCourseCoverMock.mockResolvedValue({ coverImageUrl: '/api/courses/tin-hoc-11/cover?v=2' })
+    fetchAdminCoursesMock
+      .mockResolvedValueOnce([KHOA_10, KHOA_11])
+      .mockResolvedValue([KHOA_10, { ...KHOA_11, coverImageUrl: '/api/courses/tin-hoc-11/cover?v=2' }])
+    renderPage()
+    const file = pngFile()
+
+    const row = await rowOf('Tin học 11')
+    fireEvent.change(row.getByLabelText(/Tệp ảnh bìa Tin học 11/), { target: { files: [file] } })
+
+    await waitFor(() => expect(uploadCourseCoverMock).toHaveBeenCalledWith(6, file))
+    expect((await screen.findByRole('status')).textContent).toContain('Đã đặt ảnh bìa')
+    const sau = await rowOf('Tin học 11')
+    await waitFor(() =>
+      expect(sau.getByTestId('course-cover').querySelector('img')?.getAttribute('src')).toBe(
+        '/api/courses/tin-hoc-11/cover?v=2',
+      ),
+    )
+  })
+
+  it('tệp không phải ảnh hoặc lớn hơn 1 MB thì báo ngay và không gọi máy chủ', async () => {
+    renderPage()
+    const row = await rowOf('Tin học 10')
+    const input = row.getByLabelText(/Tệp ảnh bìa Tin học 10/)
+
+    fireEvent.change(input, { target: { files: [new File(['x'], 'a.txt', { type: 'text/plain' })] } })
+    expect((await row.findByRole('alert')).textContent).toContain('Chỉ nhận ảnh PNG, JPEG hoặc WebP.')
+
+    const lon = new File([new Uint8Array(1024 * 1024 + 1)], 'lon.png', { type: 'image/png' })
+    fireEvent.change(input, { target: { files: [lon] } })
+    await waitFor(() => expect(row.getByRole('alert').textContent).toContain('Ảnh lớn hơn 1 MB'))
+
+    expect(uploadCourseCoverMock).not.toHaveBeenCalled()
+  })
+
+  it('tải ảnh lỗi thì báo lỗi ở đúng khóa và không báo thành công', async () => {
+    uploadCourseCoverMock.mockRejectedValue(new Error('hỏng'))
+    renderPage()
+
+    const row = await rowOf('Tin học 10')
+    fireEvent.change(row.getByLabelText(/Tệp ảnh bìa Tin học 10/), { target: { files: [pngFile()] } })
+
+    expect((await row.findByRole('alert')).textContent).toContain('Không đặt được ảnh bìa')
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('Bỏ ảnh bìa phải xác nhận: bấm lần đầu chỉ hỏi lại, chưa gọi máy chủ', async () => {
+    fetchAdminCoursesMock.mockResolvedValue([KHOA_10_BIA, KHOA_11])
+    renderPage()
+
+    const row = await rowOf('Tin học 10')
+    fireEvent.click(row.getByRole('button', { name: 'Bỏ ảnh bìa Tin học 10' }))
+
+    expect(row.getByText(/Bỏ ảnh bìa của khóa "Tin học 10"\?/)).not.toBeNull()
+    expect(row.getByRole('button', { name: 'Xác nhận bỏ ảnh bìa' })).not.toBeNull()
+    expect(deleteCourseCoverMock).not.toHaveBeenCalled()
+  })
+
+  it('Hủy ở bước xác nhận thì giữ nguyên ảnh bìa và không gọi máy chủ', async () => {
+    fetchAdminCoursesMock.mockResolvedValue([KHOA_10_BIA, KHOA_11])
+    renderPage()
+
+    const row = await rowOf('Tin học 10')
+    fireEvent.click(row.getByRole('button', { name: 'Bỏ ảnh bìa Tin học 10' }))
+    fireEvent.click(row.getByRole('button', { name: 'Hủy' }))
+
+    expect(row.queryByRole('button', { name: 'Xác nhận bỏ ảnh bìa' })).toBeNull()
+    expect(row.getByRole('button', { name: 'Bỏ ảnh bìa Tin học 10' })).not.toBeNull()
+    expect(row.getByTestId('course-cover').getAttribute('data-kind')).toBe('image')
+    expect(deleteCourseCoverMock).not.toHaveBeenCalled()
+  })
+
+  it('Xác nhận bỏ ảnh bìa gọi máy chủ đúng khóa, báo đã bỏ và tải lại danh sách', async () => {
+    deleteCourseCoverMock.mockResolvedValue(undefined)
+    fetchAdminCoursesMock.mockResolvedValueOnce([KHOA_10_BIA, KHOA_11]).mockResolvedValue([KHOA_10, KHOA_11])
+    renderPage()
+
+    const row = await rowOf('Tin học 10')
+    fireEvent.click(row.getByRole('button', { name: 'Bỏ ảnh bìa Tin học 10' }))
+    fireEvent.click(row.getByRole('button', { name: 'Xác nhận bỏ ảnh bìa' }))
+
+    await waitFor(() => expect(deleteCourseCoverMock).toHaveBeenCalledWith(5))
+    expect((await screen.findByRole('status')).textContent).toContain('Đã bỏ ảnh bìa')
+    const sau = await rowOf('Tin học 10')
+    await waitFor(() => expect(sau.getByTestId('course-cover').getAttribute('data-kind')).toBe('generated'))
+  })
+
+  it('bỏ ảnh bìa lỗi thì báo lỗi và giữ nguyên ảnh', async () => {
+    deleteCourseCoverMock.mockRejectedValue(new Error('hỏng'))
+    fetchAdminCoursesMock.mockResolvedValue([KHOA_10_BIA, KHOA_11])
+    renderPage()
+
+    const row = await rowOf('Tin học 10')
+    fireEvent.click(row.getByRole('button', { name: 'Bỏ ảnh bìa Tin học 10' }))
+    fireEvent.click(row.getByRole('button', { name: 'Xác nhận bỏ ảnh bìa' }))
+
+    expect((await row.findByRole('alert')).textContent).toContain('Không bỏ được ảnh bìa')
+    expect(row.getByTestId('course-cover').getAttribute('data-kind')).toBe('image')
+  })
 })
 
 describe('AdminCoursesPage — quyền truy cập', () => {

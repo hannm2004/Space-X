@@ -86,6 +86,9 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    min-height: 2.5rem;
+    /* Bỏ độ trễ chờ "chạm hai lần để phóng to" của trình duyệt điện thoại: bấm nút phản hồi ngay. */
+    touch-action: manipulation;
     border: 1px solid transparent;
     border-radius: var(--radius-md);
     padding: 0.5rem 1rem;
@@ -131,15 +134,26 @@
     background-color: var(--color-danger);
     color: var(--color-paper);
   }
+  /* Nút trung tính: nền ô nhập, khung mảnh. Dùng cho "Đăng nhập bằng Google", nơi không nên tranh màu với nút chính. */
+  .btn-neutral {
+    border-color: var(--color-line-strong);
+    color: var(--color-ink);
+    background-color: var(--color-surface);
+  }
+  .btn-neutral:hover:not(:disabled) {
+    background-color: var(--color-sunken);
+  }
   .btn-sm {
+    min-height: 2.25rem;
     padding: 0.25rem 0.75rem;
     font-size: 0.875rem;
   }
   /* Nút chỉ có biểu tượng (kính lúp, đổi giao diện). */
   .btn-icon {
     display: inline-flex;
-    height: 2.25rem;
-    width: 2.25rem;
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+    touch-action: manipulation;
     align-items: center;
     justify-content: center;
     border: 1px solid var(--color-line-strong);
@@ -147,9 +161,25 @@
     color: var(--color-ink);
     background-color: transparent;
     cursor: pointer;
+    transition: background-color 120ms;
   }
-  .btn-icon:hover {
+  .btn-icon:hover:not(:disabled) {
     background-color: var(--color-sunken);
+  }
+  .btn-icon:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  /* Màn hình cảm ứng: ngón tay cần mục tiêu chạm tối thiểu khoảng 44px (WCAG 2.5.8 / hướng dẫn của Apple và Google). */
+  @media (pointer: coarse) {
+    .btn,
+    .btn-sm,
+    .btn-icon {
+      min-height: 2.75rem;
+    }
+    .btn-icon {
+      min-width: 2.75rem;
+    }
   }
 
   .field {

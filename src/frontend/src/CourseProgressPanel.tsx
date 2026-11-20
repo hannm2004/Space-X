@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { PRIMARY, SECONDARY } from './buttons'
 import type { LessonLinkState } from './lessonLinkState'
 import { restartCourse, type CourseProgress } from './learningApi'
 import ProgressBar from './ProgressBar'
 import type { LoadState } from './useLoad'
 
-const PRIMARY = 'btn btn-primary w-full text-center'
-const SECONDARY = 'btn btn-secondary btn-sm'
 const MUTED = 'text-sm text-muted'
 
 type Props = {
@@ -61,7 +60,7 @@ export default function CourseProgressPanel({ progress, courseSlug, linkState, o
           <Link
             to={`/bai/${encodeURIComponent(course.continueLesson.slug)}`}
             state={linkState}
-            className={PRIMARY}
+            className={`${PRIMARY} w-full`}
           >
             Học tiếp: {course.continueLesson.title}
           </Link>

@@ -124,7 +124,15 @@ export async function resetUserPassword(id: number): Promise<TemporaryPassword> 
 
 // ---- Khóa học, bài học, ảnh (CP6.4). Hình dạng khớp mục "Quản trị" của docs/API.md. ----
 
-export type AdminCourse = { id: number; slug: string; title: string; description: string | null; sortOrder: number }
+export type AdminCourse = {
+  id: number
+  slug: string
+  title: string
+  description: string | null
+  sortOrder: number
+  // Ảnh bìa khóa (công khai); null khi chưa có. Thiếu trường (máy chủ cũ) coi như null.
+  coverImageUrl?: string | null
+}
 // Dữ liệu gửi lên khi tạo/sửa khóa: mô tả để trống thì gửi chuỗi rỗng, máy chủ lưu null.
 export type CourseInput = { slug: string; title: string; description: string; sortOrder: number }
 
@@ -172,6 +180,7 @@ function parseAdminCourse(value: unknown): AdminCourse {
     title: asString(record.title),
     description: asNullableString(record.description),
     sortOrder: asNumber(record.sortOrder),
+    coverImageUrl: record.coverImageUrl === undefined ? null : asNullableString(record.coverImageUrl),
   }
 }
 
@@ -271,6 +280,19 @@ export async function uploadLessonImage(lessonId: number, file: File): Promise<U
   form.append('file', file)
   const record = asRecord(await apiRequest('POST', `/api/admin/lessons/${lessonId}/images`, form))
   return { id: asNumber(record.id), url: asString(record.url) }
+}
+
+// Ảnh bìa khóa học: mỗi khóa một ảnh, tải ảnh mới là thay ảnh cũ. Phần multipart tên "file" như ảnh bài học; trả về
+// đường dẫn ảnh mới (có ?v= đổi theo lần tải để trình duyệt không giữ ảnh cũ).
+export async function uploadCourseCover(courseId: number, file: File): Promise<{ coverImageUrl: string }> {
+  const form = new FormData()
+  form.append('file', file)
+  const record = asRecord(await apiRequest('POST', `/api/admin/courses/${courseId}/cover`, form))
+  return { coverImageUrl: asString(record.coverImageUrl) }
+}
+
+export async function deleteCourseCover(courseId: number): Promise<void> {
+  await apiRequest('DELETE', `/api/admin/courses/${courseId}/cover`)
 }
 
 // Đặt ảnh làm ảnh bìa của bài (máy chủ tự bỏ ảnh bìa cũ của bài đó) hoặc bỏ ảnh bìa.

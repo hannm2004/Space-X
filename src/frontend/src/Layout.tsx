@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router'
+import { SECONDARY } from './buttons'
 import HealthStatus from './HealthStatus'
 import HeaderSearch from './HeaderSearch'
 import ThemeToggle from './ThemeToggle'
@@ -76,7 +77,7 @@ function AccountNav() {
       >
         {state.user.displayName}
       </Link>
-      <button type="button" onClick={handleLogout} className="btn btn-secondary btn-sm">
+      <button type="button" onClick={handleLogout} className={SECONDARY}>
         Đăng xuất
       </button>
       {logoutFailed && (

@@ -18,6 +18,8 @@ import {
   setUserEnabled,
   updateCourse,
   updateLesson,
+  deleteCourseCover,
+  uploadCourseCover,
   uploadLessonImage,
 } from './adminApi'
 import { ApiError, apiRequest } from './client'
@@ -230,7 +232,14 @@ describe('fetchAdminDashboard', () => {
   })
 })
 
-const COURSE_JSON = { id: 5, slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Lớp 10', sortOrder: 1 }
+const COURSE_JSON = {
+  id: 5,
+  slug: 'tin-hoc-10',
+  title: 'Tin học 10',
+  description: 'Lớp 10',
+  sortOrder: 1,
+  coverImageUrl: null,
+}
 const COURSE_INPUT = { slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Lớp 10', sortOrder: 1 }
 const LESSON_SUMMARY_JSON = {
   id: 3,
@@ -427,6 +436,52 @@ describe('ảnh bài học (Admin)', () => {
     await deleteImage(7)
 
     expect(apiRequestMock).toHaveBeenCalledWith('DELETE', '/api/admin/images/7')
+  })
+})
+
+describe('ảnh bìa khóa học (Admin)', () => {
+  it('fetchAdminCourses giữ đường dẫn ảnh bìa; thiếu trường thì là null', async () => {
+    apiRequestMock.mockResolvedValue([
+      { ...COURSE_JSON, coverImageUrl: '/api/courses/tin-hoc-10/cover?v=9' },
+      { id: 6, slug: 'a', title: 'A', description: null, sortOrder: 2 },
+    ])
+
+    const result = await fetchAdminCourses()
+
+    expect(result.map((course) => course.coverImageUrl)).toEqual(['/api/courses/tin-hoc-10/cover?v=9', null])
+  })
+
+  it('fetchAdminCourses từ chối coverImageUrl không phải chuỗi', async () => {
+    apiRequestMock.mockResolvedValue([{ ...COURSE_JSON, coverImageUrl: 3 }])
+
+    await expect(fetchAdminCourses()).rejects.toThrow()
+  })
+
+  it('uploadCourseCover gửi tệp trong phần tên "file" bằng POST và trả { coverImageUrl }', async () => {
+    apiRequestMock.mockResolvedValue({ coverImageUrl: '/api/courses/tin-hoc-10/cover?v=1' })
+    const file = new File(['x'], 'bia.png', { type: 'image/png' })
+
+    await expect(uploadCourseCover(5, file)).resolves.toEqual({ coverImageUrl: '/api/courses/tin-hoc-10/cover?v=1' })
+
+    const [method, path, body] = apiRequestMock.mock.calls[0]
+    expect(method).toBe('POST')
+    expect(path).toBe('/api/admin/courses/5/cover')
+    expect(body).toBeInstanceOf(FormData)
+    expect((body as FormData).get('file')).toBeInstanceOf(File)
+  })
+
+  it('uploadCourseCover từ chối phản hồi thiếu coverImageUrl', async () => {
+    apiRequestMock.mockResolvedValue({})
+
+    await expect(uploadCourseCover(5, new File(['x'], 'bia.png', { type: 'image/png' }))).rejects.toThrow()
+  })
+
+  it('deleteCourseCover gọi DELETE /api/admin/courses/{id}/cover', async () => {
+    apiRequestMock.mockResolvedValue(undefined)
+
+    await deleteCourseCover(5)
+
+    expect(apiRequestMock).toHaveBeenCalledWith('DELETE', '/api/admin/courses/5/cover')
   })
 })
 

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { fetchAdminUsers, resetUserPassword, setUserEnabled, type AdminUser } from '../adminApi'
+import { DANGER, PRIMARY, SECONDARY } from '../buttons'
 import { ApiError } from '../client'
 import { errorMessages } from '../formErrors'
 import { ErrorAlert } from '../FormParts'
@@ -9,9 +10,6 @@ import { useAuth } from '../useAuth'
 import { useLoad } from '../useLoad'
 
 const PATH = '/quan-tri/nguoi-dung'
-const LINK = 'link'
-const SECONDARY = `btn btn-secondary btn-sm`
-const DANGER = `btn btn-danger btn-sm`
 const NO_PERMISSION = 'Bạn không có quyền truy cập trang này.'
 
 // Chỉ nhận số nguyên không âm; chữ, số âm hay số thập phân coi như trang 0.
@@ -58,7 +56,7 @@ function UserSearchForm({ initialQuery }: { initialQuery: string }) {
       />
       <button
         type="submit"
-        className={`btn btn-primary`}
+        className={PRIMARY}
       >
         Tìm
       </button>
@@ -259,12 +257,12 @@ function UserList({ query, page, myEmail }: { query: string; page: number; myEma
   // Có người dùng nhưng trang này rỗng (địa chỉ chứa số trang quá lớn).
   if (result.items.length === 0) {
     return (
-      <p className="mt-6">
-        Không có kết quả ở trang này.{' '}
-        <Link to={pageHref(query, 0)} className={LINK}>
+      <div className="mt-6">
+        <p>Không có kết quả ở trang này.</p>
+        <Link to={pageHref(query, 0)} className={`${SECONDARY} mt-3`}>
           Về trang đầu
         </Link>
-      </p>
+      </div>
     )
   }
 
@@ -281,13 +279,13 @@ function UserList({ query, page, myEmail }: { query: string; page: number; myEma
       {totalPages > 1 && (
         <nav aria-label="Phân trang" className="mt-6 flex items-center gap-4">
           {result.page > 0 && (
-            <Link to={pageHref(query, result.page - 1)} className={LINK}>
+            <Link to={pageHref(query, result.page - 1)} className={SECONDARY}>
               Trang trước
             </Link>
           )}
           <span>{`Trang ${result.page + 1} / ${totalPages}`}</span>
           {result.page + 1 < totalPages && (
-            <Link to={pageHref(query, result.page + 1)} className={LINK}>
+            <Link to={pageHref(query, result.page + 1)} className={SECONDARY}>
               Trang sau
             </Link>
           )}
