@@ -3,26 +3,36 @@ package vn.spacex.course;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.spacex.image.CourseCoverService;
 import vn.spacex.lesson.LessonRepository;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class AdminCourseService {
 
     private final CourseRepository courseRepository;
     private final LessonRepository lessonRepository;
+    private final CourseCoverService courseCoverService;
 
-    public AdminCourseService(CourseRepository courseRepository, LessonRepository lessonRepository) {
+    public AdminCourseService(CourseRepository courseRepository, LessonRepository lessonRepository,
+                              CourseCoverService courseCoverService) {
         this.courseRepository = courseRepository;
         this.lessonRepository = lessonRepository;
+        this.courseCoverService = courseCoverService;
     }
 
     // Khác GET /api/courses (công khai, không có sortOrder): form sửa khóa cần giá trị sortOrder hiện tại.
     @Transactional(readOnly = true)
     public List<AdminCourseResponse> findAll() {
-        return courseRepository.findAllByOrderBySortOrderAscIdAsc().stream()
-                .map(AdminCourseResponse::from)
+        List<Course> courses = courseRepository.findAllByOrderBySortOrderAscIdAsc();
+        Map<Long, String> slugsById = new LinkedHashMap<>();
+        courses.forEach(course -> slugsById.put(course.getId(), course.getSlug()));
+        Map<Long, String> covers = courseCoverService.urlsByCourseId(slugsById);
+        return courses.stream()
+                .map(course -> AdminCourseResponse.from(course, covers.get(course.getId())))
                 .toList();
     }
 
@@ -32,7 +42,8 @@ public class AdminCourseService {
             throw new CourseSlugAlreadyExistsException();
         }
         Course course = Course.create(request.slug(), request.title(), request.description(), request.sortOrder());
-        return save(course);
+        // Khóa mới chưa có ảnh bìa.
+        return AdminCourseResponse.from(persist(course), null);
     }
 
     @Transactional
@@ -42,7 +53,9 @@ public class AdminCourseService {
             throw new CourseSlugAlreadyExistsException();
         }
         course.update(request.slug(), request.title(), request.description(), request.sortOrder());
-        return save(course);
+        Course saved = persist(course);
+        // Sửa khóa không đụng tới ảnh bìa; trả đường dẫn hiện có để trang Admin không mất ảnh vừa hiện.
+        return AdminCourseResponse.from(saved, courseCoverService.urlOfCourse(id, saved.getSlug()));
     }
 
     @Transactional
@@ -61,10 +74,10 @@ public class AdminCourseService {
         }
     }
 
-    private AdminCourseResponse save(Course course) {
+    private Course persist(Course course) {
         try {
             // saveAndFlush để ràng buộc UNIQUE của slug báo lỗi ngay tại đây (không đợi đến lúc commit).
-            return AdminCourseResponse.from(courseRepository.saveAndFlush(course));
+            return courseRepository.saveAndFlush(course);
         } catch (DataIntegrityViolationException e) {
             // Hai Admin dùng cùng slug cùng lúc: cả hai qua được kiểm tra trước, chỉ một người ghi được.
             throw new CourseSlugAlreadyExistsException();

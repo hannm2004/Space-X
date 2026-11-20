@@ -31,8 +31,30 @@ class CourseServiceTest {
     @Mock
     private vn.spacex.image.CoverImageLookup coverImageLookup;
 
+    @Mock
+    private vn.spacex.image.CourseCoverService courseCoverService;
+
     @InjectMocks
     private CourseService courseService;
+
+    @Test
+    void danhSachKhoaGanDuongDanAnhBiaChoKhoaCoAnhVaNullChoKhoaChuaCo() {
+        Course coAnh = mock(Course.class);
+        when(coAnh.getId()).thenReturn(5L);
+        when(coAnh.getSlug()).thenReturn("tin-hoc-10");
+        Course chuaCoAnh = mock(Course.class);
+        when(chuaCoAnh.getId()).thenReturn(6L);
+        when(chuaCoAnh.getSlug()).thenReturn("tin-hoc-11");
+        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(coAnh, chuaCoAnh));
+        when(courseCoverService.urlsByCourseId(java.util.Map.of(5L, "tin-hoc-10", 6L, "tin-hoc-11")))
+                .thenReturn(java.util.Map.of(5L, "/api/courses/tin-hoc-10/cover?v=1"));
+
+        List<CourseResponse> ketQua = courseService.listCourses();
+
+        assertThat(ketQua).hasSize(2);
+        assertThat(ketQua.get(0).coverImageUrl()).isEqualTo("/api/courses/tin-hoc-10/cover?v=1");
+        assertThat(ketQua.get(1).coverImageUrl()).isNull();
+    }
 
     @Test
     void danhSachKhoaLayTheoThuTuSortOrderRoiId() {
