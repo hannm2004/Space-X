@@ -16,6 +16,22 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-20 — Chốt cuối ngày: chạy test lần cuối, kiểm tra bản deploy, trạng thái so với kế hoạch
+- **Nhánh:** `feat/day-close-report` (tạo từ `main` ở `7ded707`, sau khi PR #50 và #51 đã gộp).
+- **Test lần cuối trên `main`:**
+  - Backend, đợt 1 (`.\mvnw test "-Dtest=!*IntegrationTest"`): `Tests run: 436, Failures: 0, Errors: 0`, `BUILD SUCCESS`.
+  - Backend, đợt 2 (`.\mvnw test "-Dtest=*IntegrationTest"`, MySQL 8.4 thật qua Testcontainers): `Tests run: 182, Failures: 0, Errors: 0`, `BUILD SUCCESS`. Tổng 618, khớp lệnh đếm trong `docs/TESTING.md`.
+  - Frontend bằng PowerShell: `npx vitest run` 39 file, 569 test qua (lệnh đếm = 569); `tsc -b`, `npm run lint`, `npm run build` đều sạch.
+- **CI trên GitHub (commit `7ded707`):** CodeQL và Security (gitleaks) xanh ngay lần đầu. Job `backend` của CI đỏ lần đầu: hỏng chỉ sau vài giây ở bước `./mvnw -B test`, trước khi biên dịch xong, trong khi cùng mã đó đã xanh trên PR (`84f404c`, backend 4 phút 31 giây). Không có quyền đọc log nên không biết nguyên nhân chính xác; nghi lỗi tạm thời của runner. Chạy lại (attempt 2): CI xanh, rồi deploy.
+- **Kiểm tra bản deploy (`https://space-x-47f1.onrender.com`), bằng `curl`:**
+  - `/api/health` 200; `/api/courses` có `lessonCount` ở cả 7 khóa (4, 4, 4, 4, 5, 5, 5), tổng 31 bài; `/api/lessons/{slug}` khi chưa đăng nhập 401.
+  - Bundle frontend mới có các chuỗi "phút đọc", "Chuyển bài", "Sắp có bài", "Về khóa", "Đường dẫn"; `/robots.txt`, `/favicon.svg`, `/gioi-thieu` đều 200.
+  - Chưa kiểm tra được bằng `curl` nội dung `course/previous/next` ở trang bài (cần đăng nhập); người dùng sẽ mở thử trên bản thật.
+- **Trạng thái so với kế hoạch 11 tuần (`docs/PLAN.md`):** Tuần 1 đến Tuần 6 `Done` (bản chưa có AI đã deploy). Tuần 7 (chia đoạn, truy xuất, chatbot RAG), Tuần 8 (Agent), Tuần 9 (test toàn luồng, bảo mật), Tuần 10–11 (tài liệu, deploy cuối, tổng duyệt) còn `Planned`. Chatbot RAG và AI Agent chưa có trên bản chạy thật.
+- **Việc đã làm trong ngày:** ảnh bìa khóa học (D35), chuẩn hóa nút bấm, thiết kế lại giao diện (D36), favicon, thẻ mô tả/chia sẻ, `robots.txt`, trang Giới thiệu, bài trước/sau và đường dẫn ở trang bài, số bài của khóa (D37).
+- **Việc còn mở (chưa kiểm tra, không ghi là đã xong):** tải ảnh bìa và đặt `sortOrder` cho Tin học 10/11/12 ở trang Admin của bản thật; xem bản thật trên điện thoại thật; bản nộp Tuần 6 chưa nhắc đến đợt thiết kế lại và các tính năng mới trong ngày; tìm nguyên nhân chắc chắn của lần đỏ CI ở trên nếu tái diễn; test `AdminUsersPage` từng đỏ một lần khi máy tải nặng (không gặp lại hôm nay).
+- **Tiếp theo:** mục 5 ("Tiếp tục học" ở trang chủ) nếu người dùng muốn; sau đó Tuần 7 (chia đoạn, truy xuất, chatbot RAG; đo lại Hit@3 bằng bộ dữ liệu hiện tại).
+
 ## 2026-11-20 — Bài trước/sau, đường dẫn và thời gian đọc ở trang bài; số bài của khóa
 - **Nhánh:** `feat/lesson-navigation` (tạo từ `main` ở `c06e0c9`).
 - **Lý do:** người dùng chọn nhóm 4 và 6 trong danh sách cải tiến sau khi so với một website đào tạo khác ("làm 4 và 6 trên một nhánh, 5 để sau"). Quyết định ghi ở D37 (chỉ ở máy).
@@ -36,7 +52,7 @@ Mẫu một mục:
   - Test danh mục `buttonStyles.test.ts` đỏ vì breadcrumb dùng class `link` ở trang bài; đổi sang kiểu chữ như liên kết chân trang thay vì nới lỏng test.
   - File cài đặt test gán `window.scrollTo` làm ba test chạy ở môi trường node vỡ; thêm điều kiện `typeof window`.
 - **Học được:** thêm một trường vào JSON thì phải tìm mọi chỗ khẳng định "đúng N trường" bằng mọi cách viết (`hasSize`, `length()`, `.*`) và sửa mọi fixture, rồi chạy cả đợt test tích hợp trước khi commit chứ không chỉ các lớp liên quan; CSS không thuộc lớp nào thắng mọi tiện ích Tailwind bất kể độ đặc hiệu; nhờ xem bằng trình duyệt thật mới thấy khung viền xanh mà test không bắt được.
-- **Chưa kiểm tra:** các trang mới trên bản deploy.
+- **Kiểm tra sau deploy:** xem mục "Chốt cuối ngày" ở trên (API và bundle đã kiểm bằng `curl`; nội dung trang bài cần đăng nhập nên chờ người dùng mở thử).
 - **Tiếp theo:** mục 5 ("Tiếp tục học" ở trang chủ) khi người dùng chốt; mở Pull Request, chờ CI xanh.
 
 ## 2026-11-20 — Favicon, thẻ mô tả/chia sẻ, robots.txt và trang Giới thiệu
