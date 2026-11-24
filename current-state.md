@@ -16,6 +16,37 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-24 — Giai đoạn 0 của Space-X 2.0: chuyển hướng đề tài, thương hiệu mới, bản nháp database và chatbot
+- **Nhánh:** `feat/brand-space-x` (PR #53, đã gộp ở `6052c1e`) và `feat/design-drafts` (PR #54, đã gộp vào `main` ở `cc6765d`; `git fetch` xác nhận `origin/main` đã có). Cả hai tạo từ `main` sau khi PR #52 gộp.
+- **Lý do:** thầy góp ý giao diện cũ chưa đẹp; đề tài chuyển từ website tự học Tin học 6–12 sang website của **Trung tâm Tin học SPACE-X** (hư cấu): bán khóa, lịch khai giảng, đăng ký và thanh toán (VNPay sandbox), tra cứu điểm/chứng nhận, chatbot RAG + Agent. Quyết định ghi ở D38 (chỉ ở máy).
+- **Đã làm:**
+  - Dọn dấu vết Figma cũ: chuyển thư mục thiết kế cũ vào `_to_delete/`, giữ 12 ảnh giao diện cũ ở `docs/evidence/giao-dien-cu/` làm ảnh so sánh trước/sau. Chưa xóa gì. Các file Figma trên figma.com phải tự xóa tay (không có công cụ Figma).
+  - `.gitignore` thêm `docs/SPACE-X-2.0.md`, `Space-X-2.0-goi-ban-giao/`, `_to_delete/`.
+  - `CLAUDE.md` viết lại theo D38: mô tả trung tâm, ràng buộc nghiệp vụ (không bán quá số chỗ, tiền `BIGINT`, chỉ IPN hợp lệ mới thành `PAID`, dữ liệu cá nhân không gửi AI), Resend qua HTTPS (không SMTP), Agent đúng 4 tool chỉ đọc (bỏ `findLessons`).
+  - Cập nhật `docs/DECISIONS.md` (D38, ghi rõ D4, D9, D17, D19, D23 bị thay), `docs/PLAN.md` (lộ trình Tuần 7–11, danh sách phần sẽ bỏ hoặc sửa), `docs/PROJECT_SCOPE.md` (use case UC24–UC41, gồm chatbot tư vấn và để lại số điện thoại). Cả ba là file chỉ ở máy.
+  - Thương hiệu mới: logo hai bản sáng/tối (`logo-mark.svg`, `logo-mark-on-dark.svg`), `favicon.svg` mới, `Layout.tsx` dùng `BrandLogo` (hai thẻ `<img>`, `dark:hidden` và `hidden dark:block`), dòng phụ "Trung tâm Tin học", `index.html` đổi tiêu đề và mô tả.
+  - Bản nháp thiết kế (chưa áp dụng): `docs/DATABASE_DESIGN.md` mục 8 (ERD, 15 bảng mới, đổi `courses` và `knowledge_chunks`, tách migration V6–V10, máy trạng thái đơn, 12 câu hỏi mở); `docs/API.md` (`POST /api/agent/ask`, 4 tool, `POST /api/contact-requests`, API Admin, 7 điểm cần quyết); `docs/TESTING.md` (test bắt buộc của chatbot A1–E).
+- **Kiểm tra:**
+  - Thương hiệu (viết test trước): chạy `npx vitest run` cho `siteMetadata.test.ts` và `App.test.tsx` ra đỏ **5 failed | 38 passed (43)**, rồi xanh sau khi sửa. Chạy đủ bằng PowerShell ở `src/frontend`: **39 file, 578 test qua** (trước đó 569). `npm run build` xong trong 1,08 giây, sinh `dist/assets/index-*.js` và `index-*.css`.
+  - Lint và `tsc` đã chạy trong phiên; điền lại kết quả chính xác từ lần chạy của bạn nếu cần.
+  - Backend không đổi (không có thay đổi mã Java), nên không chạy lại; số test backend vẫn là 618 như mục 2026-11-20.
+  - CI xanh, gộp và deploy thành công cho cả PR #53 và PR #54: **theo người dùng báo lại**; chưa kiểm tra bằng `curl` trên bản chạy thật. PR #54 chỉ có tài liệu nên không đổi bản chạy.
+- **Lỗi gặp và cách sửa:**
+  - Hook chặn lần sửa đầu của vài file cho đến khi nêu rõ lý do; khi gửi nhiều lệnh sửa song song thì chỉ một phần được áp dụng. Có lúc `Layout.tsx` gọi `BrandLogo` khi chưa khai báo; phát hiện khi kiểm tra lại trạng thái file rồi bổ sung ngay.
+  - Một khẳng định trong test của chính tôi vô nghĩa (`not.toContain('fill="#ffffff" fill-opacity')`); đổi thành kiểm màu không lẫn giữa hai bản logo.
+  - Bản nháp D38 có chỗ viết thừa (số bảng, một nhận định "dễ nhầm với SpaceX" không có căn cứ); đã sửa trước khi lưu.
+  - Thiết kế: định thêm CHECK cho `knowledge_chunks.lesson_id` nhưng theo tài liệu MySQL, CHECK không được dùng cột có tham gia hành động tham chiếu của khóa ngoại (`ON DELETE CASCADE`); đã bỏ CHECK. Đây là theo tài liệu, **chưa thử trên MySQL thật**.
+  - `docs/reports/giao-dien/` không chuyển được do thư mục đang bị khóa; chuyển từng thư mục con, còn lại một thư mục rỗng (xóa tay sau khi đóng chương trình đang giữ).
+- **Học được:** (điền theo ý bạn) ví dụ: dùng hai thẻ `<img>` với `dark:` để đổi logo theo chế độ sáng/tối mà không cần JavaScript; ràng buộc "không bán quá số chỗ" nên có cả khóa dòng lẫn CHECK ở database; tách bản nháp thiết kế khỏi migration để được duyệt trước khi áp dụng.
+- **Việc còn mở (chưa làm, không ghi là xong):**
+  - Chưa tạo migration và chưa viết mã chatbot: chờ bạn trả lời 12 câu ở `DATABASE_DESIGN.md` mục 8.8 và 7 câu ở `API.md` (mục "Điểm cần quyết").
+  - Chưa render thử 4 sơ đồ mermaid trên GitHub; chưa xem logo mới bằng trình duyệt ở chế độ sáng và tối.
+  - Còn chữ "lớp 6–12", `courseGroups.ts`, lưới "Bạn đang học lớp mấy?", cột chân trang THCS/THPT (danh sách ở `docs/PLAN.md`); dọn trên nhánh `feat/course-catalog`.
+  - `CLAUDE.md` dòng 3 còn ghi "12 tuần".
+  - Hạn mức Gemini, giá Render Starter, việc Resend chỉ gửi tới chủ tài khoản khi chưa xác minh tên miền, VNPay sandbox không cần thẻ: lấy từ đặc tả, **chưa kiểm chứng**.
+  - Cần xin phép trước khi tạo tài khoản VNPay sandbox, Resend hoặc mua tên miền (dự kiến Tuần 8).
+- **Tiếp theo:** duyệt hai bản nháp; sau đó nhánh `feat/course-catalog` (dọn phần đề tài cũ, V6 `create_course_catalog`, test viết trước).
+
 ## 2026-11-20 — Chốt cuối ngày: chạy test lần cuối, kiểm tra bản deploy, trạng thái so với kế hoạch
 - **Nhánh:** `feat/day-close-report` (tạo từ `main` ở `7ded707`, sau khi PR #50 và #51 đã gộp).
 - **Test lần cuối trên `main`:**
