@@ -109,12 +109,56 @@ describe('App — định tuyến', () => {
     expect(home.getAttribute('href')).toBe('/')
   })
 
-  it('mọi trang đều có thanh đầu trang với liên kết Space-X về trang chủ và nút đổi giao diện', () => {
+  it('mọi trang đều có thanh đầu trang với liên kết SPACE-X về trang chủ và nút đổi giao diện', () => {
     renderAt('/khong-co-trang-nay')
 
-    const brand = screen.getByRole('link', { name: 'Space-X' })
+    const brand = within(screen.getByRole('banner')).getByRole('link', { name: /SPACE-X/ })
     expect(brand.getAttribute('href')).toBe('/')
     expect(screen.getByRole('button', { name: 'Chuyển sang giao diện tối' })).not.toBeNull()
+  })
+
+  it('thương hiệu ở đầu trang: chữ SPACE-X và dòng phụ "Trung tâm Tin học"', () => {
+    renderAt('/khong-co-trang-nay')
+
+    const brand = within(screen.getByRole('banner')).getByRole('link', { name: /SPACE-X/ })
+    expect(brand.textContent).toContain('SPACE-X')
+    expect(brand.textContent).toMatch(/Trung tâm Tin học/i)
+    // Tên cũ "Space-X" (viết hoa chữ đầu) không còn.
+    expect(brand.textContent).not.toContain('Space-X')
+  })
+
+  it('logo có hai bản, bản nền sáng ẩn khi chế độ tối và ngược lại; cả hai là hình trang trí', () => {
+    renderAt('/khong-co-trang-nay')
+
+    const brand = within(screen.getByRole('banner')).getByRole('link', { name: /SPACE-X/ })
+    expect(brand.querySelectorAll('img')).toHaveLength(2)
+    const light = brand.querySelector('img[src="/logo-mark.svg"]')!
+    const dark = brand.querySelector('img[src="/logo-mark-on-dark.svg"]')!
+    expect(light).not.toBeNull()
+    expect(dark).not.toBeNull()
+    // Tên đã có bằng chữ ngay bên cạnh nên ảnh để alt rỗng, trình đọc màn hình không đọc hai lần.
+    expect(light.getAttribute('alt')).toBe('')
+    expect(dark.getAttribute('alt')).toBe('')
+    // Đổi sáng/tối bằng class `dark` trên <html> (ThemeToggle), không cần JavaScript thêm.
+    expect(light.classList.contains('dark:hidden')).toBe(true)
+    expect(dark.classList.contains('hidden')).toBe(true)
+    expect(dark.classList.contains('dark:block')).toBe(true)
+    // Có sẵn width/height để trình duyệt giữ chỗ, trang không nhảy khi ảnh tải xong.
+    for (const img of [light, dark]) {
+      expect(img.getAttribute('width')).toBeTruthy()
+      expect(img.getAttribute('height')).toBeTruthy()
+    }
+  })
+
+  it('chân trang cũng dùng logo mới và tên SPACE-X, không còn biểu tượng ngoặc nhọn cũ', async () => {
+    renderAt('/khong-co-trang-nay')
+
+    const footer = await screen.findByRole('contentinfo')
+    expect(footer.querySelector('img[src="/logo-mark.svg"]')).not.toBeNull()
+    expect(footer.querySelector('img[src="/logo-mark-on-dark.svg"]')).not.toBeNull()
+    expect(within(footer).getByText('SPACE-X')).not.toBeNull()
+    // Biểu tượng cũ là một <svg> nằm trong khối thương hiệu; logo mới là <img>.
+    expect(footer.querySelector('svg path[d="M9 7l-5 5 5 5M15 7l5 5-5 5"]')).toBeNull()
   })
 
   it('có liên kết "Bỏ qua tới nội dung" là mục đầu tiên để người dùng bàn phím khỏi Tab qua cả thanh đầu trang', () => {
@@ -130,10 +174,10 @@ describe('App — định tuyến', () => {
     expect(document.body.querySelector('a, button')).toBe(skip)
   })
 
-  it('tên thương hiệu Space-X không bị trình duyệt dịch tự động', () => {
+  it('tên thương hiệu SPACE-X không bị trình duyệt dịch tự động', () => {
     renderAt('/khong-co-trang-nay')
 
-    const brand = screen.getByRole('link', { name: 'Space-X' })
+    const brand = within(screen.getByRole('banner')).getByRole('link', { name: /SPACE-X/ })
     expect(brand.querySelector('[translate="no"]')).not.toBeNull()
   })
 

@@ -11,14 +11,17 @@ import { useAuth } from './useAuth'
 const NAV_LINK =
   'rounded-md px-3 py-2 text-[0.9375rem] font-medium text-muted hover:bg-sunken hover:text-ink aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent'
 
-// Biểu tượng thương hiệu: dấu ngoặc nhọn của mã nguồn trong khung vuông bo góc. Chỉ trang trí nên ẩn với trình đọc màn hình.
-function BrandMark() {
+// Logo SPACE-X có hai tệp: bản vẽ bằng xanh đậm cho nền sáng, bản vẽ bằng trắng cho nền tối. Hai thẻ <img> cùng có
+// mặt, class `dark` trên <html> (do ThemeToggle và script ở index.html đặt) chọn thẻ nào hiện, nên không cần JavaScript
+// và không nháy sai logo khi tải trang. Dùng `dark:` ở đây vì token màu của index.css không đổi được tệp ảnh.
+// alt rỗng: tên thương hiệu đã có bằng chữ ngay bên cạnh, để trình đọc màn hình không đọc hai lần.
+// width/height theo tỉ lệ 200:140 của tệp SVG để trình duyệt giữ chỗ.
+function BrandLogo() {
   return (
-    <span aria-hidden="true" className="grid size-8 place-items-center rounded-lg bg-accent text-on-accent">
-      <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 7l-5 5 5 5M15 7l5 5-5 5" />
-      </svg>
-    </span>
+    <>
+      <img src="/logo-mark.svg" alt="" width={46} height={32} className="h-8 w-auto dark:hidden" />
+      <img src="/logo-mark-on-dark.svg" alt="" width={46} height={32} className="hidden h-8 w-auto dark:block" />
+    </>
   )
 }
 
@@ -128,10 +131,14 @@ export default function Layout() {
       </a>
       <header className="sticky top-0 z-30 border-b border-line bg-surface/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
-          <Link to="/" className="flex items-center gap-2 text-xl font-bold tracking-tight">
-            <BrandMark />
-            <span translate="no">
-              Space-<span className="text-accent">X</span>
+          <Link to="/" className="flex items-center gap-2.5">
+            <BrandLogo />
+            <span className="flex flex-col leading-none">
+              {/* translate="no": tên riêng, trình duyệt không được dịch. Dòng phụ là tiếng Việt thường nên vẫn cho dịch. */}
+              <span translate="no" className="text-xl font-extrabold tracking-tight">
+                SPACE-X
+              </span>
+              <span className="mt-1 text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-muted">Trung tâm Tin học</span>
             </span>
           </Link>
           <PrimaryNav isAdmin={isAdmin} />
@@ -152,11 +159,9 @@ export default function Layout() {
       <footer className="border-t border-line bg-surface">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm sm:px-6 md:grid-cols-[1.5fr_1fr_1fr_1fr_1fr]">
           <div>
-            <p className="flex items-center gap-2 text-lg font-bold tracking-tight">
-              <BrandMark />
-              <span translate="no">
-                Space-<span className="text-accent">X</span>
-              </span>
+            <p className="flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
+              <BrandLogo />
+              <span translate="no">SPACE-X</span>
             </p>
             <p className="mt-3 max-w-xs text-muted">
               Học liệu Tin học lớp 6 đến lớp 12 theo Chương trình GDPT 2018. Dự án học tập, miễn phí.

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="140" viewBox="0 0 200 140" role="img" aria-label="Logo Trung tâm Tin học SPACE-X">
+  <path d="M18 70 A82 24 0 0 1 182 70" transform="rotate(-16 100 70)" fill="none" stroke="#ffffff" stroke-opacity="0.4" stroke-width="2.5"/>
+  <path d="M100 47 L106 64 L123 70 L106 76 L100 93 L94 76 L77 70 L94 64 Z" transform="rotate(45 100 70)" fill="#ffffff" fill-opacity="0.5"/>
+  <path d="M100 14 C103 55 106 63 142 70 C106 77 103 85 100 126 C97 85 94 77 58 70 C94 63 97 55 100 14 Z" fill="#ffffff"/>
+  <circle cx="100" cy="70" r="5" fill="#05070d"/>
+  <g transform="rotate(-16 100 70)">
+    <path d="M182 70 A82 24 0 0 1 18 70" fill="none" stroke="#ffffff" stroke-width="3"/>
+    <rect x="147" y="83" width="11" height="11" rx="2.5" fill="#f59e0b" stroke="#05070d" stroke-width="2"/>
+  </g>
+  <path d="M38 26 C39 31 40 32 45 33 C40 34 39 35 38 40 C37 35 36 34 31 33 C36 32 37 31 38 26 Z" fill="#ffffff"/>
+  <path d="M166 22 C166.6 25 167 25.4 170 26 C167 26.6 166.6 27 166 30 C165.4 27 165 26.6 162 26 C165 25.4 165.4 25 166 22 Z" fill="#ffffff" fill-opacity="0.8"/>
+  <path d="M58 108 C58.5 110.5 59 111 61.5 111.5 C59 112 58.5 112.5 58 115 C57.5 112.5 57 112 54.5 111.5 C57 111 57.5 110.5 58 108 Z" fill="#ffffff" fill-opacity="0.7"/>
+</svg>
