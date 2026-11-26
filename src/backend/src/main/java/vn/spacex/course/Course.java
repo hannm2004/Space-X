@@ -2,6 +2,8 @@ package vn.spacex.course;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -34,7 +36,32 @@ public class Course {
     @Column(nullable = false)
     private String code;
 
+    // Giá trị ban đầu phải đặt ở đây: Hibernate luôn ghi cả hai cột nên DEFAULT của database không được dùng.
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CourseStatus status = CourseStatus.DRAFT;
+
+    // Đồng Việt Nam, số nguyên; 0 là chưa có học phí.
+    @Column(name = "tuition_vnd", nullable = false)
+    private long tuitionVnd;
+
     protected Course() {
+    }
+
+    public void changeStatus(CourseStatus status) {
+        this.status = status;
+    }
+
+    public void changeTuition(long tuitionVnd) {
+        this.tuitionVnd = tuitionVnd;
+    }
+
+    public CourseStatus getStatus() {
+        return status;
+    }
+
+    public long getTuitionVnd() {
+        return tuitionVnd;
     }
 
     public void placeIn(Long categoryId, String code) {

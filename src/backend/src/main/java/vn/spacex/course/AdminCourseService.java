@@ -50,6 +50,7 @@ public class AdminCourseService {
         Category category = categoryRepository.findBySlug(DEFAULT_CATEGORY_SLUG)
                 .orElseThrow(() -> new IllegalStateException("Thiếu nhóm khóa mặc định"));
         course.placeIn(category.getId(), CourseCodes.fromSlug(request.slug(), courseRepository::existsByCode));
+        applySale(course, request);
         // Khóa mới chưa có ảnh bìa.
         return AdminCourseResponse.from(persist(course), null);
     }
@@ -61,6 +62,7 @@ public class AdminCourseService {
             throw new CourseSlugAlreadyExistsException();
         }
         course.update(request.slug(), request.title(), request.description(), request.sortOrder());
+        applySale(course, request);
         Course saved = persist(course);
         // Sửa khóa không đụng tới ảnh bìa; trả đường dẫn hiện có để trang Admin không mất ảnh vừa hiện.
         return AdminCourseResponse.from(saved, courseCoverService.urlOfCourse(id, saved.getSlug()));
@@ -79,6 +81,16 @@ public class AdminCourseService {
         } catch (DataIntegrityViolationException e) {
             // Có bài vừa được thêm vào khóa này giữa lúc kiểm tra và lúc xóa; khóa ngoại là chốt cuối.
             throw new CourseHasLessonsException();
+        }
+    }
+
+    // Trường bỏ trống (null) nghĩa là không đổi.
+    private static void applySale(Course course, AdminCourseRequest request) {
+        if (request.status() != null) {
+            course.changeStatus(request.status());
+        }
+        if (request.tuitionVnd() != null) {
+            course.changeTuition(request.tuitionVnd());
         }
     }
 

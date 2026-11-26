@@ -170,7 +170,7 @@ Bảng lưu session (Spring Session JDBC, từ việc 3.6) và bảng lịch s�
 
 ## 8. Bản nháp 2.0 (chưa áp dụng)
 
-**Trạng thái (2026-11-26): phần của `V6` đã được duyệt và cài đặt trên nhánh `feat/course-catalog` (`V6__create_course_catalog.sql`), chưa gộp và chưa chạy trên Aiven. `V7`–`V10` vẫn là bản nháp, chờ duyệt. Phần 1–7 ở trên mô tả schema đang chạy trên bản thật (`V1`–`V5`).** Đây là thiết kế cho đề tài Trung tâm Tin học SPACE-X (D38): bán khóa học, lịch khai giảng, đăng ký và thanh toán học phí, tra cứu điểm và chứng nhận, chatbot tư vấn. Nguồn: `docs/SPACE-X-2.0.md` mục 5 và 6.
+**Trạng thái (2026-11-26): phần của `V6` đã được duyệt, cài đặt (`V6__create_course_catalog.sql`), gộp qua PR #56 và deploy; từ đây không sửa file đó nữa. `V7`–`V10` vẫn là bản nháp, chờ duyệt. Phần 1–7 ở trên mô tả schema `V1`–`V5`; những gì `V6` thêm nằm ở mục 8. Đây là thiết kế cho đề tài Trung tâm Tin học SPACE-X (D38): bán khóa học, lịch khai giảng, đăng ký và thanh toán học phí, tra cứu điểm và chứng nhận, chatbot tư vấn. Nguồn: `docs/SPACE-X-2.0.md` mục 5 và 6.
 
 Nguyên tắc: không sửa `V1`–`V5` (Flyway kiểm checksum, `V1` đã chạy trên Aiven); mọi thay đổi đi qua `V6` trở đi, mỗi migration một nhóm việc và chỉ viết khi tới tuần làm nhóm đó; tiền là `BIGINT` (đồng, không có phần lẻ); mọi bảng dùng `utf8mb4` + `utf8mb4_0900_ai_ci`, `DATETIME(6)`, `ENGINE = InnoDB` như `V1`. Các bảng, cột và ràng buộc đánh dấu **(đề xuất thêm)** không có trong đặc tả mục 5, do thiết kế này thêm vào vì một yêu cầu khác của đặc tả cần đến; cần được duyệt riêng.
 
@@ -539,5 +539,6 @@ Dữ liệu cá nhân (`birth_year`, `phone`, `email` trong `registration_member
 
 - `FlywayMigrationIntegrationTest` (đang kiểm danh sách 6 bảng và `knowledge_chunks` xóa theo bài) cần cập nhật khi thêm bảng; giữ nguyên các phép kiểm cũ vì `lesson_id` và `CASCADE` không đổi.
 - (Đã làm cùng `V6`) Các test tích hợp chèn khóa qua hàm dùng chung `CourseRows`, vì `category_id` và `code` không có `DEFAULT`.
-- (Đã làm cùng `V6`) API Admin tạo khóa chưa nhận nhóm và mã, nên khóa mới vào nhóm mặc định "Khóa cho thiếu niên", mã sinh từ slug (`CourseCodes`), trạng thái `DRAFT`, học phí 0. API công khai **chưa lọc theo `status`**; khi thêm bộ lọc phải có chỗ cho Admin đăng khóa trước, nếu không khóa mới sẽ không hiện.
+- (Đã làm cùng `V6`) API Admin tạo khóa chưa nhận nhóm và mã, nên khóa mới vào nhóm mặc định "Khóa cho thiếu niên", mã sinh từ slug (`CourseCodes`); mặc định `DRAFT`, học phí 0.
+- (Đã làm sau `V6`) API và trang Admin đặt được `status` và `tuition_vnd`. API công khai **chưa lọc theo `status`**: việc đó làm cùng bộ lọc danh sách, kèm cho dữ liệu mẫu (`seed/`) đăng khóa, nếu không khóa nạp mới sẽ không hiện.
 - `SeedDataTest` và script nạp dữ liệu mẫu cần biết nhóm và học phí của khóa (danh sách ở `docs/PLAN.md`, Việc 6).

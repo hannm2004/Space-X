@@ -20,7 +20,24 @@ class AdminCourseRequestValidationTest {
     }
 
     private static AdminCourseRequest request(String slug, String title, String description, Integer sortOrder) {
-        return new AdminCourseRequest(slug, title, description, sortOrder);
+        return new AdminCourseRequest(slug, title, description, sortOrder, null, null);
+    }
+
+    private static AdminCourseRequest coHocPhi(Long tuitionVnd) {
+        return new AdminCourseRequest("a", "x", null, 0, CourseStatus.PUBLISHED, tuitionVnd);
+    }
+
+    @Test
+    void trangThaiVaHocPhiCoTheBoTrong() {
+        assertThat(truongLoi(request("a", "x", null, 0))).isEmpty();
+    }
+
+    @Test
+    void hocPhiTuKhongDenMotTyDong() {
+        assertThat(truongLoi(coHocPhi(0L))).isEmpty();
+        assertThat(truongLoi(coHocPhi(1_000_000_000L))).isEmpty();
+        assertThat(truongLoi(coHocPhi(-1L))).containsExactly("tuitionVnd");
+        assertThat(truongLoi(coHocPhi(1_000_000_001L))).containsExactly("tuitionVnd");
     }
 
     @Test

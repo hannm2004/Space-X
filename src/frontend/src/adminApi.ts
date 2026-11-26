@@ -124,17 +124,29 @@ export async function resetUserPassword(id: number): Promise<TemporaryPassword> 
 
 // ---- Khóa học, bài học, ảnh (CP6.4). Hình dạng khớp mục "Quản trị" của docs/API.md. ----
 
+// DRAFT: đang soạn; PUBLISHED: đang hiển thị; ARCHIVED: ngừng bán.
+export type CourseStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
 export type AdminCourse = {
   id: number
   slug: string
   title: string
   description: string | null
   sortOrder: number
+  status: CourseStatus
+  // Đồng Việt Nam, số nguyên; 0 là chưa có học phí.
+  tuitionVnd: number
   // Ảnh bìa khóa (công khai); null khi chưa có. Thiếu trường (máy chủ cũ) coi như null.
   coverImageUrl?: string | null
 }
 // Dữ liệu gửi lên khi tạo/sửa khóa: mô tả để trống thì gửi chuỗi rỗng, máy chủ lưu null.
-export type CourseInput = { slug: string; title: string; description: string; sortOrder: number }
+export type CourseInput = {
+  slug: string
+  title: string
+  description: string
+  sortOrder: number
+  status: CourseStatus
+  tuitionVnd: number
+}
 
 export type LessonStatus = 'DRAFT' | 'PUBLISHED'
 // Một dòng trong danh sách bài (không có nội dung); AdminLesson là bài đầy đủ để sửa.
@@ -172,6 +184,11 @@ export type UploadedImage = { id: number; url: string }
 
 const LESSON_PAGE_SIZE = 20
 
+function asCourseStatus(value: unknown): CourseStatus {
+  if (value !== 'DRAFT' && value !== 'PUBLISHED' && value !== 'ARCHIVED') throw new Error(BAD_SHAPE)
+  return value
+}
+
 function parseAdminCourse(value: unknown): AdminCourse {
   const record = asRecord(value)
   return {
@@ -180,6 +197,8 @@ function parseAdminCourse(value: unknown): AdminCourse {
     title: asString(record.title),
     description: asNullableString(record.description),
     sortOrder: asNumber(record.sortOrder),
+    status: asCourseStatus(record.status),
+    tuitionVnd: asNumber(record.tuitionVnd),
     coverImageUrl: record.coverImageUrl === undefined ? null : asNullableString(record.coverImageUrl),
   }
 }

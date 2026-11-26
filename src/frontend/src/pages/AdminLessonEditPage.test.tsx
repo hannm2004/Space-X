@@ -57,8 +57,8 @@ const ADMIN_ME = { displayName: 'Quản trị viên', email: 'admin@example.com'
 const LEARNER_ME = { displayName: 'Học sinh', email: 'hs@example.com', role: 'LEARNER' as const }
 
 const KHOA: AdminCourse[] = [
-  { id: 5, slug: 'tin-hoc-10', title: 'Tin học 10', description: null, sortOrder: 1 },
-  { id: 6, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, sortOrder: 2 },
+  { id: 5, slug: 'tin-hoc-10', title: 'Tin học 10', description: null, sortOrder: 1, status: 'PUBLISHED', tuitionVnd: 0 },
+  { id: 6, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, sortOrder: 2, status: 'PUBLISHED', tuitionVnd: 0 },
 ]
 const BAI: AdminLesson = {
   id: 3,

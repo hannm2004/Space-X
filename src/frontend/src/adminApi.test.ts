@@ -238,9 +238,18 @@ const COURSE_JSON = {
   title: 'Tin học 10',
   description: 'Lớp 10',
   sortOrder: 1,
+  status: 'PUBLISHED',
+  tuitionVnd: 1500000,
   coverImageUrl: null,
 }
-const COURSE_INPUT = { slug: 'tin-hoc-10', title: 'Tin học 10', description: 'Lớp 10', sortOrder: 1 }
+const COURSE_INPUT = {
+  slug: 'tin-hoc-10',
+  title: 'Tin học 10',
+  description: 'Lớp 10',
+  sortOrder: 1,
+  status: 'PUBLISHED' as const,
+  tuitionVnd: 1500000,
+}
 const LESSON_SUMMARY_JSON = {
   id: 3,
   courseId: 5,
@@ -282,6 +291,17 @@ describe('khóa học (Admin)', () => {
     apiRequestMock.mockResolvedValue([{ id: 5, slug: 'a', title: 'A', description: null }])
 
     await expect(fetchAdminCourses()).rejects.toThrow()
+  })
+
+  it('fetchAdminCourses từ chối trạng thái lạ, thiếu trạng thái hoặc học phí không phải số', async () => {
+    const thieuTrangThai: Record<string, unknown> = { ...COURSE_JSON }
+    delete thieuTrangThai.status
+
+    for (const bad of [{ ...COURSE_JSON, status: 'HIDDEN' }, thieuTrangThai, { ...COURSE_JSON, tuitionVnd: '0' }]) {
+      apiRequestMock.mockResolvedValue([bad])
+
+      await expect(fetchAdminCourses()).rejects.toThrow()
+    }
   })
 
   it('fetchAdminCourses từ chối phản hồi không phải mảng', async () => {
@@ -443,7 +463,7 @@ describe('ảnh bìa khóa học (Admin)', () => {
   it('fetchAdminCourses giữ đường dẫn ảnh bìa; thiếu trường thì là null', async () => {
     apiRequestMock.mockResolvedValue([
       { ...COURSE_JSON, coverImageUrl: '/api/courses/tin-hoc-10/cover?v=9' },
-      { id: 6, slug: 'a', title: 'A', description: null, sortOrder: 2 },
+      { id: 6, slug: 'a', title: 'A', description: null, sortOrder: 2, status: 'DRAFT', tuitionVnd: 0 },
     ])
 
     const result = await fetchAdminCourses()

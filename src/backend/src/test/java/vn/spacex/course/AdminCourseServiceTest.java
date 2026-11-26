@@ -71,7 +71,59 @@ class AdminCourseServiceTest {
     }
 
     private static AdminCourseRequest request(String slug) {
-        return new AdminCourseRequest(slug, "Tin học 10", "Chương trình lớp 10", 1);
+        return new AdminCourseRequest(slug, "Tin học 10", "Chương trình lớp 10", 1, null, null);
+    }
+
+    private static AdminCourseRequest banKhoa(CourseStatus status, Long tuitionVnd) {
+        return new AdminCourseRequest("tin-hoc-10", "Tin học 10", null, 1, status, tuitionVnd);
+    }
+
+    @Test
+    void khoaMoiKhongGuiTrangThaiVaHocPhiThiLaBanNhapKhongDong() {
+        coNhomMacDinh();
+        when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        AdminCourseResponse response = service.create(banKhoa(null, null));
+
+        assertThat(response.status()).isEqualTo(CourseStatus.DRAFT);
+        assertThat(response.tuitionVnd()).isZero();
+    }
+
+    @Test
+    void taoKhoaCoTheDangNgayKemHocPhi() {
+        coNhomMacDinh();
+        when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        AdminCourseResponse response = service.create(banKhoa(CourseStatus.PUBLISHED, 1_500_000L));
+
+        assertThat(response.status()).isEqualTo(CourseStatus.PUBLISHED);
+        assertThat(response.tuitionVnd()).isEqualTo(1_500_000L);
+    }
+
+    @Test
+    void suaKhoaDoiTrangThaiVaHocPhi() {
+        Course khoa = Course.create("tin-hoc-10", "Tin học 10", null, 1);
+        when(courseRepository.findById(5L)).thenReturn(Optional.of(khoa));
+        when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.update(5L, banKhoa(CourseStatus.ARCHIVED, 2_000_000L));
+
+        assertThat(khoa.getStatus()).isEqualTo(CourseStatus.ARCHIVED);
+        assertThat(khoa.getTuitionVnd()).isEqualTo(2_000_000L);
+    }
+
+    @Test
+    void suaKhoaKhongGuiTrangThaiVaHocPhiThiGiuNguyen() {
+        Course khoa = Course.create("tin-hoc-10", "Tin học 10", null, 1);
+        khoa.changeStatus(CourseStatus.PUBLISHED);
+        khoa.changeTuition(1_500_000L);
+        when(courseRepository.findById(5L)).thenReturn(Optional.of(khoa));
+        when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.update(5L, banKhoa(null, null));
+
+        assertThat(khoa.getStatus()).isEqualTo(CourseStatus.PUBLISHED);
+        assertThat(khoa.getTuitionVnd()).isEqualTo(1_500_000L);
     }
 
     private void coNhomMacDinh() {
@@ -155,7 +207,7 @@ class AdminCourseServiceTest {
         when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AdminCourseResponse response = service.update(5L,
-                new AdminCourseRequest("tin-hoc-10-moi", "Tin học 10 mới", "Mô tả mới", 3));
+                new AdminCourseRequest("tin-hoc-10-moi", "Tin học 10 mới", "Mô tả mới", 3, null, null));
 
         assertThat(khoa.getSlug()).isEqualTo("tin-hoc-10-moi");
         assertThat(khoa.getTitle()).isEqualTo("Tin học 10 mới");

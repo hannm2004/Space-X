@@ -9,6 +9,7 @@ import {
   uploadCourseCover,
   type AdminCourse,
   type CourseInput,
+  type CourseStatus,
 } from '../adminApi'
 import AdminGate from '../AdminGate'
 import { CARD, DANGER, NO_PERMISSION, SECONDARY, SUCCESS_BOX } from '../adminUi'
@@ -21,9 +22,26 @@ import { IMAGE_ACCEPT, IMAGE_HINT, imageProblem } from '../imageUpload'
 import LoadError from '../LoadError'
 import { useLoad } from '../useLoad'
 
-type FormValues = { slug: string; title: string; description: string; sortOrder: string }
+type FormValues = {
+  slug: string
+  title: string
+  description: string
+  sortOrder: string
+  status: CourseStatus
+  tuition: string
+}
 
-const EMPTY_VALUES: FormValues = { slug: '', title: '', description: '', sortOrder: '' }
+// Khóa mới mặc định là bản nháp chưa có học phí, giống mặc định của máy chủ.
+const EMPTY_VALUES: FormValues = { slug: '', title: '', description: '', sortOrder: '', status: 'DRAFT', tuition: '0' }
+
+const STATUS_LABELS: Record<CourseStatus, string> = {
+  DRAFT: 'Bản nháp',
+  PUBLISHED: 'Đã đăng',
+  ARCHIVED: 'Ngừng bán',
+}
+
+// Cùng mức trần với backend.
+const MAX_TUITION = 1_000_000_000
 
 function toValues(course: AdminCourse): FormValues {
   return {
@@ -31,6 +49,8 @@ function toValues(course: AdminCourse): FormValues {
     title: course.title,
     description: course.description ?? '',
     sortOrder: String(course.sortOrder),
+    status: course.status,
+    tuition: String(course.tuitionVnd),
   }
 }
 
@@ -42,8 +62,21 @@ function parseValues(values: FormValues): { input: CourseInput } | { errors: str
   if (slug === '' || title === '') errors.push('Hãy nhập slug và tên khóa học.')
   const sortText = values.sortOrder.trim()
   if (!/^\d{1,9}$/.test(sortText)) errors.push('Thứ tự hiển thị phải là số nguyên không âm.')
+  const tuitionText = values.tuition.trim()
+  if (!/^\d{1,10}$/.test(tuitionText) || Number(tuitionText) > MAX_TUITION) {
+    errors.push('Học phí phải là số nguyên từ 0 đến 1.000.000.000 đồng, không có dấu chấm.')
+  }
   if (errors.length > 0) return { errors }
-  return { input: { slug, title, description: values.description.trim(), sortOrder: Number(sortText) } }
+  return {
+    input: {
+      slug,
+      title,
+      description: values.description.trim(),
+      sortOrder: Number(sortText),
+      status: values.status,
+      tuitionVnd: Number(tuitionText),
+    },
+  }
 }
 
 type CourseFormProps = {
@@ -61,7 +94,7 @@ function CourseForm({ idPrefix, initial, submitLabel, pendingLabel, clearOnSucce
   const [busy, setBusy] = useState(false)
   const [messages, setMessages] = useState<string[]>([])
 
-  function set(field: keyof FormValues) {
+  function set(field: Exclude<keyof FormValues, 'status'>) {
     return (value: string) => setValues((current) => ({ ...current, [field]: value }))
   }
 
@@ -106,6 +139,30 @@ function CourseForm({ idPrefix, initial, submitLabel, pendingLabel, clearOnSucce
         value={values.sortOrder}
         onChange={set('sortOrder')}
         hint="Số nhỏ hiện trước."
+      />
+      <div>
+        <label htmlFor={`${idPrefix}-status`} className="block text-sm font-medium">
+          Trạng thái
+        </label>
+        <select
+          id={`${idPrefix}-status`}
+          value={values.status}
+          onChange={(event) => setValues((current) => ({ ...current, status: event.target.value as CourseStatus }))}
+          className="mt-1 field"
+        >
+          {Object.entries(STATUS_LABELS).map(([status, label]) => (
+            <option key={status} value={status}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <TextField
+        id={`${idPrefix}-tuition`}
+        label="Học phí (đồng)"
+        value={values.tuition}
+        onChange={set('tuition')}
+        hint="Chỉ nhập chữ số, ví dụ 1500000. Để 0 nếu chưa có học phí."
       />
       <ErrorAlert messages={messages} />
       <div className="flex gap-3">
@@ -203,6 +260,10 @@ function CourseRow({ course, onChanged }: { course: AdminCourse; onChanged: (mes
             <span className="font-semibold">{course.title}</span>
             <code className="text-sm text-muted">{course.slug}</code>
             <span className="text-sm text-muted">{`Thứ tự ${course.sortOrder}`}</span>
+            <span className="text-sm font-medium">{STATUS_LABELS[course.status]}</span>
+            <span className="text-sm text-muted tabular-nums">
+              {course.tuitionVnd > 0 ? `${course.tuitionVnd.toLocaleString('vi-VN')} đ` : 'Chưa có học phí'}
+            </span>
           </div>
           {course.description && <p className="mt-1 text-ink">{course.description}</p>}
           {mode === 'view' && (
