@@ -48,8 +48,18 @@ const KHOA_10: AdminCourse = {
   title: 'Tin học 10',
   description: 'Chương trình lớp 10',
   sortOrder: 1,
+  status: 'PUBLISHED',
+  tuitionVnd: 1500000,
 }
-const KHOA_11: AdminCourse = { id: 6, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, sortOrder: 2 }
+const KHOA_11: AdminCourse = {
+  id: 6,
+  slug: 'tin-hoc-11',
+  title: 'Tin học 11',
+  description: null,
+  sortOrder: 2,
+  status: 'DRAFT',
+  tuitionVnd: 0,
+}
 
 function LoginStub() {
   const state = useLocation().state as { from?: string } | null
@@ -295,7 +305,7 @@ describe('AdminCoursesPage — danh sách', () => {
 
 describe('AdminCoursesPage — thêm khóa', () => {
   it('gửi đúng dữ liệu (thứ tự là số), tải lại danh sách, xóa form và báo đã thêm', async () => {
-    createCourseMock.mockResolvedValue({ id: 7, slug: 'tin-hoc-12', title: 'Tin học 12', description: null, sortOrder: 3 })
+    createCourseMock.mockResolvedValue({ ...KHOA_11, id: 7, slug: 'tin-hoc-12', title: 'Tin học 12', sortOrder: 3 })
     renderPage()
     await screen.findByText('Tin học 10')
 
@@ -308,6 +318,8 @@ describe('AdminCoursesPage — thêm khóa', () => {
         title: 'Tin học 12',
         description: '',
         sortOrder: 3,
+        status: 'DRAFT',
+        tuitionVnd: 0,
       }),
     )
     expect((await screen.findByRole('status')).textContent).toContain('Đã thêm khóa học')
@@ -398,6 +410,8 @@ describe('AdminCoursesPage — sửa khóa', () => {
         title: 'Tin học 10 (mới)',
         description: 'Chương trình lớp 10',
         sortOrder: 1,
+        status: 'PUBLISHED',
+        tuitionVnd: 1500000,
       }),
     )
     expect((await screen.findByRole('status')).textContent).toContain('Đã lưu khóa học')
@@ -428,6 +442,86 @@ describe('AdminCoursesPage — sửa khóa', () => {
 
     expect(khoa10.queryByLabelText('Slug')).toBeNull()
     expect(updateCourseMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('AdminCoursesPage — trạng thái và học phí', () => {
+  const value = (scope: ReturnType<typeof within>, label: string) =>
+    (scope.getByLabelText(label) as HTMLInputElement | HTMLSelectElement).value
+
+  it('danh sách ghi trạng thái bằng tiếng Việt và học phí có dấu chấm; 0 đồng thì ghi chưa có học phí', async () => {
+    fetchAdminCoursesMock.mockResolvedValue([
+      KHOA_10,
+      KHOA_11,
+      { ...KHOA_11, id: 8, slug: 'cu', title: 'Khóa cũ', status: 'ARCHIVED' },
+    ])
+    renderPage()
+
+    const dang = await rowOf('Tin học 10')
+    expect(dang.getByText('Đã đăng')).not.toBeNull()
+    expect(dang.getByText('1.500.000 đ')).not.toBeNull()
+    const nhap = await rowOf('Tin học 11')
+    expect(nhap.getByText('Bản nháp')).not.toBeNull()
+    expect(nhap.getByText('Chưa có học phí')).not.toBeNull()
+    expect((await rowOf('Khóa cũ')).getByText('Ngừng bán')).not.toBeNull()
+  })
+
+  it('form thêm khóa mặc định là bản nháp, học phí 0', async () => {
+    renderPage()
+    await screen.findByText('Tin học 10')
+
+    expect(value(addForm(), 'Trạng thái')).toBe('DRAFT')
+    expect(value(addForm(), 'Học phí (đồng)')).toBe('0')
+  })
+
+  it('chọn đăng và nhập học phí thì gửi đúng, rồi form thêm trở về mặc định', async () => {
+    createCourseMock.mockResolvedValue({ ...KHOA_10, id: 7 })
+    renderPage()
+    await screen.findByText('Tin học 10')
+
+    const form = fillAddForm('tin-hoc-12', 'Tin học 12', '', '3')
+    type(form, 'Trạng thái', 'PUBLISHED')
+    type(form, 'Học phí (đồng)', ' 2000000 ')
+    fireEvent.click(form.getByRole('button', { name: 'Thêm khóa học' }))
+
+    await waitFor(() =>
+      expect(createCourseMock).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'PUBLISHED', tuitionVnd: 2000000 }),
+      ),
+    )
+    await waitFor(() => expect(value(form, 'Trạng thái')).toBe('DRAFT'))
+    expect(value(form, 'Học phí (đồng)')).toBe('0')
+  })
+
+  it('form sửa có sẵn trạng thái và học phí hiện tại, lưu thì gửi giá trị mới', async () => {
+    updateCourseMock.mockResolvedValue(KHOA_10)
+    renderPage()
+
+    const row = await rowOf('Tin học 10')
+    fireEvent.click(row.getByRole('button', { name: 'Sửa Tin học 10' }))
+    expect(value(row, 'Trạng thái')).toBe('PUBLISHED')
+    expect(value(row, 'Học phí (đồng)')).toBe('1500000')
+
+    type(row, 'Trạng thái', 'ARCHIVED')
+    type(row, 'Học phí (đồng)', '0')
+    fireEvent.click(row.getByRole('button', { name: 'Lưu thay đổi' }))
+
+    await waitFor(() =>
+      expect(updateCourseMock).toHaveBeenCalledWith(5, expect.objectContaining({ status: 'ARCHIVED', tuitionVnd: 0 })),
+    )
+  })
+
+  it('học phí không phải số nguyên từ 0 đến 1 tỷ thì báo lỗi và không gọi API', async () => {
+    renderPage()
+    await screen.findByText('Tin học 10')
+
+    for (const bad of ['', 'abc', '-1', '1.500.000', '1000000001']) {
+      const form = fillAddForm('tin-hoc-12', 'Tin học 12', '', '1')
+      type(form, 'Học phí (đồng)', bad)
+      fireEvent.click(form.getByRole('button', { name: 'Thêm khóa học' }))
+      expect((await screen.findByRole('alert')).textContent).toContain('Học phí')
+    }
+    expect(createCourseMock).not.toHaveBeenCalled()
   })
 })
 

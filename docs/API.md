@@ -5,6 +5,7 @@ Trạng thái (cập nhật 2026-11-15, sau Tuần 5): đã có mã nguồn và 
 ## Quy ước chung
 
 - Tiền tố `/api`, dữ liệu JSON, UTF-8.
+- Kiểu dữ liệu gửi lên phải đúng: trường liệt kê (enum) nhận tên, không nhận số; trường số nguyên không nhận số có phần lẻ. Sai → `400`.
 - **Quyền** luôn kiểm tra ở backend, không dựa vào việc ẩn nút ở frontend:
   - `Công khai`: ai cũng gọi được.
   - `Đăng nhập`: Học sinh hoặc Admin đã đăng nhập.
@@ -211,7 +212,7 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
 | GET | `/api/admin/dashboard` | Số người dùng (tổng, mới trong 7 ngày), số bài theo trạng thái và theo khóa, số học sinh đang học, số lượt hoàn thành bài |
-| GET | `/api/admin/courses` | Danh sách khóa cho trang quản trị, sắp theo `sortOrder` rồi `id`. Mỗi khóa: `id`, `slug`, `title`, `description` (`null` nếu để trống), `sortOrder`, `coverImageUrl` (`null` nếu chưa có ảnh bìa). Khác `GET /api/courses` (công khai, không có `sortOrder`). Chưa có khóa nào → `[]`. Xem "Khóa học (Admin)" bên dưới |
+| GET | `/api/admin/courses` | Danh sách khóa cho trang quản trị, sắp theo `sortOrder` rồi `id`. Mỗi khóa: `id`, `slug`, `title`, `description` (`null` nếu để trống), `sortOrder`, `status`, `tuitionVnd`, `coverImageUrl` (`null` nếu chưa có ảnh bìa). Khác `GET /api/courses` (công khai, không có `sortOrder`). Chưa có khóa nào → `[]`. Xem "Khóa học (Admin)" bên dưới |
 | POST | `/api/admin/courses` | Tạo khóa. `201` kèm khóa vừa tạo; `400` dữ liệu sai (kèm `errors`); `409` slug trùng. Xem "Khóa học (Admin)" bên dưới |
 | PUT | `/api/admin/courses/{id}` | Sửa khóa. `200`; `400`; `404` không có khóa; `409` slug trùng với khóa khác |
 | DELETE | `/api/admin/courses/{id}` | Xóa khóa. `204`; `404`; `409` khóa còn bài (kể cả bài Nháp). Ảnh bìa của khóa bị xóa theo (`CASCADE`) |
@@ -251,16 +252,20 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 
 ### Khóa học (Admin) — `GET`, `POST`, `PUT`, `DELETE /api/admin/courses`
 
-`GET /api/admin/courses` trả mảng khóa (`id`, `slug`, `title`, `description`, `sortOrder`, `coverImageUrl`) sắp theo `sortOrder` rồi `id`. Có endpoint riêng vì `GET /api/courses` (công khai) không có `sortOrder` mà form sửa khóa cần giá trị hiện tại. Khách → `401`, học sinh → `403`. Mục dưới mô tả thân của `POST` và `PUT`:
+`GET /api/admin/courses` trả mảng khóa (`id`, `slug`, `title`, `description`, `sortOrder`, `status`, `tuitionVnd`, `coverImageUrl`) sắp theo `sortOrder` rồi `id`. Có endpoint riêng vì `GET /api/courses` (công khai) không có `sortOrder` mà form sửa khóa cần giá trị hiện tại. Khách → `401`, học sinh → `403`. Mục dưới mô tả thân của `POST` và `PUT`:
 
 ```json
-{ "slug": "tin-hoc-10", "title": "Tin học 10", "description": "Chương trình lớp 10", "sortOrder": 1 }
+{ "slug": "tin-hoc-10", "title": "Tin học 10", "description": "Chương trình lớp 10", "sortOrder": 1,
+  "status": "PUBLISHED", "tuitionVnd": 1500000 }
 ```
+
+- `status`: tùy chọn, `DRAFT`, `PUBLISHED` hoặc `ARCHIVED` (gửi bằng tên; gửi số → `400`). `tuitionVnd`: tùy chọn, số nguyên đồng từ 0 đến 1000000000 (có phần lẻ → `400`); 0 là chưa có học phí. **Bỏ trống một trong hai khi sửa thì giữ giá trị cũ**; khi tạo thì là `DRAFT` và 0.
+- Hiện tại `status` **chưa ảnh hưởng tới API công khai** (`GET /api/courses` vẫn trả mọi khóa); việc chỉ trả khóa `PUBLISHED` làm cùng bộ lọc.
 
 - `slug`: bắt buộc, tối đa 100 ký tự, chỉ chữ thường không dấu, số và dấu gạch ngang giữa các từ (`tin-hoc-10`; không nhận `Tin-Hoc`, `tin_hoc`, `-tin`, `tin--hoc`).
 - `title`: bắt buộc, tối đa 200 ký tự. `description`: tùy chọn, tối đa 500 ký tự; chỉ có khoảng trắng thì lưu `null`. `sortOrder`: bắt buộc, số nguyên không âm.
 - `slug` và `title` được cắt khoảng trắng hai đầu trước khi kiểm tra.
-- Trả về (`201` khi tạo, `200` khi sửa): `id`, `slug`, `title`, `description`, `sortOrder`.
+- Trả về (`201` khi tạo, `200` khi sửa): `id`, `slug`, `title`, `description`, `sortOrder`, `status`, `tuitionVnd`, `coverImageUrl`.
 - `PUT` được đổi `slug`; giữ nguyên slug của chính khóa đó không bị tính là trùng. Đổi slug làm đường dẫn cũ `/api/courses/{slug}/lessons` ngừng hoạt động.
 - Lỗi `409` có hai câu khác nhau, đều không lặp lại dữ liệu người gửi: "Slug khóa học đã tồn tại" và "Không xóa được khóa học còn bài học". Slug trùng được chặn hai lần: kiểm tra trước ở service, và ràng buộc `UNIQUE` của database cho trường hợp hai Admin cùng gửi một lúc. Khóa còn bài được chặn bằng kiểm tra trước và khóa ngoại `RESTRICT`.
 - `401` khi chưa đăng nhập, `403` với học sinh hoặc khi thiếu CSRF token. `id` trong đường dẫn không phải số → `400` với `detail` cố định "Tham số trong đường dẫn không hợp lệ" (áp dụng cho mọi endpoint có tham số số trong đường dẫn).

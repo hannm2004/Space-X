@@ -193,6 +193,29 @@ class AdminCourseIntegrationTest {
     }
 
     @Test
+    void adminDangKhoaKemHocPhiRoiSuaKhongGuiHaiTruongDoThiVanGiu() throws Exception {
+        Cookie session = dangNhapAdmin();
+        long id = themKhoa("tin-hoc-10", 1);
+        jdbc.update("UPDATE courses SET status = 'DRAFT' WHERE id = ?", id);
+
+        mockMvc.perform(put("/api/admin/courses/" + id).cookie(session).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"slug":"tin-hoc-10","title":"Tin học 10","sortOrder":1,
+                                 "status":"PUBLISHED","tuitionVnd":1500000}"""))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/admin/courses/" + id).cookie(session).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(body("tin-hoc-10", "Tên mới", null, 1)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.tuitionVnd").value(1500000));
+
+        assertThat(jdbc.queryForObject(
+                "SELECT CONCAT_WS('|', title, status, tuition_vnd) FROM courses WHERE id = ?", String.class, id))
+                .isEqualTo("Tên mới|PUBLISHED|1500000");
+    }
+
+    @Test
     void haiSlugKhacNhauRaCungMaThiKhoaSauDuocThemSo() throws Exception {
         Cookie session = dangNhapAdmin();
 

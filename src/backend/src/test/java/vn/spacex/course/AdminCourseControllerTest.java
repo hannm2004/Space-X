@@ -59,7 +59,56 @@ class AdminCourseControllerTest {
     }
 
     private static AdminCourseResponse khoa() {
-        return new AdminCourseResponse(5L, "tin-hoc-10", "Tin học 10", "Chương trình lớp 10", 1, null);
+        return new AdminCourseResponse(5L, "tin-hoc-10", "Tin học 10", "Chương trình lớp 10", 1,
+                CourseStatus.PUBLISHED, 1_500_000L, null);
+    }
+
+    // Ghép thêm phần sai vào một thân yêu cầu hợp lệ rồi kiểm bị chặn trước khi tới service.
+    private void biTuChoiTruocKhiToiService(String phanThem) throws Exception {
+        String body = "{\"slug\":\"tin-hoc-10\",\"title\":\"Tin học 10\",\"sortOrder\":1," + phanThem + "}";
+
+        mockMvc.perform(post("/api/admin/courses").with(user(admin())).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
+
+        verify(service, never()).create(any());
+    }
+
+    @Test
+    void trangThaiLaBiTuChoi() throws Exception {
+        biTuChoiTruocKhiToiService("\"status\":\"HIDDEN\"");
+    }
+
+    // Mặc định Jackson hiểu số là thứ tự trong enum, tức 1 thành PUBLISHED: không được nhận.
+    @Test
+    void trangThaiGuiBangSoBiTuChoi() throws Exception {
+        biTuChoiTruocKhiToiService("\"status\":1");
+    }
+
+    // Tiền là số nguyên đồng: không được lặng lẽ cắt phần lẻ.
+    @Test
+    void hocPhiCoPhanLeBiTuChoi() throws Exception {
+        biTuChoiTruocKhiToiService("\"tuitionVnd\":1500000.5");
+    }
+
+    @Test
+    void adminGuiTrangThaiVaHocPhiHopLeThiServiceNhanDung() throws Exception {
+        when(service.create(any())).thenReturn(khoa());
+
+        mockMvc.perform(post("/api/admin/courses").with(user(admin())).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"slug":"tin-hoc-10","title":"Tin học 10","sortOrder":1,
+                                 "status":"PUBLISHED","tuitionVnd":1500000}"""))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.tuitionVnd").value(1500000));
+
+        ArgumentCaptor<AdminCourseRequest> sent = ArgumentCaptor.forClass(AdminCourseRequest.class);
+        verify(service).create(sent.capture());
+        assertThat(sent.getValue().status()).isEqualTo(CourseStatus.PUBLISHED);
+        assertThat(sent.getValue().tuitionVnd()).isEqualTo(1_500_000L);
     }
 
     // ---- Phân quyền và CSRF: luật /api/admin/** thật của SecurityConfig ----
@@ -116,14 +165,14 @@ class AdminCourseControllerTest {
     // ---- Tạo ----
 
     @Test
-    void adminTaoKhoaThanhCongTra201VoiNamTruong() throws Exception {
+    void adminTaoKhoaThanhCongTra201VoiTamTruong() throws Exception {
         when(service.create(any())).thenReturn(khoa());
 
         mockMvc.perform(post("/api/admin/courses").with(user(admin())).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content(BODY_HOP_LE))
                 .andExpect(status().isCreated())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.*", hasSize(6)))
+                .andExpect(jsonPath("$.*", hasSize(8)))
                 .andExpect(jsonPath("$.id").value(5))
                 .andExpect(jsonPath("$.slug").value("tin-hoc-10"))
                 .andExpect(jsonPath("$.title").value("Tin học 10"))
@@ -286,7 +335,8 @@ class AdminCourseControllerTest {
     void adminXemDanhSachKhoaCoDayDuCacTruongKemSortOrder() throws Exception {
         when(service.findAll()).thenReturn(List.of(
                 khoa(),
-                new AdminCourseResponse(6L, "tin-hoc-11", "Tin học 11", null, 2, "/api/courses/tin-hoc-11/cover?v=2")));
+                new AdminCourseResponse(6L, "tin-hoc-11", "Tin học 11", null, 2, CourseStatus.DRAFT, 0L,
+                        "/api/courses/tin-hoc-11/cover?v=2")));
 
         mockMvc.perform(get("/api/admin/courses").with(user(admin())))
                 .andExpect(status().isOk())

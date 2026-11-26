@@ -56,7 +56,9 @@ class SeedDataTest {
     }
 
     private static AdminCourseRequest toCourse(Map<String, Object> m) {
-        return new AdminCourseRequest(str(m, "slug"), str(m, "title"), str(m, "description"), num(m, "sortOrder"));
+        // courses.json chưa có trạng thái và học phí: bỏ trống như script đang gửi.
+        return new AdminCourseRequest(str(m, "slug"), str(m, "title"), str(m, "description"), num(m, "sortOrder"),
+                null, null);
     }
 
     private static String content(Map<String, Object> lesson) throws IOException {
