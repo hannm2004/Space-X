@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
+import vn.spacex.support.CourseRows;
 import vn.spacex.auth.AppUserDetails;
 import vn.spacex.user.Role;
 
@@ -86,9 +87,7 @@ class ProgressIntegrationTest {
     }
 
     private long themKhoa(String slug, int thuTu) {
-        jdbc.update("INSERT INTO courses (slug, title, description, sort_order) VALUES (?, ?, 'mo ta', ?)",
-                slug, "Khóa " + slug, thuTu);
-        return jdbc.queryForObject("SELECT id FROM courses WHERE slug = ?", Long.class, slug);
+        return CourseRows.insert(jdbc, slug, "Khóa " + slug, "mo ta", thuTu);
     }
 
     private long themBai(long khoa, String slug, String trangThai, int thuTu) {

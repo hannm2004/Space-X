@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
+import vn.spacex.support.CourseRows;
 
 import java.nio.charset.StandardCharsets;
 
@@ -59,8 +60,7 @@ class LessonIntegrationTest {
                 INSERT INTO users (email, password_hash, display_name, role, auth_provider, enabled)
                 VALUES ('tacgia@example.com', 'khong-dung-de-dang-nhap', 'Tác giả', 'ADMIN', 'LOCAL', 1)""");
         tacGiaId = jdbc.queryForObject("SELECT id FROM users WHERE email = 'tacgia@example.com'", Long.class);
-        jdbc.update("INSERT INTO courses (slug, title, description, sort_order) VALUES ('tin-hoc-10', 'Tin học 10', 'mo ta', 1)");
-        khoaId = jdbc.queryForObject("SELECT id FROM courses WHERE slug = 'tin-hoc-10'", Long.class);
+        khoaId = CourseRows.insert(jdbc, "tin-hoc-10", "Tin học 10", "mo ta", 1);
     }
 
     private void themBai(String slug, String trangThai, String noiDung) {
@@ -84,8 +84,7 @@ class LessonIntegrationTest {
         themBaiThuTu(khoaId, "bai-nhap", "DRAFT", 2);
         themBaiThuTu(khoaId, "bai-2", "PUBLISHED", 3);
         themBaiThuTu(khoaId, "bai-3", "PUBLISHED", 4);
-        jdbc.update("INSERT INTO courses (slug, title, description, sort_order) VALUES ('tin-hoc-11', 'Tin học 11', 'x', 2)");
-        long khoaKhac = jdbc.queryForObject("SELECT id FROM courses WHERE slug = 'tin-hoc-11'", Long.class);
+        long khoaKhac = CourseRows.insert(jdbc, "tin-hoc-11", "Tin học 11", "x", 2);
         themBaiThuTu(khoaKhac, "bai-lop-11", "PUBLISHED", 3);
 
         mockMvc.perform(get("/api/lessons/bai-2").with(user("hocsinh")))

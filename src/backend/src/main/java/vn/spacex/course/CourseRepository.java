@@ -13,6 +13,8 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
 
     boolean existsBySlug(String slug);
 
+    boolean existsByCode(String code);
+
     // Dùng khi sửa: slug hiện tại của chính khóa đó không bị tính là trùng.
     boolean existsBySlugAndIdNot(String slug, Long id);
 }

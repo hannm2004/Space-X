@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
+import vn.spacex.support.CourseRows;
 
 import java.util.Map;
 
@@ -97,9 +98,7 @@ class AdminCourseIntegrationTest {
     }
 
     private long themKhoa(String slug, int thuTu) {
-        jdbc.update("INSERT INTO courses (slug, title, description, sort_order) VALUES (?, ?, NULL, ?)",
-                slug, "Khóa " + slug, thuTu);
-        return jdbc.queryForObject("SELECT id FROM courses WHERE slug = ?", Long.class, slug);
+        return CourseRows.insert(jdbc, slug, "Khóa " + slug, null, thuTu);
     }
 
     private void themBai(long khoaId, String slug) {
@@ -176,6 +175,35 @@ class AdminCourseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].slug").value("tin-hoc-10"));
+    }
+
+    @Test
+    void khoaTaoQuaApiVaoNhomMacDinhCoMaVaLaBanNhapChuaCoHocPhi() throws Exception {
+        Cookie session = dangNhapAdmin();
+
+        mockMvc.perform(post("/api/admin/courses").cookie(session).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(body("tin-hoc-10", "Tin học 10", null, 1)))
+                .andExpect(status().isCreated());
+
+        assertThat(jdbc.queryForObject("""
+                SELECT CONCAT_WS('|', g.slug, c.code, c.status, c.tuition_vnd)
+                FROM courses c JOIN categories g ON g.id = c.category_id
+                WHERE c.slug = 'tin-hoc-10'""", String.class))
+                .isEqualTo("khoa-cho-thieu-nien|TINHOC10|DRAFT|0");
+    }
+
+    @Test
+    void haiSlugKhacNhauRaCungMaThiKhoaSauDuocThemSo() throws Exception {
+        Cookie session = dangNhapAdmin();
+
+        for (String slug : new String[] {"tin-hoc-10", "tinhoc10"}) {
+            mockMvc.perform(post("/api/admin/courses").cookie(session).with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON).content(body(slug, "Khóa " + slug, null, 1)))
+                    .andExpect(status().isCreated());
+        }
+
+        assertThat(jdbc.queryForList("SELECT code FROM courses ORDER BY id", String.class))
+                .containsExactly("TINHOC10", "TINHOC10-2");
     }
 
     @Test

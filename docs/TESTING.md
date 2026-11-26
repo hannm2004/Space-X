@@ -6,9 +6,11 @@ Cập nhật: 2026-11-17 (đếm lại bằng lệnh ở mục "Cách đếm l�
 
 | | Số test | Số lớp/file | Cần Docker? |
 |---|---|---|---|
-| Backend (JUnit 5 + Spring Test) | 436 | 41 lớp | Không |
-| Frontend (Vitest + Testing Library, môi trường jsdom) | 569 | 39 file | Không |
-| Test tích hợp với MySQL thật (Testcontainers) | 182 | 18 lớp | Có |
+| Backend (JUnit 5 + Spring Test) | 443 | 42 lớp | Không |
+| Frontend (Vitest + Testing Library, môi trường jsdom) | 578 | 39 file | Không |
+| Test tích hợp với MySQL thật (Testcontainers) | 200 | 19 lớp | Có |
+
+Đếm lại ngày 2026-11-26 trên nhánh `feat/course-catalog` (migration `V6`).
 
 CI chạy toàn bộ test trên mỗi Pull Request. **Không test nào gọi API AI thật**: dùng nhà cung cấp giả.
 
@@ -33,6 +35,8 @@ Mỗi dòng phải có test thật trước khi tuần đó được coi là xon
 | Lỗi trả `problem+json`: 404, 405 và lỗi bất ngờ (500) không lộ stack trace hay nội dung exception | Slice | 3 | Tested |
 | Flyway tạo đủ 6 bảng trên MySQL thật; email không trùng (kể cả khác hoa/thường); không xóa khóa còn bài; xóa bài thì xóa ảnh, tiến độ, đoạn tri thức; mỗi học sinh một dòng tiến độ mỗi bài | Integration | 3 | Tested (`FlywayMigrationIntegrationTest`, 5 test) |
 | Ứng dụng khởi động được với datasource + Flyway `V1` + Hibernate `ddl-auto=validate` trên MySQL thật | Integration | 3 | Tested (`SpacexApplicationIntegrationTest`, 1 test) |
+| Migration `V6` (D39) chạy trên database đang ở `V5` có sẵn khóa: có đủ bảng mới; 7 khóa cũ được điền nhóm "Khóa cho thiếu niên", mã `TINHOC6`–`TINHOC12`, `PUBLISHED`, học phí 0, giữ nguyên tên và mô tả; slug quá dài hoặc trùng mã dùng `KH-<id>`; khóa mới bắt buộc có nhóm và mã, mã không trùng, mặc định `DRAFT`; học phí không âm; `overview_md` dài hơn 500 ký tự; không xóa nhóm còn khóa; xóa khóa thì xóa phần và hỏi đáp; không xóa ảnh đang làm banner; loại ảnh chỉ trong danh sách; có chỉ mục `FULLTEXT` | Integration | 7 | Tested (`CourseCatalogMigrationIntegrationTest`, 16 test) |
+| Khóa tạo qua API Admin vào nhóm mặc định, mã sinh từ slug (bỏ gạch ngang, viết hoa, tối đa 20 ký tự, trùng thì thêm `-2`, `-3`), là bản nháp chưa có học phí; sửa slug không đổi mã và nhóm | Unit + Integration | 7 | Tested (`CourseCodesTest` 5 test; `AdminCourseServiceTest` +2; `AdminCourseIntegrationTest` +2) |
 | Đăng ký (D25): email trùng (kể cả khác hoa/thường hoặc có khoảng trắng thừa) → 409, đăng ký bằng email đã thuộc tài khoản Google cũng 409; thiếu trường, email sai định dạng hoặc > 255 ký tự, `displayName` rỗng/chỉ có khoảng trắng hoặc > 100 ký tự, mật khẩu < 8 ký tự, mật khẩu > 72 byte UTF-8 (kể cả khi ≤ 72 ký tự có dấu), `confirmPassword` không khớp → 400; email được cắt khoảng trắng và lưu chữ thường; mật khẩu không bị cắt khoảng trắng; mật khẩu được băm BCrypt, không lưu rõ; `confirmPassword` không được lưu; thân yêu cầu gửi `role: ADMIN` vẫn ra `LEARNER`; đăng ký không tạo session | Slice + Unit + Integration | 3 | Tested (`RegisterRequestValidationTest`, `AuthServiceTest`, `AuthControllerTest`, `AuthIntegrationTest`) |
 | Đăng nhập (D25): đúng thông tin (kể cả email viết hoa hoặc có khoảng trắng thừa) → 200 kèm `displayName`, `email`, `role`, có cookie session, thân phản hồi không chứa JWT hay session ID; email không tồn tại, sai mật khẩu, tài khoản bị khóa (kể cả khi mật khẩu đúng) và tài khoản Google (không có mật khẩu) → **cùng** 401, cùng `detail` `Email hoặc mật khẩu không chính xác`, định dạng `problem+json` (so sánh nguyên thân phản hồi giữa các trường hợp); thiếu CSRF → 403; đăng xuất xong thì gọi API cần đăng nhập → 401 | Integration | 3 | Tested (`AuthIntegrationTest`, `AuthControllerTest`) |
 | Phân quyền (D26): chưa đăng nhập gọi `/api/admin/**` → 401; `LEARNER` → 403 `problem+json` (thân không lộ email hay tên role, kể cả gọi `/api/admin` và `/api/admin/` không có phần sau); `ADMIN` → 200; `LEARNER` vẫn gọi được API thường; lỗi phân quyền ném từ trong controller ra 403, không phải 500; luồng thật trên MySQL: học sinh đăng nhập gọi API Admin → 403, Admin đăng nhập → 200 | Slice + Integration | 3 | Tested (`AdminAuthorizationTest`, `GlobalExceptionHandlerTest`, `AdminAuthorizationIntegrationTest`) |

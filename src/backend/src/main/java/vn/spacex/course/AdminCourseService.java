@@ -13,15 +13,20 @@ import java.util.Map;
 @Service
 public class AdminCourseService {
 
+    // Do migration V6 tạo. Khóa tạo mới vào nhóm này cho tới khi form Admin cho chọn nhóm.
+    private static final String DEFAULT_CATEGORY_SLUG = "khoa-cho-thieu-nien";
+
     private final CourseRepository courseRepository;
     private final LessonRepository lessonRepository;
     private final CourseCoverService courseCoverService;
+    private final CategoryRepository categoryRepository;
 
     public AdminCourseService(CourseRepository courseRepository, LessonRepository lessonRepository,
-                              CourseCoverService courseCoverService) {
+                              CourseCoverService courseCoverService, CategoryRepository categoryRepository) {
         this.courseRepository = courseRepository;
         this.lessonRepository = lessonRepository;
         this.courseCoverService = courseCoverService;
+        this.categoryRepository = categoryRepository;
     }
 
     // Khác GET /api/courses (công khai, không có sortOrder): form sửa khóa cần giá trị sortOrder hiện tại.
@@ -42,6 +47,9 @@ public class AdminCourseService {
             throw new CourseSlugAlreadyExistsException();
         }
         Course course = Course.create(request.slug(), request.title(), request.description(), request.sortOrder());
+        Category category = categoryRepository.findBySlug(DEFAULT_CATEGORY_SLUG)
+                .orElseThrow(() -> new IllegalStateException("Thiếu nhóm khóa mặc định"));
+        course.placeIn(category.getId(), CourseCodes.fromSlug(request.slug(), courseRepository::existsByCode));
         // Khóa mới chưa có ảnh bìa.
         return AdminCourseResponse.from(persist(course), null);
     }

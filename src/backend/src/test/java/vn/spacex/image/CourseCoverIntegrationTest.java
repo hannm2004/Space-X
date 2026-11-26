@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
+import vn.spacex.support.CourseRows;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -70,10 +71,8 @@ class CourseCoverIntegrationTest {
         jdbc.update("DELETE FROM lessons");
         jdbc.update("DELETE FROM courses");
         jdbc.update("DELETE FROM users WHERE role = 'LEARNER'");
-        jdbc.update("INSERT INTO courses (slug, title, sort_order) VALUES ('tin-hoc-10', 'Tin học 10', 1)");
-        jdbc.update("INSERT INTO courses (slug, title, sort_order) VALUES ('tin-hoc-11', 'Tin học 11', 2)");
-        khoa10 = jdbc.queryForObject("SELECT id FROM courses WHERE slug = 'tin-hoc-10'", Long.class);
-        khoa11 = jdbc.queryForObject("SELECT id FROM courses WHERE slug = 'tin-hoc-11'", Long.class);
+        khoa10 = CourseRows.insert(jdbc, "tin-hoc-10", "Tin học 10", null, 1);
+        khoa11 = CourseRows.insert(jdbc, "tin-hoc-11", "Tin học 11", null, 2);
     }
 
     private Cookie dangNhap(String email, String password) throws Exception {

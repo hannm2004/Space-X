@@ -27,7 +27,27 @@ public class Course {
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
+    @Column(name = "category_id", nullable = false)
+    private Long categoryId;
+
+    // Mã khóa dùng để sinh mã lớp: đặt một lần, đổi slug không đổi mã.
+    @Column(nullable = false)
+    private String code;
+
     protected Course() {
+    }
+
+    public void placeIn(Long categoryId, String code) {
+        this.categoryId = categoryId;
+        this.code = code;
+    }
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public String getCode() {
+        return code;
     }
 
     public static Course create(String slug, String title, String description, int sortOrder) {

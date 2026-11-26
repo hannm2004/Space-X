@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
+import vn.spacex.support.CourseRows;
 
 import java.nio.charset.StandardCharsets;
 
@@ -62,9 +63,7 @@ class CourseIntegrationTest {
     }
 
     private long themKhoa(String slug, String mota, int thuTu) {
-        jdbc.update("INSERT INTO courses (slug, title, description, sort_order) VALUES (?, ?, ?, ?)",
-                slug, "Khóa " + slug, mota, thuTu);
-        return jdbc.queryForObject("SELECT id FROM courses WHERE slug = ?", Long.class, slug);
+        return CourseRows.insert(jdbc, slug, "Khóa " + slug, mota, thuTu);
     }
 
     private void themBai(long khoaId, String slug, String trangThai, int thuTu, String noiDung) {
@@ -180,9 +179,8 @@ class CourseIntegrationTest {
 
     @Test
     void tenKhoaVaBaiTiengVietCoDauDiQuaMySqlVaJsonKhongBiHong() throws Exception {
-        jdbc.update("INSERT INTO courses (slug, title, description, sort_order) VALUES (?, ?, ?, 1)",
-                "tin-hoc-12", "Tin học 12 — Hệ cơ sở dữ liệu", "Ứng dụng tin học cho học sinh THPT");
-        long khoa = jdbc.queryForObject("SELECT id FROM courses WHERE slug = 'tin-hoc-12'", Long.class);
+        long khoa = CourseRows.insert(jdbc, "tin-hoc-12", "Tin học 12 — Hệ cơ sở dữ liệu",
+                "Ứng dụng tin học cho học sinh THPT", 1);
         themBai(khoa, "mo-dau", "PUBLISHED", 1, "x");
 
         mockMvc.perform(get("/api/courses"))

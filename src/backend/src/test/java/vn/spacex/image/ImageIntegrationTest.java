@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
+import vn.spacex.support.CourseRows;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -73,8 +74,7 @@ class ImageIntegrationTest {
         jdbc.update("DELETE FROM courses");
         jdbc.update("DELETE FROM users WHERE role = 'LEARNER'");
         adminId = jdbc.queryForObject("SELECT id FROM users WHERE role = 'ADMIN'", Long.class);
-        jdbc.update("INSERT INTO courses (slug, title, sort_order) VALUES ('tin-hoc-10', 'Tin học 10', 1)");
-        long khoa = jdbc.queryForObject("SELECT id FROM courses WHERE slug = 'tin-hoc-10'", Long.class);
+        long khoa = CourseRows.insert(jdbc, "tin-hoc-10", "Tin học 10", null, 1);
         baiNhap = themBai(khoa, "bai-nhap", "DRAFT");
         baiDaDang = themBai(khoa, "bai-da-dang", "PUBLISHED");
     }

@@ -120,7 +120,10 @@ class FlywayMigrationIntegrationTest {
     }
 
     private long insertCourse(String slug) throws SQLException {
-        return execute("INSERT INTO courses (slug, title) VALUES (?, 'Tin hoc')", slug);
+        // Từ V6 khóa phải có nhóm và mã.
+        return execute("INSERT INTO courses (category_id, code, slug, title) "
+                + "SELECT id, UPPER(REPLACE(?, '-', '')), ?, 'Tin hoc' FROM categories "
+                + "WHERE slug = 'khoa-cho-thieu-nien'", slug, slug);
     }
 
     private long insertLesson(long courseId, long userId, String slug) throws SQLException {
