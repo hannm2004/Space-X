@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
+import vn.spacex.support.CourseRows;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -101,9 +102,7 @@ class AdminLessonIntegrationTest {
     }
 
     private long themKhoa(String slug, int thuTu) {
-        jdbc.update("INSERT INTO courses (slug, title, description, sort_order) VALUES (?, ?, NULL, ?)",
-                slug, "Khóa " + slug, thuTu);
-        return jdbc.queryForObject("SELECT id FROM courses WHERE slug = ?", Long.class, slug);
+        return CourseRows.insert(jdbc, slug, "Khóa " + slug, null, thuTu);
     }
 
     private long themBai(long khoaId, String slug, String trangThai, int thuTu, String noiDung) {

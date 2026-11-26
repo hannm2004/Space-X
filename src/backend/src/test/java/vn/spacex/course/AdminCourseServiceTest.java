@@ -31,6 +31,9 @@ class AdminCourseServiceTest {
     private LessonRepository lessonRepository;
 
     @Mock
+    private CategoryRepository categoryRepository;
+
+    @Mock
     private vn.spacex.image.CourseCoverService courseCoverService;
 
     @InjectMocks
@@ -71,8 +74,43 @@ class AdminCourseServiceTest {
         return new AdminCourseRequest(slug, "Tin học 10", "Chương trình lớp 10", 1);
     }
 
+    private void coNhomMacDinh() {
+        Category nhom = mock(Category.class);
+        when(nhom.getId()).thenReturn(3L);
+        when(categoryRepository.findBySlug("khoa-cho-thieu-nien")).thenReturn(Optional.of(nhom));
+    }
+
+    @Test
+    void khoaMoiVaoNhomMacDinhVaCoMaSinhTuSlug() {
+        coNhomMacDinh();
+        when(courseRepository.existsBySlug("tin-hoc-10")).thenReturn(false);
+        when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.create(request("tin-hoc-10"));
+
+        ArgumentCaptor<Course> saved = ArgumentCaptor.forClass(Course.class);
+        verify(courseRepository).saveAndFlush(saved.capture());
+        assertThat(saved.getValue().getCategoryId()).isEqualTo(3L);
+        assertThat(saved.getValue().getCode()).isEqualTo("TINHOC10");
+    }
+
+    @Test
+    void suaSlugKhongDoiMaVaNhomCuaKhoa() {
+        Course khoa = Course.create("tin-hoc-10", "Tin học 10", null, 1);
+        khoa.placeIn(3L, "TINHOC10");
+        when(courseRepository.findById(5L)).thenReturn(Optional.of(khoa));
+        when(courseRepository.existsBySlugAndIdNot("ten-khac", 5L)).thenReturn(false);
+        when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.update(5L, request("ten-khac"));
+
+        assertThat(khoa.getCategoryId()).isEqualTo(3L);
+        assertThat(khoa.getCode()).isEqualTo("TINHOC10");
+    }
+
     @Test
     void taoKhoaLuuDungCacTruongVaTraVeKhoaVuaTao() {
+        coNhomMacDinh();
         when(courseRepository.existsBySlug("tin-hoc-10")).thenReturn(false);
         when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -101,6 +139,7 @@ class AdminCourseServiceTest {
 
     @Test
     void haiNguoiTaoCungSlugCungLucThiNguoiThuaBiBaoTrungSlug() {
+        coNhomMacDinh();
         when(courseRepository.existsBySlug("tin-hoc-10")).thenReturn(false);
         when(courseRepository.saveAndFlush(any(Course.class))).thenThrow(new DataIntegrityViolationException("uk"));
 

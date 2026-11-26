@@ -170,7 +170,7 @@ Bảng lưu session (Spring Session JDBC, từ việc 3.6) và bảng lịch s�
 
 ## 8. Bản nháp 2.0 (chưa áp dụng)
 
-**Trạng thái: bản nháp thiết kế, chờ duyệt. Chưa có migration nào được viết; phần 1–7 ở trên vẫn là schema thật (5 migration `V1`–`V5`).** Đây là thiết kế cho đề tài Trung tâm Tin học SPACE-X (D38): bán khóa học, lịch khai giảng, đăng ký và thanh toán học phí, tra cứu điểm và chứng nhận, chatbot tư vấn. Nguồn: `docs/SPACE-X-2.0.md` mục 5 và 6.
+**Trạng thái (2026-11-26): phần của `V6` đã được duyệt và cài đặt trên nhánh `feat/course-catalog` (`V6__create_course_catalog.sql`), chưa gộp và chưa chạy trên Aiven. `V7`–`V10` vẫn là bản nháp, chờ duyệt. Phần 1–7 ở trên mô tả schema đang chạy trên bản thật (`V1`–`V5`).** Đây là thiết kế cho đề tài Trung tâm Tin học SPACE-X (D38): bán khóa học, lịch khai giảng, đăng ký và thanh toán học phí, tra cứu điểm và chứng nhận, chatbot tư vấn. Nguồn: `docs/SPACE-X-2.0.md` mục 5 và 6.
 
 Nguyên tắc: không sửa `V1`–`V5` (Flyway kiểm checksum, `V1` đã chạy trên Aiven); mọi thay đổi đi qua `V6` trở đi, mỗi migration một nhóm việc và chỉ viết khi tới tuần làm nhóm đó; tiền là `BIGINT` (đồng, không có phần lẻ); mọi bảng dùng `utf8mb4` + `utf8mb4_0900_ai_ci`, `DATETIME(6)`, `ENGINE = InnoDB` như `V1`. Các bảng, cột và ràng buộc đánh dấu **(đề xuất thêm)** không có trong đặc tả mục 5, do thiết kế này thêm vào vì một yêu cầu khác của đặc tả cần đến; cần được duyệt riêng.
 
@@ -412,7 +412,7 @@ Không vẽ: `course_covers` (giữ nguyên, `V5`), `lesson_images`, `lesson_pro
 
 | Bảng | Thay đổi | Ghi chú |
 |---|---|---|
-| `courses` | Thêm `category_id` FK `RESTRICT`; `code VARCHAR(20)` UNIQUE; `level ENUM('BASIC','ADVANCED','EXPERT') DEFAULT 'BASIC'`; `course_type ENUM('SHORT','LONG') DEFAULT 'SHORT'`; `total_hours`, `sessions SMALLINT UNSIGNED DEFAULT 0`; `tuition_vnd BIGINT NOT NULL DEFAULT 0` (`CHECK >= 0`); `audience_md`, `outcomes_md`, `assessment_md TEXT` NULL; `status ENUM('DRAFT','PUBLISHED','ARCHIVED') DEFAULT 'DRAFT'` | Bảng đã có **7 khóa thật trên production** (`tin-hoc-6` … `tin-hoc-12`, D32). Migration phải điền sẵn cho 7 dòng này, xem mục 8.4. Thêm chỉ mục `(category_id, status, sort_order)` và `FULLTEXT (title, description)` cho tìm khóa (A13) |
+| `courses` | Thêm `category_id` FK `RESTRICT`; `code VARCHAR(20)` UNIQUE; `level ENUM('BASIC','ADVANCED','EXPERT') DEFAULT 'BASIC'`; `course_type ENUM('SHORT','LONG') DEFAULT 'SHORT'`; `total_hours`, `sessions SMALLINT UNSIGNED DEFAULT 0`; `tuition_vnd BIGINT NOT NULL DEFAULT 0` (`CHECK >= 0`); `overview_md`, `audience_md`, `outcomes_md`, `assessment_md TEXT` NULL (`overview_md` là mục "Mô tả" đầy đủ của trang khóa; `description` giữ làm câu ngắn trên thẻ khóa); `status ENUM('DRAFT','PUBLISHED','ARCHIVED') DEFAULT 'DRAFT'` | Bảng đã có **7 khóa thật trên production** (`tin-hoc-6` … `tin-hoc-12`, D32). Migration phải điền sẵn cho 7 dòng này, xem mục 8.4. Thêm chỉ mục `(category_id, status, sort_order)` và `FULLTEXT (title, description)` cho tìm khóa (A13) |
 | `knowledge_chunks` | Thêm `source_type ENUM('COURSE','MODULE','FAQ','POST','POLICY','LESSON') NOT NULL DEFAULT 'LESSON'` và `source_id BIGINT` NULL; **(đề xuất thêm)** `link_path VARCHAR(255)` NULL (đường dẫn trích dẫn, vd `/khoa-hoc/<slug>#noi-dung`, tính khi chia đoạn); **đổi `lesson_id` cho phép NULL** | Đoạn không thuộc bài học thì `lesson_id = NULL`. Giữ `lesson_id` và khóa ngoại `CASCADE` cho đoạn `LESSON`, vì `FlywayMigrationIntegrationTest` và `AdminLessonIntegrationTest` đang dựa vào việc xóa bài kéo theo xóa đoạn và đang `INSERT` không có `source_type` (nên cột mới phải có giá trị mặc định). Với đoạn `LESSON` thì `source_id` để NULL (đã có `lesson_id`); với loại khác `source_id` là id của khóa, phần, hỏi đáp hoặc bài viết. Thêm `UNIQUE (source_type, source_id, chunk_index)` cho đoạn không phải bài học. Quy tắc "đoạn `LESSON` thì có `lesson_id`, đoạn loại khác thì `lesson_id` rỗng" **do ứng dụng giữ, không đặt `CHECK`**: theo tài liệu MySQL, không được đặt `CHECK` lên cột đang có hành động tham chiếu của khóa ngoại (`lesson_id` có `ON DELETE CASCADE`). Điều này cần kiểm lại bằng test tích hợp khi viết `V9`. Bảng hiện **chưa có mã chính nào dùng** (chia đoạn chưa làm) nên đổi lúc này rẻ |
 
 `lessons`, `lesson_images`, `lesson_progress`, `course_covers`, `users` **không đổi cột**. Quyền đọc bài đổi bằng truy vấn (mục 8.7), không cần cột mới.
@@ -461,7 +461,7 @@ Không vẽ: `course_covers` (giữ nguyên, `V5`), `lesson_images`, `lesson_pro
 | `contact_requests` | `(status, created_at)` | Danh sách Admin |
 | `knowledge_chunks` | giữ `UNIQUE(lesson_id, chunk_index)` và `FULLTEXT(heading, content)`; thêm `UNIQUE(source_type, source_id, chunk_index)` | Dựng lại đoạn, tìm kiếm |
 
-**Dữ liệu cho 7 khóa đang có khi chạy migration của `courses`** (làm trong chính migration, không để NOT NULL làm lỗi): tạo một nhóm mặc định **"Khóa cho thiếu niên"** (đặc tả mục 8) và gán `category_id` cho 7 khóa; `code` = chữ hoa của `slug` bỏ gạch ngang (`TINHOC10`, vừa 20 ký tự) rồi mới đặt `NOT NULL` và `UNIQUE`; `level = 'BASIC'`, `tuition_vnd = 0`, `status = 'PUBLISHED'` để trang hiện tại không đổi hành vi. Đây là migration **có sửa dữ liệu production** (không chỉ cấu trúc) nên cần bạn duyệt riêng. `tuition_vnd = 0` nghĩa là các khóa cũ chưa có học phí cho tới khi Admin nhập (xem mục 8.8).
+**Dữ liệu cho 7 khóa đang có khi chạy migration của `courses`** (làm trong chính migration, không để NOT NULL làm lỗi): tạo một nhóm mặc định **"Khóa cho thiếu niên"** (đặc tả mục 8) và gán `category_id` cho 7 khóa; `code` = chữ hoa của `slug` bỏ gạch ngang (`TINHOC10`) rồi mới đặt `NOT NULL` và `UNIQUE`; slug dài quá 20 ký tự hoặc hai slug ra cùng một mã (chỉ có thể gặp ở database trên máy) thì dùng `KH-<id>`, để migration không hỏng giữa chừng; `level = 'BASIC'`, `tuition_vnd = 0`, `status = 'PUBLISHED'` để trang hiện tại không đổi hành vi. Đây là migration **có sửa dữ liệu production** (không chỉ cấu trúc) nên cần bạn duyệt riêng. `tuition_vnd = 0` nghĩa là các khóa cũ chưa có học phí cho tới khi Admin nhập (xem mục 8.8).
 
 ### 8.5 Chia migration
 
@@ -520,6 +520,8 @@ Dữ liệu cá nhân (`birth_year`, `phone`, `email` trong `registration_member
 
 ### 8.8 Điểm cần bạn quyết trước khi viết migration
 
+**Đã chốt 2026-11-26 (cho `V6`):** bảng của `V6` gồm cả `site_images` và `banners` (một phần câu 11); thêm `overview_md` (câu 7); sửa dữ liệu 7 khóa cũ theo mục 8.4; khóa học phí 0 đồng thì ẩn nút Đăng ký và backend từ chối đăng ký (câu 4, cài đặt cùng phần đăng ký). Các câu còn lại chưa chốt.
+
 1. **Mã đơn** (`registrations.code`): đề xuất 10 ký tự ngẫu nhiên khó đoán (không phải số tăng dần) vì khách dùng nó để tra cứu. Bạn muốn dạng nào (ví dụ `SX` + 8 ký tự)?
 2. **Thời hạn giữ chỗ**: đề xuất 30 phút, đặt trong biến môi trường. Đồng ý?
 3. **Đơn của khách và tài khoản**: khách đặt đơn bằng email A, sau đó đăng ký tài khoản bằng email A. Đơn có tự gắn vào tài khoản không? Đề xuất: **không tự gắn** (đăng ký tài khoản chưa xác minh email, gắn tự động là mở đường chiếm đơn); cho gắn khi đăng nhập Google với email đã xác minh trùng `contact_email`, hoặc để Admin gắn tay. Cho tới khi gắn, đơn của khách không mở học liệu. Chọn cách nào?
@@ -536,5 +538,6 @@ Dữ liệu cá nhân (`birth_year`, `phone`, `email` trong `registration_member
 ### 8.9 Ảnh hưởng tới test và mã hiện có
 
 - `FlywayMigrationIntegrationTest` (đang kiểm danh sách 6 bảng và `knowledge_chunks` xóa theo bài) cần cập nhật khi thêm bảng; giữ nguyên các phép kiểm cũ vì `lesson_id` và `CASCADE` không đổi.
-- Có **13 chỗ ở 10 tệp test** chèn thẳng vào `courses` bằng SQL (`AdminCourseIntegrationTest`, `CourseIntegrationTest`, `DashboardIntegrationTest`, `FlywayMigrationIntegrationTest`, `CourseCoverIntegrationTest`, `ImageIntegrationTest`, `AdminLessonIntegrationTest`, `LessonIntegrationTest`, `LessonSearchIntegrationTest`, `ProgressIntegrationTest`). Cột mới `level`, `course_type`, `tuition_vnd`, `status` có `DEFAULT` nên không ảnh hưởng, nhưng `category_id` và `code` **không có** `DEFAULT` hợp lý, nên các lệnh `INSERT` này phải sửa khi làm `V6` (hoặc dùng hàm dựng khóa dùng chung cho test).
+- (Đã làm cùng `V6`) Các test tích hợp chèn khóa qua hàm dùng chung `CourseRows`, vì `category_id` và `code` không có `DEFAULT`.
+- (Đã làm cùng `V6`) API Admin tạo khóa chưa nhận nhóm và mã, nên khóa mới vào nhóm mặc định "Khóa cho thiếu niên", mã sinh từ slug (`CourseCodes`), trạng thái `DRAFT`, học phí 0. API công khai **chưa lọc theo `status`**; khi thêm bộ lọc phải có chỗ cho Admin đăng khóa trước, nếu không khóa mới sẽ không hiện.
 - `SeedDataTest` và script nạp dữ liệu mẫu cần biết nhóm và học phí của khóa (danh sách ở `docs/PLAN.md`, Việc 6).

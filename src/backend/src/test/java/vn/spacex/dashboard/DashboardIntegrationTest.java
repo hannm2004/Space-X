@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
+import vn.spacex.support.CourseRows;
 
 import java.time.LocalDateTime;
 
@@ -90,8 +91,7 @@ class DashboardIntegrationTest {
     }
 
     private long themKhoa(String slug, String title, int sortOrder) {
-        jdbc.update("INSERT INTO courses (slug, title, sort_order) VALUES (?, ?, ?)", slug, title, sortOrder);
-        return jdbc.queryForObject("SELECT id FROM courses WHERE slug = ?", Long.class, slug);
+        return CourseRows.insert(jdbc, slug, title, null, sortOrder);
     }
 
     private long themBai(long courseId, String slug, String status) {

@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
+import vn.spacex.support.CourseRows;
 
 import java.util.stream.Stream;
 
@@ -58,8 +59,7 @@ class LessonSearchIntegrationTest {
                 INSERT INTO users (email, password_hash, display_name, role, auth_provider, enabled)
                 VALUES ('tacgia@example.com', 'khong-dung-de-dang-nhap', 'Tác giả', 'ADMIN', 'LOCAL', 1)""");
         tacGiaId = jdbc.queryForObject("SELECT id FROM users WHERE email = 'tacgia@example.com'", Long.class);
-        jdbc.update("INSERT INTO courses (slug, title, description, sort_order) VALUES ('tin-hoc-10', 'Tin học 10', 'mo ta', 1)");
-        khoaId = jdbc.queryForObject("SELECT id FROM courses WHERE slug = 'tin-hoc-10'", Long.class);
+        khoaId = CourseRows.insert(jdbc, "tin-hoc-10", "Tin học 10", "mo ta", 1);
     }
 
     private void themBai(String slug, String tieuDe, String tomTat, String noiDung, String trangThai) {
