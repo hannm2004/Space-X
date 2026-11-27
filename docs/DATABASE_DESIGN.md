@@ -540,5 +540,6 @@ Dữ liệu cá nhân (`birth_year`, `phone`, `email` trong `registration_member
 - `FlywayMigrationIntegrationTest` (đang kiểm danh sách 6 bảng và `knowledge_chunks` xóa theo bài) cần cập nhật khi thêm bảng; giữ nguyên các phép kiểm cũ vì `lesson_id` và `CASCADE` không đổi.
 - (Đã làm cùng `V6`) Các test tích hợp chèn khóa qua hàm dùng chung `CourseRows`, vì `category_id` và `code` không có `DEFAULT`.
 - (Đã làm cùng `V6`) API Admin tạo khóa chưa nhận nhóm và mã, nên khóa mới vào nhóm mặc định "Khóa cho thiếu niên", mã sinh từ slug (`CourseCodes`); mặc định `DRAFT`, học phí 0.
-- (Đã làm sau `V6`) API và trang Admin đặt được `status` và `tuition_vnd`. API công khai **chưa lọc theo `status`**: việc đó làm cùng bộ lọc danh sách, kèm cho dữ liệu mẫu (`seed/`) đăng khóa, nếu không khóa nạp mới sẽ không hiện.
+- (Đã làm sau `V6`) API và trang Admin đặt được `status` và `tuition_vnd`. 
+- (Đã làm) `GET /api/courses` và danh sách bài của khóa chỉ trả khóa `PUBLISHED`, có bộ lọc theo nhóm, trình độ, số giờ, học phí; API và trang Admin đặt được nhóm, trình độ, số giờ; dữ liệu mẫu (`seed/`) đăng khóa. Chỉ mục `FULLTEXT` của khóa đã có nhưng chưa API nào dùng (tìm khóa, A13).
 - `SeedDataTest` và script nạp dữ liệu mẫu cần biết nhóm và học phí của khóa (danh sách ở `docs/PLAN.md`, Việc 6).

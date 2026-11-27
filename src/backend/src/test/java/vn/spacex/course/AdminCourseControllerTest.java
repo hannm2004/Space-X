@@ -60,7 +60,7 @@ class AdminCourseControllerTest {
 
     private static AdminCourseResponse khoa() {
         return new AdminCourseResponse(5L, "tin-hoc-10", "Tin học 10", "Chương trình lớp 10", 1,
-                CourseStatus.PUBLISHED, 1_500_000L, null);
+                CourseStatus.PUBLISHED, 1_500_000L, 3L, CourseLevel.BASIC, 40, null);
     }
 
     // Ghép thêm phần sai vào một thân yêu cầu hợp lệ rồi kiểm bị chặn trước khi tới service.
@@ -90,6 +90,22 @@ class AdminCourseControllerTest {
     @Test
     void hocPhiCoPhanLeBiTuChoi() throws Exception {
         biTuChoiTruocKhiToiService("\"tuitionVnd\":1500000.5");
+    }
+
+    @Test
+    void trinhDoLaHoacSoGioCoPhanLeBiTuChoi() throws Exception {
+        biTuChoiTruocKhiToiService("\"level\":\"MASTER\"");
+        biTuChoiTruocKhiToiService("\"totalHours\":10.5");
+    }
+
+    @Test
+    void nhomKhongTonTaiBi404VoiCauCoDinh() throws Exception {
+        when(service.create(any())).thenThrow(new CategoryNotFoundException());
+
+        mockMvc.perform(post("/api/admin/courses").with(user(admin())).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(BODY_HOP_LE))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.detail").value("Không tìm thấy nhóm khóa học"));
     }
 
     @Test
@@ -165,14 +181,14 @@ class AdminCourseControllerTest {
     // ---- Tạo ----
 
     @Test
-    void adminTaoKhoaThanhCongTra201VoiTamTruong() throws Exception {
+    void adminTaoKhoaThanhCongTra201VoiDuCacTruong() throws Exception {
         when(service.create(any())).thenReturn(khoa());
 
         mockMvc.perform(post("/api/admin/courses").with(user(admin())).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content(BODY_HOP_LE))
                 .andExpect(status().isCreated())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.*", hasSize(8)))
+                .andExpect(jsonPath("$.*", hasSize(11)))
                 .andExpect(jsonPath("$.id").value(5))
                 .andExpect(jsonPath("$.slug").value("tin-hoc-10"))
                 .andExpect(jsonPath("$.title").value("Tin học 10"))
@@ -335,7 +351,7 @@ class AdminCourseControllerTest {
     void adminXemDanhSachKhoaCoDayDuCacTruongKemSortOrder() throws Exception {
         when(service.findAll()).thenReturn(List.of(
                 khoa(),
-                new AdminCourseResponse(6L, "tin-hoc-11", "Tin học 11", null, 2, CourseStatus.DRAFT, 0L,
+                new AdminCourseResponse(6L, "tin-hoc-11", "Tin học 11", null, 2, CourseStatus.DRAFT, 0L, 3L, CourseLevel.BASIC, 0,
                         "/api/courses/tin-hoc-11/cover?v=2")));
 
         mockMvc.perform(get("/api/admin/courses").with(user(admin())))

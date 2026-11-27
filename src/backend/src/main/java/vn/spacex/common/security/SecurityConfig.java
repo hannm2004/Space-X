@@ -38,7 +38,7 @@ public class SecurityConfig {
                         // Chỉ đọc danh sách khóa và bài đã đăng là công khai, và chỉ bằng GET. "*" khớp đúng một đoạn
                         // đường dẫn nên /api/courses/{slug} (nếu sau này có) vẫn đòi đăng nhập. Ảnh bìa khóa học
                         // công khai theo danh sách khóa (trang chủ hiện cho khách); ảnh trong bài vẫn đòi đăng nhập (D19).
-                        .requestMatchers(HttpMethod.GET, "/api/courses", "/api/courses/*/lessons",
+                        .requestMatchers(HttpMethod.GET, "/api/categories", "/api/courses", "/api/courses/*/lessons",
                                 "/api/courses/*/cover").permitAll()
                         // Spring lấy luật khớp đầu tiên nên luật Admin phải đứng trước "/api/**" (D26).
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

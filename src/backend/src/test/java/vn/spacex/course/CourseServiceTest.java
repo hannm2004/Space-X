@@ -37,8 +37,64 @@ class CourseServiceTest {
     @Mock
     private vn.spacex.image.CourseCoverService courseCoverService;
 
+    @Mock
+    private CategoryRepository categoryRepository;
+
     @InjectMocks
     private CourseService courseService;
+
+    private static final CourseFilter KHONG_LOC = CourseFilter.of(null, null, null, null, null);
+
+    private void khoLocTraVe(List<Course> courses) {
+        when(courseRepository.searchPublished(null, null, 0, Short.MAX_VALUE, 0L, Long.MAX_VALUE,
+                KHONG_LOC.sort())).thenReturn(courses);
+    }
+
+    private static Category nhom(long id, String slug, String name) {
+        Category category = mock(Category.class);
+        lenient().when(category.getId()).thenReturn(id);
+        lenient().when(category.getSlug()).thenReturn(slug);
+        lenient().when(category.getName()).thenReturn(name);
+        return category;
+    }
+
+    @Test
+    void theKhoaCoNhomTrinhDoSoGioVaHocPhi() {
+        Course khoa = Course.create("tin-hoc-10", "Tin học 10", null, 1);
+        khoa.placeIn(3L, "TINHOC10");
+        khoa.changeLevel(CourseLevel.ADVANCED);
+        khoa.changeTotalHours(40);
+        khoa.changeTuition(1_500_000L);
+        khoLocTraVe(List.of(khoa));
+        Category thieuNien = nhom(3L, "thieu-nien", "Thiếu niên");
+        when(categoryRepository.findAll()).thenReturn(List.of(thieuNien));
+
+        CourseResponse the = courseService.listCourses(KHONG_LOC).getFirst();
+
+        assertThat(the.category()).isEqualTo(new CategoryResponse(3L, "thieu-nien", "Thiếu niên"));
+        assertThat(the.level()).isEqualTo(CourseLevel.ADVANCED);
+        assertThat(the.totalHours()).isEqualTo(40);
+        assertThat(the.tuitionVnd()).isEqualTo(1_500_000L);
+    }
+
+    @Test
+    void danhSachNhomTheoThuTuHienThi() {
+        Category a = nhom(2L, "a", "Nhóm A");
+        when(categoryRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(a));
+
+        assertThat(courseService.listCategories()).containsExactly(new CategoryResponse(2L, "a", "Nhóm A"));
+    }
+
+    @Test
+    void khoaChuaDangThiDanhSachBaiTraKhongTimThay() {
+        Course nhap = Course.create("khoa-nhap", "Khóa nháp", null, 1);
+        when(courseRepository.findBySlug("khoa-nhap")).thenReturn(Optional.of(nhap));
+
+        assertThatThrownBy(() -> courseService.listPublishedLessons("khoa-nhap"))
+                .isInstanceOf(CourseNotFoundException.class);
+
+        verifyNoInteractions(lessonRepository);
+    }
 
     @Test
     void danhSachKhoaGanDuongDanAnhBiaChoKhoaCoAnhVaNullChoKhoaChuaCo() {
@@ -48,11 +104,11 @@ class CourseServiceTest {
         Course chuaCoAnh = mock(Course.class);
         when(chuaCoAnh.getId()).thenReturn(6L);
         when(chuaCoAnh.getSlug()).thenReturn("tin-hoc-11");
-        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(coAnh, chuaCoAnh));
+        khoLocTraVe(List.of(coAnh, chuaCoAnh));
         when(courseCoverService.urlsByCourseId(java.util.Map.of(5L, "tin-hoc-10", 6L, "tin-hoc-11")))
                 .thenReturn(java.util.Map.of(5L, "/api/courses/tin-hoc-10/cover?v=1"));
 
-        List<CourseResponse> ketQua = courseService.listCourses();
+        List<CourseResponse> ketQua = courseService.listCourses(KHONG_LOC);
 
         assertThat(ketQua).hasSize(2);
         assertThat(ketQua.get(0).coverImageUrl()).isEqualTo("/api/courses/tin-hoc-10/cover?v=1");
@@ -77,13 +133,13 @@ class CourseServiceTest {
         Course chuaCoBai = mock(Course.class);
         when(chuaCoBai.getId()).thenReturn(6L);
         when(chuaCoBai.getSlug()).thenReturn("tin-hoc-11");
-        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(coBai, chuaCoBai));
+        khoLocTraVe(List.of(coBai, chuaCoBai));
         // Dựng mock ra biến trước: gọi soBai() ngay trong when(...) sẽ lồng hai lần khai báo giả lập vào nhau.
         LessonCountByCourse daDang = soBai(5L, LessonStatus.PUBLISHED, 4);
         LessonCountByCourse nhap = soBai(5L, LessonStatus.DRAFT, 3);
         when(lessonRepository.countLessonsByCourseAndStatus()).thenReturn(List.of(daDang, nhap));
 
-        List<CourseResponse> ketQua = courseService.listCourses();
+        List<CourseResponse> ketQua = courseService.listCourses(KHONG_LOC);
 
         assertThat(ketQua).extracting(CourseResponse::lessonCount).containsExactly(4, 0);
         // Một truy vấn đếm cho cả danh sách, không phải mỗi khóa một truy vấn.
@@ -91,12 +147,10 @@ class CourseServiceTest {
     }
 
     @Test
-    void danhSachKhoaLayTheoThuTuSortOrderRoiId() {
-        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of());
+    void khongCoKhoaNaoKhopThiTraDanhSachRong() {
+        khoLocTraVe(List.of());
 
-        assertThat(courseService.listCourses()).isEmpty();
-
-        verify(courseRepository).findAllByOrderBySortOrderAscIdAsc();
+        assertThat(courseService.listCourses(KHONG_LOC)).isEmpty();
     }
 
     @Test
@@ -113,6 +167,7 @@ class CourseServiceTest {
     void khoaTonTaiChiHoiBaiDaDangCuaDungKhoaDo() {
         Course khoa = mock(Course.class);
         when(khoa.getId()).thenReturn(5L);
+        when(khoa.getStatus()).thenReturn(CourseStatus.PUBLISHED);
         when(courseRepository.findBySlug("tin-hoc-10")).thenReturn(Optional.of(khoa));
         when(lessonRepository.findByCourseIdAndStatusOrderBySortOrderAscIdAsc(5L, LessonStatus.PUBLISHED))
                 .thenReturn(List.of());
@@ -126,6 +181,7 @@ class CourseServiceTest {
     void danhSachBaiCuaKhoaGanDuongDanAnhBia() {
         Course khoa = mock(Course.class);
         when(khoa.getId()).thenReturn(5L);
+        when(khoa.getStatus()).thenReturn(CourseStatus.PUBLISHED);
         when(courseRepository.findBySlug("tin-hoc-10")).thenReturn(Optional.of(khoa));
         Lesson co = mock(Lesson.class);
         when(co.getId()).thenReturn(11L);

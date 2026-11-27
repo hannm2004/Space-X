@@ -109,8 +109,8 @@ try {
     $password = $null
     Require $r 200 "Đăng nhập Admin"
 
-    # Khóa đã có (danh sách khóa là công khai, có id).
-    $r = Send "GET" "/api/courses" $null
+    # Khóa đã có. Dùng danh sách của Admin: danh sách công khai không có khóa nháp nên script sẽ tạo trùng.
+    $r = Send "GET" "/api/admin/courses" $null
     Require $r 200 "Đọc danh sách khóa"
     $courseIds = @{}
     foreach ($c in (ConvertFrom-JsonArray $r.Text)) { $courseIds[$c.slug] = $c.id }
@@ -123,6 +123,7 @@ try {
         if ($DryRun) { Write-Host ("  khóa  {0,-12} SẼ TẠO" -f $course.slug); $courseIds[$course.slug] = 0; continue }
         $r = Send "POST" "/api/admin/courses" @{
             slug = $course.slug; title = $course.title; description = $course.description; sortOrder = [int]$course.sortOrder
+            status = $course.status
         }
         Require $r 201 "Tạo khóa $($course.slug)"
         $courseIds[$course.slug] = ($r.Text | ConvertFrom-Json).id

@@ -97,12 +97,87 @@ class CourseIntegrationTest {
                 .andExpect(jsonPath("$[1].lessonCount").value(0));
     }
 
+    private void ban(long id, String level, int hours, long tuition) {
+        jdbc.update("UPDATE courses SET level = ?, total_hours = ?, tuition_vnd = ? WHERE id = ?",
+                level, hours, tuition, id);
+    }
+
+    private void khoaDeLoc() {
+        ban(themKhoa("co-ban", "x", 1), "BASIC", 20, 1_000_000);
+        ban(themKhoa("nang-cao", "x", 2), "ADVANCED", 40, 3_000_000);
+        ban(themKhoa("chuyen-sau", "x", 3), "EXPERT", 80, 2_000_000);
+    }
+
     @Test
-    void moiKhoaChiCoSauTruongVaMoTaVaAnhBiaDeTrongThiLaNull() throws Exception {
+    void chiKhoaDaDangMoiHienTrongDanhSachCongKhai() throws Exception {
+        themKhoa("da-dang", "x", 1);
+        jdbc.update("UPDATE courses SET status = 'DRAFT' WHERE id = ?", themKhoa("ban-nhap", "x", 2));
+        jdbc.update("UPDATE courses SET status = 'ARCHIVED' WHERE id = ?", themKhoa("ngung-ban", "x", 3));
+
+        mockMvc.perform(get("/api/courses"))
+                .andExpect(jsonPath("$[*].slug", contains("da-dang")));
+        mockMvc.perform(get("/api/courses/ban-nhap/lessons")).andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/courses/ngung-ban/lessons")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void locTheoTrinhDoSoGioVaHocPhiTrenMySqlThat() throws Exception {
+        khoaDeLoc();
+
+        mockMvc.perform(get("/api/courses?level=ADVANCED"))
+                .andExpect(jsonPath("$[*].slug", contains("nang-cao")));
+        mockMvc.perform(get("/api/courses?duration=20-40"))
+                .andExpect(jsonPath("$[*].slug", contains("co-ban", "nang-cao")));
+        mockMvc.perform(get("/api/courses?duration=41-"))
+                .andExpect(jsonPath("$[*].slug", contains("chuyen-sau")));
+        // Số vượt kiểu cột không gây lỗi.
+        mockMvc.perform(get("/api/courses?duration=-9999999999"))
+                .andExpect(jsonPath("$", hasSize(3)));
+        mockMvc.perform(get("/api/courses?price=2000000-"))
+                .andExpect(jsonPath("$[*].slug", contains("nang-cao", "chuyen-sau")));
+        mockMvc.perform(get("/api/courses?level=BASIC&price=2000000-"))
+                .andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    @Test
+    void sapTheoHocPhiTangVaGiam() throws Exception {
+        khoaDeLoc();
+
+        mockMvc.perform(get("/api/courses?sort=price_asc"))
+                .andExpect(jsonPath("$[*].slug", contains("co-ban", "chuyen-sau", "nang-cao")));
+        mockMvc.perform(get("/api/courses?sort=price_desc"))
+                .andExpect(jsonPath("$[*].slug", contains("nang-cao", "chuyen-sau", "co-ban")));
+    }
+
+    @Test
+    void locTheoNhomVaDanhSachNhomLaCongKhai() throws Exception {
+        jdbc.update("DELETE FROM categories WHERE slug = 'nhom-thu'");
+        jdbc.update("INSERT INTO categories (slug, name, sort_order) VALUES ('nhom-thu', 'Nhóm thử', -1)");
+        themKhoa("o-nhom-mac-dinh", "x", 1);
+        jdbc.update("UPDATE courses SET category_id = (SELECT id FROM categories WHERE slug = 'nhom-thu') "
+                + "WHERE id = ?", themKhoa("o-nhom-thu", "x", 2));
+
+        mockMvc.perform(get("/api/categories"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].slug", contains("nhom-thu", "khoa-cho-thieu-nien")))
+                .andExpect(jsonPath("$[0].name").value("Nhóm thử"))
+                .andExpect(jsonPath("$[0].*", hasSize(3)));
+        mockMvc.perform(get("/api/courses?category=nhom-thu"))
+                .andExpect(jsonPath("$[*].slug", contains("o-nhom-thu")))
+                .andExpect(jsonPath("$[0].category.name").value("Nhóm thử"));
+        mockMvc.perform(get("/api/courses?category=khong-co"))
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        jdbc.update("DELETE FROM courses");
+        jdbc.update("DELETE FROM categories WHERE slug = 'nhom-thu'");
+    }
+
+    @Test
+    void moiKhoaCoMuoiTruongVaMoTaVaAnhBiaDeTrongThiLaNull() throws Exception {
         long id = themKhoa("tin-hoc-10", null, 1);
 
         mockMvc.perform(get("/api/courses"))
-                .andExpect(jsonPath("$[0].*", hasSize(6)))
+                .andExpect(jsonPath("$[0].*", hasSize(10)))
                 .andExpect(jsonPath("$[0].coverImageUrl").value(nullValue()))
                 .andExpect(jsonPath("$[0].id").value(id))
                 .andExpect(jsonPath("$[0].slug").value("tin-hoc-10"))

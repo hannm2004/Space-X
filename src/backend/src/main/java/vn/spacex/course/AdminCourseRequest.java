@@ -33,7 +33,16 @@ public record AdminCourseRequest(
         @PositiveOrZero(message = "Học phí không được âm")
         // Trần để chặn gõ thừa số 0; không phải quy định của trung tâm.
         @Max(value = 1_000_000_000L, message = "Học phí tối đa 1.000.000.000 đồng")
-        Long tuitionVnd) {
+        Long tuitionVnd,
+
+        // Ba trường phân loại cũng được bỏ trống như trên: tạo mới thì vào nhóm mặc định, cơ bản, 0 giờ.
+        Long categoryId,
+
+        CourseLevel level,
+
+        @PositiveOrZero(message = "Số giờ học không được âm")
+        @Max(value = 10_000, message = "Số giờ học tối đa 10000")
+        Integer totalHours) {
 
     // Chuẩn hóa trước khi kiểm tra. Mô tả chỉ có khoảng trắng được lưu thành NULL như khi để trống.
     public AdminCourseRequest {

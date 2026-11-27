@@ -3,42 +3,49 @@
     "slug": "tin-hoc-6",
     "title": "Tin học 6",
     "description": "Làm quen với thiết bị số, mạng và Internet, tìm kiếm thông tin và sơ đồ tư duy.",
-    "sortOrder": 1
+    "sortOrder": 1,
+    "status": "PUBLISHED"
   },
   {
     "slug": "tin-hoc-7",
     "title": "Tin học 7",
     "description": "Dung lượng dữ liệu, phần mềm bảng tính và bước đầu với thuật toán.",
-    "sortOrder": 2
+    "sortOrder": 2,
+    "status": "PUBLISHED"
   },
   {
     "slug": "tin-hoc-8",
     "title": "Tin học 8",
     "description": "Lịch sử máy tính, thành phần của mạng và lập trình trực quan với biến, điều kiện, vòng lặp.",
-    "sortOrder": 3
+    "sortOrder": 3,
+    "status": "PUBLISHED"
   },
   {
     "slug": "tin-hoc-9",
     "title": "Tin học 9",
     "description": "An toàn thông tin, nhận biết tin giả, làm sản phẩm số và định hướng nghề nghiệp.",
-    "sortOrder": 4
+    "sortOrder": 4,
+    "status": "PUBLISHED"
   },
   {
     "slug": "tin-hoc-10",
     "title": "Tin học 10",
     "description": "Thông tin, mạng, lập trình Python đầu tiên và đạo đức trong môi trường số.",
-    "sortOrder": 5
+    "sortOrder": 5,
+    "status": "PUBLISHED"
   },
   {
     "slug": "tin-hoc-11",
     "title": "Tin học 11",
     "description": "Hệ điều hành, tệp, cơ sở dữ liệu, thuật toán tìm kiếm và trang web cơ bản.",
-    "sortOrder": 6
+    "sortOrder": 6,
+    "status": "PUBLISHED"
   },
   {
     "slug": "tin-hoc-12",
     "title": "Tin học 12",
     "description": "Bảo vệ thông tin, trí tuệ nhân tạo, SQL, phát triển phần mềm và dữ liệu lớn.",
-    "sortOrder": 7
+    "sortOrder": 7,
+    "status": "PUBLISHED"
   }
 ]
