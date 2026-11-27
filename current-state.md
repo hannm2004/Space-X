@@ -23,10 +23,11 @@ Mẫu một mục:
   - Ghi D40 vào `docs/DECISIONS.md`, đánh dấu phần D38, D39 và đặc tả bị thay; viết lại lộ trình trong `docs/PLAN.md` (B0–B6 đến 29/11, Tuần 8–10 làm kỹ lại, Tuần 11 dừng thêm tính năng). Các file này chỉ ở máy.
   - Trang Giới thiệu và Điều khoản sử dụng theo mô hình mới, bỏ chữ "lớp 6 đến lớp 12"; Điều khoản thêm hai mục "Thanh toán thử nghiệm" và "Hoàn tiền".
   - `README.md` (mô tả, hiện trạng, bảng tính năng, phạm vi, lộ trình), dòng trạng thái của `docs/API.md`, số tuần trong `CLAUDE.md` (11 tuần), số test trong `docs/TESTING.md`.
+  - Sau đó viết lại các phần của `CLAUDE.md` theo D40 (mô tả dự án, công nghệ, ràng buộc nghiệp vụ, RAG và Agent) và đưa file D40 vào `.gitignore`.
 - **Kiểm tra:** test viết trước và chạy đỏ (6 đỏ, 9 qua ở hai tệp test của hai trang), sau đó chạy đủ bằng PowerShell ở `src/frontend`: `npx vitest run` 41 file, **607 test qua** (lệnh đếm = 607); `npm run lint` sạch; `npm run build` thành công (còn cảnh báo tệp JS lớn hơn 500 kB). Không sửa mã Java nên không chạy lại test backend; lệnh đếm ra 680.
 - **Lỗi gặp và cách sửa:** hook chặn lần sửa đầu của hai tệp trang nên một phần thay đổi chưa được áp dụng, lần chạy test kế tiếp còn 3 đỏ; áp dụng lại thì qua hết.
 - **Học được:** (điền theo ý bạn)
-- **Việc còn mở:** D40 chưa nói Agent giữ những tool nào khi không còn lớp, chưa kèm danh sách 9 lĩnh vực; `CLAUDE.md`, `docs/DATABASE_DESIGN.md`, bản nháp 2.0 trong `docs/API.md`, câu hỏi "Đăng ký lớp" ở trang chủ và `src/frontend/README.md` còn theo mô hình cũ. Chưa xem hai trang mới bằng trình duyệt.
+- **Việc còn mở:** D40 chưa nói Agent giữ những tool nào khi không còn lớp, chưa kèm danh sách 9 lĩnh vực; `docs/DATABASE_DESIGN.md`, bản nháp 2.0 trong `docs/API.md`, câu hỏi "Đăng ký lớp" ở trang chủ và `src/frontend/README.md` còn theo mô hình cũ. Chưa xem hai trang mới bằng trình duyệt.
 - **Tiếp theo:** B1: migration `V7`, quy tắc quyền đọc, sửa lỗi bài của khóa Nháp vẫn đọc được, giới hạn số lần đăng nhập.
 
 ## 2026-11-26 đến 2026-11-27 — Danh mục khóa: `V6`, trạng thái và học phí, bộ lọc, trang danh sách
