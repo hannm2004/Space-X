@@ -245,6 +245,7 @@ const COURSE_JSON = {
   level: 'ADVANCED',
   totalHours: 40,
   coverImageUrl: null,
+  accessType: 'PAID',
 }
 const COURSE_INPUT = {
   slug: 'tin-hoc-10',
@@ -256,6 +257,7 @@ const COURSE_INPUT = {
   categoryId: 3,
   level: 'ADVANCED' as const,
   totalHours: 40,
+  accessType: 'PAID' as const,
 }
 const LESSON_SUMMARY_JSON = {
   id: 3,
@@ -305,6 +307,19 @@ describe('khóa học (Admin)', () => {
     delete thieuTrangThai.status
 
     for (const bad of [{ ...COURSE_JSON, status: 'HIDDEN' }, thieuTrangThai, { ...COURSE_JSON, tuitionVnd: '0' }]) {
+      apiRequestMock.mockResolvedValue([bad])
+
+      await expect(fetchAdminCourses()).rejects.toThrow()
+    }
+  })
+
+  it('fetchAdminCourses đọc được khóa miễn phí và từ chối loại khóa lạ hoặc thiếu', async () => {
+    apiRequestMock.mockResolvedValue([{ ...COURSE_JSON, accessType: 'FREE' }])
+    expect((await fetchAdminCourses())[0].accessType).toBe('FREE')
+
+    const thieuLoai: Record<string, unknown> = { ...COURSE_JSON }
+    delete thieuLoai.accessType
+    for (const bad of [{ ...COURSE_JSON, accessType: 'GIFT' }, thieuLoai]) {
       apiRequestMock.mockResolvedValue([bad])
 
       await expect(fetchAdminCourses()).rejects.toThrow()
@@ -503,6 +518,7 @@ describe('ảnh bìa khóa học (Admin)', () => {
         categoryId: 3,
         level: 'BASIC',
         totalHours: 0,
+        accessType: 'PAID',
       },
     ])
 

@@ -55,6 +55,7 @@ const KHOA_10: AdminCourse = {
   categoryId: 3,
   level: 'ADVANCED',
   totalHours: 40,
+  accessType: 'FREE',
 }
 const KHOA_11: AdminCourse = {
   id: 6,
@@ -67,6 +68,7 @@ const KHOA_11: AdminCourse = {
   categoryId: 4,
   level: 'BASIC',
   totalHours: 0,
+  accessType: 'PAID',
 }
 const NHOM = [
   { id: 3, slug: 'khoa-cho-thieu-nien', name: 'Khóa cho thiếu niên' },
@@ -337,6 +339,7 @@ describe('AdminCoursesPage — thêm khóa', () => {
         categoryId: 3,
         level: 'BASIC',
         totalHours: 0,
+        accessType: 'PAID',
       }),
     )
     expect((await screen.findByRole('status')).textContent).toContain('Đã thêm khóa học')
@@ -432,6 +435,7 @@ describe('AdminCoursesPage — sửa khóa', () => {
         categoryId: 3,
         level: 'ADVANCED',
         totalHours: 40,
+        accessType: 'FREE',
       }),
     )
     expect((await screen.findByRole('status')).textContent).toContain('Đã lưu khóa học')
@@ -528,6 +532,46 @@ describe('AdminCoursesPage — trạng thái và học phí', () => {
 
     await waitFor(() =>
       expect(updateCourseMock).toHaveBeenCalledWith(5, expect.objectContaining({ status: 'ARCHIVED', tuitionVnd: 0 })),
+    )
+  })
+
+  it('mỗi khóa ghi rõ miễn phí hay trả phí, không suy ra từ học phí', async () => {
+    fetchAdminCoursesMock.mockResolvedValue([KHOA_10, KHOA_11])
+    renderPage()
+
+    // Khóa 10 có học phí nhưng đang đặt miễn phí; khóa 11 chưa có học phí nhưng là trả phí.
+    expect((await rowOf('Tin học 10')).getByText('Miễn phí')).not.toBeNull()
+    expect((await rowOf('Tin học 11')).getByText('Trả phí')).not.toBeNull()
+  })
+
+  it('form thêm khóa mặc định là trả phí; chọn miễn phí thì gửi FREE', async () => {
+    createCourseMock.mockResolvedValue({ ...KHOA_10, id: 7 })
+    renderPage()
+    await screen.findByText('Tin học 10')
+    expect(value(addForm(), 'Loại khóa')).toBe('PAID')
+
+    const form = fillAddForm('tin-hoc-12', 'Tin học 12', '', '3')
+    type(form, 'Loại khóa', 'FREE')
+    fireEvent.click(form.getByRole('button', { name: 'Thêm khóa học' }))
+
+    await waitFor(() =>
+      expect(createCourseMock).toHaveBeenCalledWith(expect.objectContaining({ accessType: 'FREE' })),
+    )
+  })
+
+  it('form sửa có sẵn loại khóa hiện tại, đổi thì gửi giá trị mới', async () => {
+    updateCourseMock.mockResolvedValue(KHOA_10)
+    renderPage()
+
+    const row = await rowOf('Tin học 10')
+    fireEvent.click(row.getByRole('button', { name: 'Sửa Tin học 10' }))
+    expect(value(row, 'Loại khóa')).toBe('FREE')
+
+    type(row, 'Loại khóa', 'PAID')
+    fireEvent.click(row.getByRole('button', { name: 'Lưu thay đổi' }))
+
+    await waitFor(() =>
+      expect(updateCourseMock).toHaveBeenCalledWith(5, expect.objectContaining({ accessType: 'PAID' })),
     )
   })
 
