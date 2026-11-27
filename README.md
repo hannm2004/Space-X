@@ -6,7 +6,7 @@ Website của **Trung tâm Tin học SPACE-X** (trung tâm hư cấu): nền t�
 
 **Bản chạy thật:** https://space-x-47f1.onrender.com — gói Free tự ngủ, lần mở đầu có thể chậm 30–60 giây.
 
-**Hiện tại (2026-11-27):** bản đã deploy có danh mục khóa theo nhóm chương trình (7 khóa, 31 bài), chưa có mua khóa, chatbot và Agent. Mã nguồn có 680 test backend và 607 test frontend.
+**Hiện tại (2026-11-27):** bản đã deploy có danh mục khóa theo nhóm chương trình (7 khóa, 31 bài), chưa có mua khóa, chatbot và Agent. Mã nguồn có 727 test backend và 611 test frontend.
 
 ## Tính năng
 
@@ -21,7 +21,8 @@ Website của **Trung tâm Tin học SPACE-X** (trung tâm hư cấu): nền t�
 | | Tiến độ học: hoàn thành bài, phần trăm theo khóa, học tiếp, học lại | Deployed |
 | | Chatbot RAG trả lời kèm trích dẫn | Planned |
 | | AI Agent gọi công cụ chỉ đọc để gợi ý khóa và bài | Planned |
-| Mua khóa | Khóa miễn phí và trả phí, ghi danh, "Khóa học của tôi" | Planned |
+| Mua khóa | Khóa miễn phí hoặc trả phí; quyền đọc bài theo loại khóa và ghi danh; giới hạn số lần đăng nhập sai | Tested |
+| | Nút "Học miễn phí", "Khóa học của tôi" | Planned |
 | | Đơn hàng, chuyển khoản VietQR do Admin xác nhận (thử nghiệm) | Planned |
 | | VNPay sandbox | Planned |
 | Quản trị | Dashboard thống kê | Deployed |

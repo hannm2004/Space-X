@@ -16,6 +16,21 @@ Mẫu một mục:
 
 ---
 
+## 2026-11-27 — B1: migration `V7`, quyền đọc bài, giới hạn số lần đăng nhập
+- **Nhánh:** `feat/access-rules` (tạo từ `main` ở `ea96523`, sau khi PR #60 gộp).
+- **Đã làm:**
+  - `V7__add_access_rules.sql`: `courses.access_type` (`FREE`/`PAID`, mặc định `PAID`, khóa đang có bài thành `FREE`), `lessons.module_id`, bảng `enrollments`, bù ghi danh cho người đã có tiến độ.
+  - Quy tắc quyền đọc viết một lần (`access/AccessRules`), ghép vào truy vấn của đọc bài, ảnh bài, tìm bài và tiến độ. Nhờ đó sửa lỗi người đã đăng nhập đọc được bài của khóa Nháp.
+  - Không xóa được khóa đã có học viên ghi danh (`409`).
+  - Admin chọn "Loại khóa" khi thêm hoặc sửa khóa; dữ liệu mẫu và script nạp khai `FREE`.
+  - Giới hạn đăng nhập sai: 5 lần mỗi email, 20 lần mỗi IP trong 15 phút, trả `429` kèm `Retry-After`; đếm trong bộ nhớ, không thêm dependency.
+- **Kiểm tra:** viết test trước, chạy đỏ (28 test tích hợp mới: 25 đỏ, 3 qua sẵn; 9 test frontend đỏ). Sau khi viết code: `.\mvnw.cmd test "-Dtest=!*IntegrationTest"` **493 qua**; `.\mvnw.cmd test "-Dtest=*IntegrationTest"` **234 qua** (MySQL 8.4 thật); frontend `npx vitest run` **611 qua**, `npm run lint` sạch, `npm run build` thành công. Số đếm bằng lệnh trong `docs/TESTING.md` khớp.
+- **Lỗi gặp và cách sửa:** lần chạy đủ test tích hợp có cảnh báo Surefire phải đóng tiến trình test sau 30 giây; kết quả vẫn qua, chưa tìm nguyên nhân.
+- **Học được:** (điền theo ý bạn)
+- **Chưa kiểm:** chưa chạy ứng dụng thật ở máy, chưa xem trang Admin bằng trình duyệt, chưa deploy; `V7` chưa chạy trên Aiven.
+- **Giới hạn đã biết:** người chưa ghi danh mở bài của khóa trả phí thấy "Không tìm thấy bài học" (giao diện mua làm ở B3); chưa có cách tạo ghi danh qua API; đề cương khóa đã lưu trữ không công khai; ảnh bìa của khóa Nháp vẫn tải được bằng đường dẫn; giới hạn theo IP né được bằng header giả.
+- **Tiếp theo:** B2: `V8`, đơn hàng, VietQR, Admin xác nhận tay.
+
 ## 2026-11-27 — Chuyển sang tự học trực tuyến (D40): ghi quyết định, sửa tài liệu và hai trang chữ
 - **Nhánh:** `docs/d40` (tạo từ `main` ở `54ac085`).
 - **Lý do:** quyết định mới D40: Space-X là nền tảng **tự học trực tuyến** có khóa miễn phí và khóa trả phí; bỏ lớp, lịch khai giảng và giữ chỗ. Thứ tự ưu tiên của kế hoạch còn chờ thầy duyệt.

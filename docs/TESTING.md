@@ -6,11 +6,11 @@ Cập nhật: 2026-11-17 (đếm lại bằng lệnh ở mục "Cách đếm l�
 
 | | Số test | Số lớp/file | Cần Docker? |
 |---|---|---|---|
-| Backend (JUnit 5 + Spring Test) | 474 | 43 lớp | Không |
-| Frontend (Vitest + Testing Library, môi trường jsdom) | 607 | 41 file | Không |
-| Test tích hợp với MySQL thật (Testcontainers) | 206 | 19 lớp | Có |
+| Backend (JUnit 5 + Spring Test) | 493 | 44 lớp | Không |
+| Frontend (Vitest + Testing Library, môi trường jsdom) | 611 | 41 file | Không |
+| Test tích hợp với MySQL thật (Testcontainers) | 234 | 22 lớp | Có |
 
-Đếm lại ngày 2026-11-27 trên nhánh `docs/d40` (trang Giới thiệu và Điều khoản theo mô hình tự học trực tuyến, +4 test frontend; backend không đổi).
+Đếm lại ngày 2026-11-27 trên nhánh `feat/access-rules` (quyền đọc bài, migration `V7`, giới hạn đăng nhập: +19 test không cần Docker, +28 test tích hợp, +4 test frontend). Cùng ngày chạy đủ ở máy: cả ba nhóm đều qua.
 
 CI chạy toàn bộ test trên mỗi Pull Request. **Không test nào gọi API AI thật**: dùng nhà cung cấp giả.
 
@@ -28,6 +28,9 @@ Mỗi dòng phải có test thật trước khi tuần đó được coi là xon
 
 | Yêu cầu | Loại | Tuần | Trạng thái |
 |---|---|---|---|
+| **Quyền đọc bài (D40):** khách `401`; người đã đăng nhập chỉ đọc khóa miễn phí đã đăng; khóa trả phí và khóa lưu trữ cần ghi danh `ACTIVE`; ghi danh bị thu hồi mất quyền; khóa nháp và bài nháp chỉ Admin; đọc bài, ảnh, tìm kiếm (cả `totalItems`) và tiến độ cùng một kết quả; bài không được đọc trả cùng câu `404` với bài không tồn tại (`LessonAccessIntegrationTest`) | Integration | 7 | Tested |
+| **Migration `V7`:** khóa đang có bài thành `FREE`, khóa mới mặc định `PAID`; người đã có tiến độ được bù đúng một ghi danh mỗi khóa; mỗi cặp người dùng và khóa một dòng; cấp tay phải ghi người cấp; không xóa khóa có ghi danh (`AccessRulesMigrationIntegrationTest`, dựng database dừng ở `V6` rồi nâng) | Integration | 7 | Tested |
+| **Giới hạn đăng nhập:** sai quá số lần thì `429` kèm `Retry-After` kể cả khi gõ đúng; đếm theo email đã chuẩn hóa và theo IP; email bịa giống email thật; đăng nhập đúng xóa số lần sai; lỗi máy chủ không tính (`LoginAttemptLimiterTest`, `LoginRateLimitIntegrationTest`, `AuthControllerTest`) | Unit, slice, integration | 7 | Tested |
 | `/api/health` trả `UP`, không lộ phiên bản hay cấu hình | Slice | 2 | Tested |
 | `/api/health` chỉ cho phép `GET` (`POST` bị từ chối 405) | Slice | 2 | Tested |
 | Sáng/tối: ưu tiên lựa chọn đã lưu, lần đầu theo hệ điều hành, bỏ qua giá trị lưu sai | Unit (frontend) | 2 | Tested (logic trong `theme.test.ts`; nút bấm trong `ThemeToggle.test.tsx`, 6 test: giao diện ban đầu theo lựa chọn đã lưu hoặc hệ điều hành, bấm thì đổi class `dark`, nhớ lựa chọn và đổi nhãn, `localStorage` bị chặn vẫn đổi được); script chống nháy màu chỉ kiểm bằng mắt |
