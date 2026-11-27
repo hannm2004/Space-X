@@ -1,6 +1,6 @@
 # CLAUDE.md — Quy tắc làm việc cho dự án Space-X
 
-Đồ án chuyên ngành của một sinh viên CNTT, làm một mình trong 12 tuần. Mức độ: đồ án sinh viên làm chuyên nghiệp (có test, CI, phân quyền, tài liệu), không phải hệ thống doanh nghiệp.
+Đồ án chuyên ngành của một sinh viên CNTT, làm một mình trong 11 tuần. Mức độ: đồ án sinh viên làm chuyên nghiệp (có test, CI, phân quyền, tài liệu), không phải hệ thống doanh nghiệp.
 Nhật ký phát triển: `current-state.md`. Kế hoạch `docs/PLAN.md`, phạm vi và use case `docs/PROJECT_SCOPE.md`, nhật ký quyết định `docs/DECISIONS.md`, đặc tả chuyển hướng `docs/SPACE-X-2.0.md` **chỉ có ở máy** (không push). Khi có mâu thuẫn, `docs/DECISIONS.md` là nguồn sự thật.
 
 ## Dự án là gì

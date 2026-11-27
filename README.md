@@ -2,11 +2,11 @@
 
 [![CI](https://github.com/hannm2004/Space-X/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hannm2004/Space-X/actions/workflows/ci.yml)
 
-Website học **Tin học từ lớp 6 đến lớp 12** (Chương trình GDPT 2018) bằng tiếng Việt, cho học sinh THCS và THPT. Đồ án chuyên ngành 11 tuần: học theo khóa, tìm bài, theo dõi tiến độ, trang quản trị; chatbot RAG và AI Agent đang được làm.
+Website của **Trung tâm Tin học SPACE-X** (trung tâm hư cấu): nền tảng **tự học Tin học trực tuyến** bằng tiếng Việt. Đồ án chuyên ngành 11 tuần: danh mục khóa học, đọc và tìm bài, theo dõi tiến độ, trang quản trị; mua khóa, chatbot RAG và AI Agent chưa có, đang trong kế hoạch. Môi trường thử nghiệm, không thu tiền thật.
 
 **Bản chạy thật:** https://space-x-47f1.onrender.com — gói Free tự ngủ, lần mở đầu có thể chậm 30–60 giây.
 
-**Hiện tại (Tuần 6 đã chốt):** bản chưa có AI đã deploy. 7 khóa, 31 bài; 618 test backend và 569 test frontend, CI xanh. Chatbot RAG và AI Agent là việc của Tuần 7–8.
+**Hiện tại (2026-11-27):** bản đã deploy có danh mục khóa theo nhóm chương trình (7 khóa, 31 bài), chưa có mua khóa, chatbot và Agent. Mã nguồn có 680 test backend và 607 test frontend.
 
 ## Tính năng
 
@@ -14,19 +14,23 @@ Website học **Tin học từ lớp 6 đến lớp 12** (Chương trình GDPT 2
 |---|---|---|
 | Tài khoản | Đăng ký, đăng nhập, đăng xuất; đăng nhập bằng Google | Deployed |
 | | Hồ sơ cá nhân, đổi mật khẩu | Deployed |
-| Học tập | Khóa học theo lớp (6–12) kèm ảnh bìa, danh sách bài | Deployed |
+| Khóa học | Danh mục theo nhóm chương trình; lọc theo trình độ, thời lượng, học phí | Deployed |
+| Học tập | Danh sách bài của khóa, ảnh bìa khóa | Deployed |
 | | Đọc bài (Markdown, bảng, ảnh), tìm kiếm bài | Deployed |
 | | Bài trước/sau, đường dẫn, thời gian đọc, số bài của khóa | Tested |
 | | Tiến độ học: hoàn thành bài, phần trăm theo khóa, học tiếp, học lại | Deployed |
-| | Chatbot RAG trả lời kèm trích dẫn bài học | Planned |
-| | AI Agent gọi công cụ chỉ đọc để gợi ý bài | Planned |
+| | Chatbot RAG trả lời kèm trích dẫn | Planned |
+| | AI Agent gọi công cụ chỉ đọc để gợi ý khóa và bài | Planned |
+| Mua khóa | Khóa miễn phí và trả phí, ghi danh, "Khóa học của tôi" | Planned |
+| | Đơn hàng, chuyển khoản VietQR do Admin xác nhận (thử nghiệm) | Planned |
+| | VNPay sandbox | Planned |
 | Quản trị | Dashboard thống kê | Deployed |
-| | Quản lý khóa học, bài học, ảnh và ảnh bìa | Deployed |
+| | Quản lý khóa học (trạng thái, nhóm, trình độ, số giờ, học phí), bài học, ảnh và ảnh bìa | Deployed |
 | | Quản lý người dùng: tìm, khóa/mở, đặt lại mật khẩu | Deployed |
 | | Dựng lại chỉ mục tìm kiếm | Planned |
 | Hệ thống | Giao diện sáng/tối, kiểm tra sống `GET /api/health` | Deployed |
 
-Nhãn: `Planned` → `In progress` → `Implemented` → `Tested` → `Deployed`. Ngoài phạm vi bản đầu: đăng nhập Facebook, thanh toán gói Premium.
+Nhãn: `Planned` → `In progress` → `Implemented` → `Tested` → `Deployed`. Ngoài phạm vi: lớp học và lịch khai giảng, giữ chỗ, chứng nhận, mã giảm giá, blog, MoMo, ZaloPay, đăng nhập Facebook. Thanh toán chỉ chạy thử nghiệm, không thu tiền thật.
 
 ## Công nghệ
 
@@ -48,10 +52,11 @@ Nhãn: `Planned` → `In progress` → `Implemented` → `Tested` → `Deployed`
 | 4 | API khóa học, bài học; Admin quản lý bài và ảnh; dữ liệu mẫu | Done |
 | 5 | Giao diện đọc bài và tài khoản, tìm kiếm, tiến độ học, quản lý người dùng | Done |
 | 6 | Dashboard, đăng nhập Google, giao diện quản trị, thiết kế lại giao diện, nội dung lớp 6–12, ảnh bìa | Done |
-| 7 | Chia đoạn, truy xuất, chatbot RAG | Planned |
-| 8 | AI Agent, giới hạn vòng gọi, test prompt injection | Planned |
-| 9 | Test toàn luồng, rà soát bảo mật, sửa lỗi | Planned |
-| 10–11 | Hoàn thiện tài liệu, deploy bản cuối, tổng duyệt demo | Planned |
+| 7 | Chuyển sang Trung tâm Tin học SPACE-X, danh mục khóa; bản chạy được tối thiểu của mua khóa và chatbot (đến 29/11) | In progress |
+| 8 | Làm kỹ ghi danh, đơn hàng, thanh toán thử nghiệm, hoàn tiền, email | Planned |
+| 9 | Module bài học, danh mục và trang khóa, chatbot RAG | Planned |
+| 10 | AI Agent, VNPay sandbox, doanh thu trên dashboard | Planned |
+| 11 | Dừng thêm tính năng: kiểm thử, rà soát bảo mật, báo cáo | Planned |
 
 ## Chạy ở máy
 
