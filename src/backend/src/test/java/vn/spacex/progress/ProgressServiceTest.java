@@ -1,5 +1,6 @@
 package vn.spacex.progress;
 
+import vn.spacex.access.Reader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -13,7 +14,6 @@ import vn.spacex.course.CourseRepository;
 import vn.spacex.lesson.Lesson;
 import vn.spacex.lesson.LessonNotFoundException;
 import vn.spacex.lesson.LessonRepository;
-import vn.spacex.lesson.LessonStatus;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -37,6 +37,8 @@ class ProgressServiceTest {
     private static final long USER_ID = 7L;
     private static final long LESSON_ID = 11L;
     private static final long COURSE_ID = 3L;
+
+    private static final Reader HOC_SINH = new Reader(USER_ID, false);
 
     private static final LocalDateTime BAY_GIO = LocalDateTime.of(2026, 11, 12, 10, 0);
     private static final LocalDateTime TRUOC_DO = LocalDateTime.of(2026, 11, 12, 8, 0);
@@ -100,10 +102,10 @@ class ProgressServiceTest {
     // ---- Ghi nhận tiến độ một bài ----
 
     @Test
-    void baiKhongTonTaiHoacChuaDangNemLessonNotFoundVaKhongGhiGi() {
-        when(lessonRepository.findByIdAndStatus(LESSON_ID, LessonStatus.PUBLISHED)).thenReturn(Optional.empty());
+    void baiKhongDuocDocHoacKhongTonTaiNemLessonNotFoundVaKhongGhiGi() {
+        when(lessonRepository.countReadable(LESSON_ID, USER_ID, false)).thenReturn(0L);
 
-        assertThatThrownBy(() -> service().record(USER_ID, LESSON_ID, ProgressStatus.COMPLETED))
+        assertThatThrownBy(() -> service().record(HOC_SINH, LESSON_ID, ProgressStatus.COMPLETED))
                 .isInstanceOf(LessonNotFoundException.class);
 
         verify(progressRepository, never()).save(any());
@@ -111,11 +113,10 @@ class ProgressServiceTest {
 
     @Test
     void moBaiLanDauTaoDongInProgressChoDungNguoiDung() {
-        when(lessonRepository.findByIdAndStatus(LESSON_ID, LessonStatus.PUBLISHED))
-                .thenReturn(Optional.of(bai(LESSON_ID, COURSE_ID, "may-tinh", "Máy tính")));
+        when(lessonRepository.countReadable(LESSON_ID, USER_ID, false)).thenReturn(1L);
         when(progressRepository.findByUserIdAndLessonId(USER_ID, LESSON_ID)).thenReturn(Optional.empty());
 
-        LessonProgressResponse ketQua = service().record(USER_ID, LESSON_ID, ProgressStatus.IN_PROGRESS);
+        LessonProgressResponse ketQua = service().record(HOC_SINH, LESSON_ID, ProgressStatus.IN_PROGRESS);
 
         ArgumentCaptor<LessonProgress> daLuu = ArgumentCaptor.forClass(LessonProgress.class);
         verify(progressRepository).save(daLuu.capture());
@@ -130,11 +131,10 @@ class ProgressServiceTest {
     @Test
     void moBaiLanNuaChiCapNhatLastViewedAtVaKhongTaoDongMoi() {
         LessonProgress cu = dangHoc(LESSON_ID, TRUOC_DO);
-        when(lessonRepository.findByIdAndStatus(LESSON_ID, LessonStatus.PUBLISHED))
-                .thenReturn(Optional.of(bai(LESSON_ID, COURSE_ID, "may-tinh", "Máy tính")));
+        when(lessonRepository.countReadable(LESSON_ID, USER_ID, false)).thenReturn(1L);
         when(progressRepository.findByUserIdAndLessonId(USER_ID, LESSON_ID)).thenReturn(Optional.of(cu));
 
-        service().record(USER_ID, LESSON_ID, ProgressStatus.IN_PROGRESS);
+        service().record(HOC_SINH, LESSON_ID, ProgressStatus.IN_PROGRESS);
 
         ArgumentCaptor<LessonProgress> daLuu = ArgumentCaptor.forClass(LessonProgress.class);
         verify(progressRepository).save(daLuu.capture());
@@ -146,11 +146,10 @@ class ProgressServiceTest {
     @Test
     void bamHoanThanhBaiGhiCompletedVaThoiDiemHoanThanh() {
         LessonProgress cu = dangHoc(LESSON_ID, TRUOC_DO);
-        when(lessonRepository.findByIdAndStatus(LESSON_ID, LessonStatus.PUBLISHED))
-                .thenReturn(Optional.of(bai(LESSON_ID, COURSE_ID, "may-tinh", "Máy tính")));
+        when(lessonRepository.countReadable(LESSON_ID, USER_ID, false)).thenReturn(1L);
         when(progressRepository.findByUserIdAndLessonId(USER_ID, LESSON_ID)).thenReturn(Optional.of(cu));
 
-        LessonProgressResponse ketQua = service().record(USER_ID, LESSON_ID, ProgressStatus.COMPLETED);
+        LessonProgressResponse ketQua = service().record(HOC_SINH, LESSON_ID, ProgressStatus.COMPLETED);
 
         assertThat(cu.getStatus()).isEqualTo(ProgressStatus.COMPLETED);
         assertThat(cu.getCompletedAt()).isEqualTo(BAY_GIO);
@@ -161,11 +160,10 @@ class ProgressServiceTest {
     @Test
     void baiDaHoanThanhMoLaiKhongBiHaVeInProgressVaVanBaoCompleted() {
         LessonProgress cu = daXong(LESSON_ID, TRUOC_DO);
-        when(lessonRepository.findByIdAndStatus(LESSON_ID, LessonStatus.PUBLISHED))
-                .thenReturn(Optional.of(bai(LESSON_ID, COURSE_ID, "may-tinh", "Máy tính")));
+        when(lessonRepository.countReadable(LESSON_ID, USER_ID, false)).thenReturn(1L);
         when(progressRepository.findByUserIdAndLessonId(USER_ID, LESSON_ID)).thenReturn(Optional.of(cu));
 
-        LessonProgressResponse ketQua = service().record(USER_ID, LESSON_ID, ProgressStatus.IN_PROGRESS);
+        LessonProgressResponse ketQua = service().record(HOC_SINH, LESSON_ID, ProgressStatus.IN_PROGRESS);
 
         assertThat(cu.getStatus()).isEqualTo(ProgressStatus.COMPLETED);
         assertThat(cu.getCompletedAt()).isEqualTo(TRUOC_DO);
@@ -176,11 +174,10 @@ class ProgressServiceTest {
     @Test
     void bamHoanThanhHaiLanGiuNguyenThoiDiemHoanThanhLanDau() {
         LessonProgress cu = daXong(LESSON_ID, TRUOC_DO);
-        when(lessonRepository.findByIdAndStatus(LESSON_ID, LessonStatus.PUBLISHED))
-                .thenReturn(Optional.of(bai(LESSON_ID, COURSE_ID, "may-tinh", "Máy tính")));
+        when(lessonRepository.countReadable(LESSON_ID, USER_ID, false)).thenReturn(1L);
         when(progressRepository.findByUserIdAndLessonId(USER_ID, LESSON_ID)).thenReturn(Optional.of(cu));
 
-        service().record(USER_ID, LESSON_ID, ProgressStatus.COMPLETED);
+        service().record(HOC_SINH, LESSON_ID, ProgressStatus.COMPLETED);
 
         assertThat(cu.getCompletedAt()).isEqualTo(TRUOC_DO);
     }
@@ -190,8 +187,7 @@ class ProgressServiceTest {
     @Test
     void haiYeuCauDauTienCungLucThiBenThuaDocLaiDongDaCoVaCapNhat() {
         LessonProgress doBenKia = dangHoc(LESSON_ID, TRUOC_DO);
-        when(lessonRepository.findByIdAndStatus(LESSON_ID, LessonStatus.PUBLISHED))
-                .thenReturn(Optional.of(bai(LESSON_ID, COURSE_ID, "may-tinh", "Máy tính")));
+        when(lessonRepository.countReadable(LESSON_ID, USER_ID, false)).thenReturn(1L);
         when(progressRepository.findByUserIdAndLessonId(USER_ID, LESSON_ID))
                 .thenReturn(Optional.empty())
                 .thenReturn(Optional.of(doBenKia));
@@ -199,7 +195,7 @@ class ProgressServiceTest {
                 .thenThrow(new DataIntegrityViolationException("uk_progress_user_lesson"))
                 .thenAnswer(lanGoi -> lanGoi.getArgument(0));
 
-        LessonProgressResponse ketQua = service().record(USER_ID, LESSON_ID, ProgressStatus.COMPLETED);
+        LessonProgressResponse ketQua = service().record(HOC_SINH, LESSON_ID, ProgressStatus.COMPLETED);
 
         verify(progressRepository, times(2)).save(any());
         assertThat(doBenKia.getStatus()).isEqualTo(ProgressStatus.COMPLETED);
@@ -210,21 +206,21 @@ class ProgressServiceTest {
 
     @Test
     void chuaCoKhoaNaoThiTraVeMangRong() {
-        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of());
-        when(lessonRepository.findByStatusOrderBySortOrderAscIdAsc(LessonStatus.PUBLISHED)).thenReturn(List.of());
+        when(courseRepository.findAccessible(USER_ID, false)).thenReturn(List.of());
+        when(lessonRepository.findReadablePublished(USER_ID, false)).thenReturn(List.of());
         when(progressRepository.findByUserId(USER_ID)).thenReturn(List.of());
 
-        assertThat(service().overview(USER_ID)).isEmpty();
+        assertThat(service().overview(HOC_SINH)).isEmpty();
     }
 
     @Test
     void phanTramLaSoBaiHoanThanhTrenTongBaiDaDangLamTronXuongVaChiMuoiMotKhiXongHet() {
-        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(khoa(COURSE_ID, "tin-hoc-10", "Tin học 10")));
-        when(lessonRepository.findByStatusOrderBySortOrderAscIdAsc(LessonStatus.PUBLISHED)).thenReturn(List.of(
+        when(courseRepository.findAccessible(USER_ID, false)).thenReturn(List.of(khoa(COURSE_ID, "tin-hoc-10", "Tin học 10")));
+        when(lessonRepository.findReadablePublished(USER_ID, false)).thenReturn(List.of(
                 bai(1, COURSE_ID, "a", "A"), bai(2, COURSE_ID, "b", "B"), bai(3, COURSE_ID, "c", "C")));
         when(progressRepository.findByUserId(USER_ID)).thenReturn(List.of(daXong(1, TRUOC_DO)));
 
-        CourseProgressResponse khoa10 = service().overview(USER_ID).get(0);
+        CourseProgressResponse khoa10 = service().overview(HOC_SINH).get(0);
 
         assertThat(khoa10.courseId()).isEqualTo(COURSE_ID);
         assertThat(khoa10.courseSlug()).isEqualTo("tin-hoc-10");
@@ -237,12 +233,12 @@ class ProgressServiceTest {
     // Admin ẩn bài thì bài không còn trong danh sách bài Đã đăng, nên dòng tiến độ cũ của bài đó không được tính.
     @Test
     void baiDaBiAnVanConDongTienDoKhongDuocTinhVaoPhanTram() {
-        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(khoa(COURSE_ID, "tin-hoc-10", "Tin học 10")));
-        when(lessonRepository.findByStatusOrderBySortOrderAscIdAsc(LessonStatus.PUBLISHED)).thenReturn(List.of(
+        when(courseRepository.findAccessible(USER_ID, false)).thenReturn(List.of(khoa(COURSE_ID, "tin-hoc-10", "Tin học 10")));
+        when(lessonRepository.findReadablePublished(USER_ID, false)).thenReturn(List.of(
                 bai(1, COURSE_ID, "a", "A"), bai(2, COURSE_ID, "b", "B")));
         when(progressRepository.findByUserId(USER_ID)).thenReturn(List.of(daXong(1, TRUOC_DO), daXong(99, TRUOC_DO)));
 
-        CourseProgressResponse khoa10 = service().overview(USER_ID).get(0);
+        CourseProgressResponse khoa10 = service().overview(HOC_SINH).get(0);
 
         assertThat(khoa10.completedLessons()).isEqualTo(1);
         assertThat(khoa10.totalLessons()).isEqualTo(2);
@@ -251,37 +247,37 @@ class ProgressServiceTest {
 
     @Test
     void hocTiepLaBaiDangHocMoiXemGanNhatDuBaiKhacCoThuTuTruocHon() {
-        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(khoa(COURSE_ID, "tin-hoc-10", "Tin học 10")));
-        when(lessonRepository.findByStatusOrderBySortOrderAscIdAsc(LessonStatus.PUBLISHED)).thenReturn(List.of(
+        when(courseRepository.findAccessible(USER_ID, false)).thenReturn(List.of(khoa(COURSE_ID, "tin-hoc-10", "Tin học 10")));
+        when(lessonRepository.findReadablePublished(USER_ID, false)).thenReturn(List.of(
                 bai(1, COURSE_ID, "a", "A"), bai(2, COURSE_ID, "b", "B"), bai(3, COURSE_ID, "c", "C")));
         when(progressRepository.findByUserId(USER_ID)).thenReturn(List.of(
                 dangHoc(1, TRUOC_DO), dangHoc(3, BAY_GIO)));
 
-        CourseProgressResponse khoa10 = service().overview(USER_ID).get(0);
+        CourseProgressResponse khoa10 = service().overview(HOC_SINH).get(0);
 
         assertThat(khoa10.continueLesson()).isEqualTo(new ContinueLessonResponse(3L, "c", "C"));
     }
 
     @Test
     void khongCoBaiDangHocThiHocTiepLaBaiDauTienChuaHoanThanhTheoThuTu() {
-        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(khoa(COURSE_ID, "tin-hoc-10", "Tin học 10")));
-        when(lessonRepository.findByStatusOrderBySortOrderAscIdAsc(LessonStatus.PUBLISHED)).thenReturn(List.of(
+        when(courseRepository.findAccessible(USER_ID, false)).thenReturn(List.of(khoa(COURSE_ID, "tin-hoc-10", "Tin học 10")));
+        when(lessonRepository.findReadablePublished(USER_ID, false)).thenReturn(List.of(
                 bai(1, COURSE_ID, "a", "A"), bai(2, COURSE_ID, "b", "B"), bai(3, COURSE_ID, "c", "C")));
         when(progressRepository.findByUserId(USER_ID)).thenReturn(List.of(daXong(1, TRUOC_DO)));
 
-        CourseProgressResponse khoa10 = service().overview(USER_ID).get(0);
+        CourseProgressResponse khoa10 = service().overview(HOC_SINH).get(0);
 
         assertThat(khoa10.continueLesson()).isEqualTo(new ContinueLessonResponse(2L, "b", "B"));
     }
 
     @Test
     void chuaHocGiThiHocTiepLaBaiDauTienCuaKhoa() {
-        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(khoa(COURSE_ID, "tin-hoc-10", "Tin học 10")));
-        when(lessonRepository.findByStatusOrderBySortOrderAscIdAsc(LessonStatus.PUBLISHED)).thenReturn(List.of(
+        when(courseRepository.findAccessible(USER_ID, false)).thenReturn(List.of(khoa(COURSE_ID, "tin-hoc-10", "Tin học 10")));
+        when(lessonRepository.findReadablePublished(USER_ID, false)).thenReturn(List.of(
                 bai(1, COURSE_ID, "a", "A"), bai(2, COURSE_ID, "b", "B")));
         when(progressRepository.findByUserId(USER_ID)).thenReturn(List.of());
 
-        CourseProgressResponse khoa10 = service().overview(USER_ID).get(0);
+        CourseProgressResponse khoa10 = service().overview(HOC_SINH).get(0);
 
         assertThat(khoa10.percent()).isZero();
         assertThat(khoa10.continueLesson()).isEqualTo(new ContinueLessonResponse(1L, "a", "A"));
@@ -289,12 +285,12 @@ class ProgressServiceTest {
 
     @Test
     void hocXongHetThiMotTramPhanTramVaKhongConHocTiep() {
-        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(khoa(COURSE_ID, "tin-hoc-10", "Tin học 10")));
-        when(lessonRepository.findByStatusOrderBySortOrderAscIdAsc(LessonStatus.PUBLISHED)).thenReturn(List.of(
+        when(courseRepository.findAccessible(USER_ID, false)).thenReturn(List.of(khoa(COURSE_ID, "tin-hoc-10", "Tin học 10")));
+        when(lessonRepository.findReadablePublished(USER_ID, false)).thenReturn(List.of(
                 bai(1, COURSE_ID, "a", "A"), bai(2, COURSE_ID, "b", "B")));
         when(progressRepository.findByUserId(USER_ID)).thenReturn(List.of(daXong(1, TRUOC_DO), daXong(2, BAY_GIO)));
 
-        CourseProgressResponse khoa10 = service().overview(USER_ID).get(0);
+        CourseProgressResponse khoa10 = service().overview(HOC_SINH).get(0);
 
         assertThat(khoa10.percent()).isEqualTo(100);
         assertThat(khoa10.continueLesson()).isNull();
@@ -302,11 +298,11 @@ class ProgressServiceTest {
 
     @Test
     void khoaChuaCoBaiDaDangThiPhanTramLaKhongVaKhongChiaChoKhong() {
-        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(khoa(COURSE_ID, "tin-hoc-12", "Tin học 12")));
-        when(lessonRepository.findByStatusOrderBySortOrderAscIdAsc(LessonStatus.PUBLISHED)).thenReturn(List.of());
+        when(courseRepository.findAccessible(USER_ID, false)).thenReturn(List.of(khoa(COURSE_ID, "tin-hoc-12", "Tin học 12")));
+        when(lessonRepository.findReadablePublished(USER_ID, false)).thenReturn(List.of());
         when(progressRepository.findByUserId(USER_ID)).thenReturn(List.of());
 
-        CourseProgressResponse khoa12 = service().overview(USER_ID).get(0);
+        CourseProgressResponse khoa12 = service().overview(HOC_SINH).get(0);
 
         assertThat(khoa12.totalLessons()).isZero();
         assertThat(khoa12.completedLessons()).isZero();
@@ -316,13 +312,13 @@ class ProgressServiceTest {
 
     @Test
     void tienDoMoiKhoaChiTinhTrenBaiCuaKhoaDoVaGiuThuTuKhoa() {
-        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(
+        when(courseRepository.findAccessible(USER_ID, false)).thenReturn(List.of(
                 khoa(1, "tin-hoc-10", "Tin học 10"), khoa(2, "tin-hoc-11", "Tin học 11")));
-        when(lessonRepository.findByStatusOrderBySortOrderAscIdAsc(LessonStatus.PUBLISHED)).thenReturn(List.of(
+        when(lessonRepository.findReadablePublished(USER_ID, false)).thenReturn(List.of(
                 bai(1, 1, "a", "A"), bai(2, 1, "b", "B"), bai(3, 2, "c", "C")));
         when(progressRepository.findByUserId(USER_ID)).thenReturn(List.of(daXong(3, TRUOC_DO)));
 
-        List<CourseProgressResponse> ketQua = service().overview(USER_ID);
+        List<CourseProgressResponse> ketQua = service().overview(HOC_SINH);
 
         assertThat(ketQua).extracting(CourseProgressResponse::courseSlug).containsExactly("tin-hoc-10", "tin-hoc-11");
         assertThat(ketQua.get(0).completedLessons()).isZero();
@@ -332,24 +328,24 @@ class ProgressServiceTest {
     }
 
     @Test
-    void chiDocTienDoCuaNguoiDungDuocTruyenVaChiHoiBaiDaDang() {
-        when(courseRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of());
-        when(lessonRepository.findByStatusOrderBySortOrderAscIdAsc(LessonStatus.PUBLISHED)).thenReturn(List.of());
+    void chiDocTienDoCuaNguoiDungDuocTruyenVaChiHoiBaiNguoiDoDuocDoc() {
+        when(courseRepository.findAccessible(USER_ID, false)).thenReturn(List.of());
+        when(lessonRepository.findReadablePublished(USER_ID, false)).thenReturn(List.of());
         when(progressRepository.findByUserId(USER_ID)).thenReturn(List.of());
 
-        service().overview(USER_ID);
+        service().overview(HOC_SINH);
 
         verify(progressRepository).findByUserId(USER_ID);
-        verify(lessonRepository).findByStatusOrderBySortOrderAscIdAsc(LessonStatus.PUBLISHED);
+        verify(lessonRepository).findReadablePublished(USER_ID, false);
     }
 
     // ---- Học lại khóa ----
 
     @Test
     void hocLaiKhoaKhongTonTaiNemCourseNotFoundVaKhongXoaGi() {
-        when(courseRepository.existsById(COURSE_ID)).thenReturn(false);
+        when(courseRepository.countAccessible(COURSE_ID, USER_ID, false)).thenReturn(0L);
 
-        assertThatThrownBy(() -> service().restartCourse(USER_ID, COURSE_ID))
+        assertThatThrownBy(() -> service().restartCourse(HOC_SINH, COURSE_ID))
                 .isInstanceOf(CourseNotFoundException.class);
 
         verify(progressRepository, never()).deleteByUserIdAndCourseId(anyLong(), anyLong());
@@ -357,9 +353,9 @@ class ProgressServiceTest {
 
     @Test
     void hocLaiKhoaXoaTienDoCuaDungNguoiDungTrongDungKhoa() {
-        when(courseRepository.existsById(COURSE_ID)).thenReturn(true);
+        when(courseRepository.countAccessible(COURSE_ID, USER_ID, false)).thenReturn(1L);
 
-        service().restartCourse(USER_ID, COURSE_ID);
+        service().restartCourse(HOC_SINH, COURSE_ID);
 
         verify(progressRepository).deleteByUserIdAndCourseId(USER_ID, COURSE_ID);
     }

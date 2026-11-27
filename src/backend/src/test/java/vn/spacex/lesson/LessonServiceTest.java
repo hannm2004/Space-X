@@ -1,5 +1,7 @@
 package vn.spacex.lesson;
 
+import static org.mockito.ArgumentMatchers.eq;
+import vn.spacex.access.Reader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -42,6 +44,8 @@ class LessonServiceTest {
     @InjectMocks
     private LessonService lessonService;
 
+    private static final Reader HOC_SINH = new Reader(7L, false);
+
     private static final ContentRef KHOA = new ContentRef("tin-hoc-10", "Tin học 10");
 
     private static Lesson baiTrongDanhSach(long id, String slug, String tieuDe) {
@@ -68,7 +72,7 @@ class LessonServiceTest {
         when(bai.getTitle()).thenReturn("Bài giữa");
         when(bai.getContentMd()).thenReturn("x");
         when(bai.getCourseId()).thenReturn(5L);
-        when(lessonContentRepository.findBySlugAndStatus("bai-giua", LessonStatus.PUBLISHED))
+        when(lessonContentRepository.findReadableBySlug("bai-giua", 7L, false))
                 .thenReturn(Optional.of(bai));
         dungKhoa5();
         when(lessonRepository.findByCourseIdAndStatusOrderBySortOrderAscIdAsc(5L, LessonStatus.PUBLISHED))
@@ -76,7 +80,7 @@ class LessonServiceTest {
     }
 
     @Test
-    void baiDaDangTraVeDayDuTruongVaChiHoiBaiPublished() {
+    void baiDuocDocTraVeDayDuTruongVaHoiDungQuyenCuaNguoiDoc() {
         LessonContent bai = mock(LessonContent.class);
         when(bai.getId()).thenReturn(11L);
         when(bai.getSlug()).thenReturn("may-tinh-la-gi");
@@ -84,19 +88,19 @@ class LessonServiceTest {
         when(bai.getSummary()).thenReturn("Tóm tắt");
         when(bai.getContentMd()).thenReturn("# Nội dung");
         when(bai.getCourseId()).thenReturn(5L);
-        when(lessonContentRepository.findBySlugAndStatus("may-tinh-la-gi", LessonStatus.PUBLISHED))
+        when(lessonContentRepository.findReadableBySlug("may-tinh-la-gi", 7L, false))
                 .thenReturn(Optional.of(bai));
         dungKhoa5();
         Lesson baiDangDoc = baiTrongDanhSach(11L, "may-tinh-la-gi", "Máy tính là gì");
         when(lessonRepository.findByCourseIdAndStatusOrderBySortOrderAscIdAsc(5L, LessonStatus.PUBLISHED))
                 .thenReturn(List.of(baiDangDoc));
 
-        LessonDetailResponse ketQua = lessonService.getPublishedLesson("may-tinh-la-gi");
+        LessonDetailResponse ketQua = lessonService.getLesson("may-tinh-la-gi", HOC_SINH);
 
         assertThat(ketQua).isEqualTo(new LessonDetailResponse(11L, "may-tinh-la-gi", "Máy tính là gì", "Tóm tắt",
                 "# Nội dung", null, KHOA, null, null));
-        // Trạng thái PUBLISHED nằm ngay trong truy vấn, nên bài nháp không bao giờ được nạp lên.
-        verify(lessonContentRepository).findBySlugAndStatus("may-tinh-la-gi", LessonStatus.PUBLISHED);
+        // Quyền đọc nằm ngay trong truy vấn, nên bài không được xem không bao giờ được nạp lên.
+        verify(lessonContentRepository).findReadableBySlug("may-tinh-la-gi", 7L, false);
     }
 
     @Test
@@ -106,7 +110,7 @@ class LessonServiceTest {
                 baiTrongDanhSach(12L, "bai-giua", "Bài giữa"),
                 baiTrongDanhSach(13L, "bai-cuoi", "Bài cuối"));
 
-        LessonDetailResponse ketQua = lessonService.getPublishedLesson("bai-giua");
+        LessonDetailResponse ketQua = lessonService.getLesson("bai-giua", HOC_SINH);
 
         assertThat(ketQua.course()).isEqualTo(KHOA);
         assertThat(ketQua.previous()).isEqualTo(new ContentRef("bai-dau", "Bài đầu"));
@@ -119,7 +123,7 @@ class LessonServiceTest {
                 baiTrongDanhSach(12L, "bai-giua", "Bài giữa"),
                 baiTrongDanhSach(13L, "bai-cuoi", "Bài cuối"));
 
-        LessonDetailResponse ketQua = lessonService.getPublishedLesson("bai-giua");
+        LessonDetailResponse ketQua = lessonService.getLesson("bai-giua", HOC_SINH);
 
         assertThat(ketQua.previous()).isNull();
         assertThat(ketQua.next()).isEqualTo(new ContentRef("bai-cuoi", "Bài cuối"));
@@ -131,7 +135,7 @@ class LessonServiceTest {
                 baiTrongDanhSach(11L, "bai-dau", "Bài đầu"),
                 baiTrongDanhSach(12L, "bai-giua", "Bài giữa"));
 
-        LessonDetailResponse ketQua = lessonService.getPublishedLesson("bai-giua");
+        LessonDetailResponse ketQua = lessonService.getLesson("bai-giua", HOC_SINH);
 
         assertThat(ketQua.previous()).isEqualTo(new ContentRef("bai-dau", "Bài đầu"));
         assertThat(ketQua.next()).isNull();
@@ -143,18 +147,28 @@ class LessonServiceTest {
     void baiTruocVaBaiSauChiLayTuBaiDaDangCuaDungKhoaDo() {
         dungBaiThuocKhoa5(baiTrongDanhSach(12L, "bai-giua", "Bài giữa"));
 
-        lessonService.getPublishedLesson("bai-giua");
+        lessonService.getLesson("bai-giua", HOC_SINH);
 
         verify(lessonRepository).findByCourseIdAndStatusOrderBySortOrderAscIdAsc(5L, LessonStatus.PUBLISHED);
     }
 
     @Test
     void khongCoBaiDaDangVoiSlugNayNemLessonNotFound() {
-        when(lessonContentRepository.findBySlugAndStatus("bai-nhap", LessonStatus.PUBLISHED))
+        when(lessonContentRepository.findReadableBySlug("bai-nhap", 7L, false))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> lessonService.getPublishedLesson("bai-nhap"))
+        assertThatThrownBy(() -> lessonService.getLesson("bai-nhap", HOC_SINH))
                 .isInstanceOf(LessonNotFoundException.class);
+    }
+
+    @Test
+    void adminDocBaiThiTruyVanNhanCoAdmin() {
+        when(lessonContentRepository.findReadableBySlug("bai-nhap", 1L, true)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> lessonService.getLesson("bai-nhap", new Reader(1L, true)))
+                .isInstanceOf(LessonNotFoundException.class);
+
+        verify(lessonContentRepository).findReadableBySlug("bai-nhap", 1L, true);
     }
 
     @Test
@@ -165,9 +179,9 @@ class LessonServiceTest {
         when(bai.getTitle()).thenReturn("Thông tin và dữ liệu");
         when(bai.getSummary()).thenReturn("Tóm tắt");
         Pageable trang = PageRequest.of(1, 5);
-        when(lessonRepository.searchPublished("thông tin", trang)).thenReturn(new PageImpl<>(List.of(bai), trang, 6));
+        when(lessonRepository.searchReadable("thông tin", 7L, false, trang)).thenReturn(new PageImpl<>(List.of(bai), trang, 6));
 
-        PageResponse<LessonSummaryResponse> ketQua = lessonService.search("  thông tin  ", 1, 5);
+        PageResponse<LessonSummaryResponse> ketQua = lessonService.search("  thông tin  ", HOC_SINH, 1, 5);
 
         assertThat(ketQua).isEqualTo(new PageResponse<>(
                 List.of(new LessonSummaryResponse(11L, "thong-tin-va-du-lieu", "Thông tin và dữ liệu", "Tóm tắt")),
@@ -177,13 +191,13 @@ class LessonServiceTest {
     // Thứ tự theo độ liên quan nằm trong câu truy vấn; nếu truyền thêm Sort thì Spring sẽ ghép vào sau và làm sai.
     @Test
     void timKiemKhongTruyenSapXepVaoTruyVan() {
-        when(lessonRepository.searchPublished(anyString(), any(Pageable.class)))
+        when(lessonRepository.searchReadable(anyString(), eq(7L), eq(false), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
-        lessonService.search("thuật toán", 0, 20);
+        lessonService.search("thuật toán", HOC_SINH, 0, 20);
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-        verify(lessonRepository).searchPublished(anyString(), captor.capture());
+        verify(lessonRepository).searchReadable(anyString(), eq(7L), eq(false), captor.capture());
         assertThat(captor.getValue().getSort().isUnsorted()).isTrue();
     }
 
@@ -198,10 +212,10 @@ class LessonServiceTest {
         when(khong.getSlug()).thenReturn("b");
         when(khong.getTitle()).thenReturn("B");
         Pageable trang = PageRequest.of(0, 20);
-        when(lessonRepository.searchPublished("a", trang)).thenReturn(new PageImpl<>(List.of(co, khong), trang, 2));
+        when(lessonRepository.searchReadable("a", 7L, false, trang)).thenReturn(new PageImpl<>(List.of(co, khong), trang, 2));
         when(coverImageLookup.urlsByLessonId(List.of(11L, 12L))).thenReturn(java.util.Map.of(11L, "/api/images/5"));
 
-        PageResponse<LessonSummaryResponse> ketQua = lessonService.search("a", 0, 20);
+        PageResponse<LessonSummaryResponse> ketQua = lessonService.search("a", HOC_SINH, 0, 20);
 
         assertThat(ketQua.items()).extracting(LessonSummaryResponse::coverImageUrl)
                 .containsExactly("/api/images/5", null);
@@ -212,6 +226,6 @@ class LessonServiceTest {
         dungBaiThuocKhoa5(baiTrongDanhSach(12L, "bai-giua", "Bài giữa"));
         when(coverImageLookup.urlsByLessonId(List.of(12L))).thenReturn(java.util.Map.of(12L, "/api/images/5"));
 
-        assertThat(lessonService.getPublishedLesson("bai-giua").coverImageUrl()).isEqualTo("/api/images/5");
+        assertThat(lessonService.getLesson("bai-giua", HOC_SINH).coverImageUrl()).isEqualTo("/api/images/5");
     }
 }

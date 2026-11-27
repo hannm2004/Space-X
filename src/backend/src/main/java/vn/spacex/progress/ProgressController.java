@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import vn.spacex.access.Reader;
 import vn.spacex.auth.AppUserDetails;
 
 import java.util.List;
@@ -29,19 +30,19 @@ public class ProgressController {
 
     @GetMapping
     List<CourseProgressResponse> overview(@AuthenticationPrincipal AppUserDetails me) {
-        return progressService.overview(me.id());
+        return progressService.overview(Reader.of(me));
     }
 
     // PUT riêng thay vì ghi ngầm trong GET bài học: GET phải an toàn (docs/API.md).
     @PutMapping("/lessons/{lessonId}")
     LessonProgressResponse record(@AuthenticationPrincipal AppUserDetails me, @PathVariable Long lessonId,
                                   @Valid @RequestBody ProgressRequest body) {
-        return progressService.record(me.id(), lessonId, body.status());
+        return progressService.record(Reader.of(me), lessonId, body.status());
     }
 
     @DeleteMapping("/courses/{courseId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void restartCourse(@AuthenticationPrincipal AppUserDetails me, @PathVariable Long courseId) {
-        progressService.restartCourse(me.id(), courseId);
+        progressService.restartCourse(Reader.of(me), courseId);
     }
 }

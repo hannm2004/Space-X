@@ -72,15 +72,63 @@ class AdminCourseServiceTest {
     }
 
     private static AdminCourseRequest request(String slug) {
-        return new AdminCourseRequest(slug, "Tin học 10", "Chương trình lớp 10", 1, null, null, null, null, null);
+        return new AdminCourseRequest(slug, "Tin học 10", "Chương trình lớp 10", 1, null, null, null, null, null, null);
     }
 
     private static AdminCourseRequest banKhoa(CourseStatus status, Long tuitionVnd) {
-        return new AdminCourseRequest("tin-hoc-10", "Tin học 10", null, 1, status, tuitionVnd, null, null, null);
+        return new AdminCourseRequest("tin-hoc-10", "Tin học 10", null, 1, status, tuitionVnd, null, null, null, null);
     }
 
     private static AdminCourseRequest phanLoai(Long categoryId, CourseLevel level, Integer totalHours) {
-        return new AdminCourseRequest("tin-hoc-10", "Tin học 10", null, 1, null, null, categoryId, level, totalHours);
+        return new AdminCourseRequest("tin-hoc-10", "Tin học 10", null, 1, null, null, categoryId, level, totalHours, null);
+    }
+
+    private static AdminCourseRequest loai(CourseAccessType accessType) {
+        return new AdminCourseRequest("tin-hoc-10", "Tin học 10", null, 1, null, null, null, null, null, accessType);
+    }
+
+    @Test
+    void khoaMoiKhongGuiLoaiThiLaTraPhiDuHocPhiBangKhong() {
+        coNhomMacDinh();
+        when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        AdminCourseResponse response = service.create(loai(null));
+
+        assertThat(response.accessType()).isEqualTo(CourseAccessType.PAID);
+        assertThat(response.tuitionVnd()).isZero();
+    }
+
+    @Test
+    void khoaMoiDatMienPhiThiLaMienPhi() {
+        coNhomMacDinh();
+        when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThat(service.create(loai(CourseAccessType.FREE)).accessType()).isEqualTo(CourseAccessType.FREE);
+    }
+
+    @Test
+    void suaKhoaBoTrongLoaiThiGiuNguyenConGuiLoaiThiDoi() {
+        Course khoa = Course.create("tin-hoc-10", "Tin học 10", null, 1);
+        khoa.changeAccessType(CourseAccessType.FREE);
+        when(courseRepository.findById(5L)).thenReturn(Optional.of(khoa));
+        when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.update(5L, loai(null));
+        assertThat(khoa.getAccessType()).isEqualTo(CourseAccessType.FREE);
+
+        service.update(5L, loai(CourseAccessType.PAID));
+        assertThat(khoa.getAccessType()).isEqualTo(CourseAccessType.PAID);
+    }
+
+    @Test
+    void xoaKhoaDaCoNguoiGhiDanhBiTuChoiVaKhongXoa() {
+        Course khoa = Course.create("tin-hoc-10", "Tin học 10", null, 1);
+        when(courseRepository.findById(5L)).thenReturn(Optional.of(khoa));
+        when(courseRepository.countEnrollments(5L)).thenReturn(1L);
+
+        assertThatThrownBy(() -> service.delete(5L)).isInstanceOf(CourseHasEnrollmentsException.class);
+
+        verify(courseRepository, never()).delete(any(Course.class));
     }
 
     @Test
@@ -280,7 +328,7 @@ class AdminCourseServiceTest {
         when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AdminCourseResponse response = service.update(5L,
-                new AdminCourseRequest("tin-hoc-10-moi", "Tin học 10 mới", "Mô tả mới", 3, null, null, null, null, null));
+                new AdminCourseRequest("tin-hoc-10-moi", "Tin học 10 mới", "Mô tả mới", 3, null, null, null, null, null, null));
 
         assertThat(khoa.getSlug()).isEqualTo("tin-hoc-10-moi");
         assertThat(khoa.getTitle()).isEqualTo("Tin học 10 mới");

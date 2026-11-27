@@ -42,7 +42,10 @@ public record AdminCourseRequest(
 
         @PositiveOrZero(message = "Số giờ học không được âm")
         @Max(value = 10_000, message = "Số giờ học tối đa 10000")
-        Integer totalHours) {
+        Integer totalHours,
+
+        // Bỏ trống thì giữ giá trị cũ; tạo mới là trả phí (D40).
+        CourseAccessType accessType) {
 
     // Chuẩn hóa trước khi kiểm tra. Mô tả chỉ có khoảng trắng được lưu thành NULL như khi để trống.
     public AdminCourseRequest {

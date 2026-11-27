@@ -3,9 +3,9 @@ package vn.spacex.image;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.spacex.access.Reader;
 import vn.spacex.lesson.LessonNotFoundException;
 import vn.spacex.lesson.LessonRepository;
-import vn.spacex.lesson.LessonStatus;
 
 import java.util.List;
 
@@ -81,23 +81,17 @@ public class ImageService {
         imageRepository.updateCover(id, false);
     }
 
-    // Học sinh chỉ xem được ảnh của bài đã đăng; Admin xem được cả ảnh của bài nháp. Ảnh không tồn tại và ảnh của bài
-    // nháp trả cùng một lỗi nên người ngoài không dò được id nào thuộc bài nháp. Dữ liệu ảnh chỉ được tải sau khi qua kiểm quyền.
+    // Ảnh trong bài theo đúng quyền đọc của bài chứa nó (AccessRules). Ảnh không tồn tại và ảnh không được xem trả
+    // cùng một lỗi nên không dò được id nào thuộc bài nháp hay khóa trả phí. Dữ liệu ảnh chỉ được tải sau khi qua kiểm quyền.
     @Transactional(readOnly = true)
-    public StoredImage load(Long id, boolean canSeeDrafts) {
+    public StoredImage load(Long id, Reader reader) {
         LessonImageInfo info = imageRepository.findById(id, LessonImageInfo.class)
                 .orElseThrow(ImageNotFoundException::new);
-        if (!canSeeDrafts && !isPublished(info.getLessonId())) {
+        if (lessonRepository.countReadable(info.getLessonId(), reader.userId(), reader.admin()) == 0) {
             throw new ImageNotFoundException();
         }
         LessonImage image = imageRepository.findById(id).orElseThrow(ImageNotFoundException::new);
         return new StoredImage(image.getContentType(), image.getData());
-    }
-
-    private boolean isPublished(Long lessonId) {
-        return lessonRepository.findById(lessonId)
-                .map(lesson -> lesson.getStatus() == LessonStatus.PUBLISHED)
-                .orElse(false);
     }
 
     static String urlOf(Long id) {

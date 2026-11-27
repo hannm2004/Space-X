@@ -19,6 +19,7 @@ import vn.spacex.auth.EmailAlreadyExistsException;
 import vn.spacex.common.security.SecurityConfig;
 import vn.spacex.course.CategoryNotFoundException;
 import vn.spacex.course.InvalidCourseFilterException;
+import vn.spacex.course.CourseHasEnrollmentsException;
 import vn.spacex.course.CourseHasLessonsException;
 import vn.spacex.course.CourseNotFoundException;
 import vn.spacex.course.CourseSlugAlreadyExistsException;
@@ -73,6 +74,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(CourseHasLessonsException.class)
     ProblemDetail xuLyKhoaHocConBai() {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "Không xóa được khóa học còn bài học");
+    }
+
+    @ExceptionHandler(CourseHasEnrollmentsException.class)
+    ProblemDetail xuLyKhoaHocConHocVien() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
+                "Không xóa được khóa học đã có học viên ghi danh");
     }
 
     @ExceptionHandler(LessonSlugAlreadyExistsException.class)

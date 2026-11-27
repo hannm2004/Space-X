@@ -20,15 +20,15 @@ class AdminCourseRequestValidationTest {
     }
 
     private static AdminCourseRequest request(String slug, String title, String description, Integer sortOrder) {
-        return new AdminCourseRequest(slug, title, description, sortOrder, null, null, null, null, null);
+        return new AdminCourseRequest(slug, title, description, sortOrder, null, null, null, null, null, null);
     }
 
     private static AdminCourseRequest coHocPhi(Long tuitionVnd) {
-        return new AdminCourseRequest("a", "x", null, 0, CourseStatus.PUBLISHED, tuitionVnd, null, null, null);
+        return new AdminCourseRequest("a", "x", null, 0, CourseStatus.PUBLISHED, tuitionVnd, null, null, null, null);
     }
 
     private static AdminCourseRequest coSoGio(Integer totalHours) {
-        return new AdminCourseRequest("a", "x", null, 0, null, null, 1L, CourseLevel.EXPERT, totalHours);
+        return new AdminCourseRequest("a", "x", null, 0, null, null, 1L, CourseLevel.EXPERT, totalHours, null);
     }
 
     @Test

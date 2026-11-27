@@ -77,6 +77,9 @@ public class AdminCourseService {
         if (lessonRepository.existsByCourseId(id)) {
             throw new CourseHasLessonsException();
         }
+        if (courseRepository.countEnrollments(id) > 0) {
+            throw new CourseHasEnrollmentsException();
+        }
         courseRepository.delete(course);
         try {
             // flush để khóa ngoại RESTRICT báo lỗi ngay tại đây (không đợi đến lúc commit).
@@ -113,6 +116,9 @@ public class AdminCourseService {
         }
         if (request.tuitionVnd() != null) {
             course.changeTuition(request.tuitionVnd());
+        }
+        if (request.accessType() != null) {
+            course.changeAccessType(request.accessType());
         }
     }
 

@@ -1,5 +1,6 @@
 package vn.spacex.seed;
 
+import vn.spacex.course.CourseAccessType;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -57,10 +58,12 @@ class SeedDataTest {
     }
 
     private static AdminCourseRequest toCourse(Map<String, Object> m) {
-        // Script chỉ gửi thêm trạng thái; học phí, nhóm, trình độ và số giờ để máy chủ đặt mặc định.
+        // Script gửi thêm trạng thái và loại khóa; học phí, nhóm, trình độ và số giờ để máy chủ đặt mặc định.
         String status = str(m, "status");
+        String accessType = str(m, "accessType");
         return new AdminCourseRequest(str(m, "slug"), str(m, "title"), str(m, "description"), num(m, "sortOrder"),
-                status == null ? null : CourseStatus.valueOf(status), null, null, null, null);
+                status == null ? null : CourseStatus.valueOf(status), null, null, null, null,
+                accessType == null ? null : CourseAccessType.valueOf(accessType));
     }
 
     private static String content(Map<String, Object> lesson) throws IOException {
@@ -77,6 +80,13 @@ class SeedDataTest {
     @Test
     void moiKhoaMauDeuDuocDang() throws IOException {
         assertThat(readList("courses.json")).allSatisfy(c -> assertThat(str(c, "status")).isEqualTo("PUBLISHED"));
+    }
+
+    // Khóa nạp mới mặc định là trả phí; 31 bài Tin học phải đọc được miễn phí (D40).
+    @Test
+    void moiKhoaMauDeuMienPhi() throws IOException {
+        assertThat(readList("courses.json"))
+                .allSatisfy(c -> assertThat(str(c, "accessType")).isEqualTo("FREE"));
     }
 
     @Test

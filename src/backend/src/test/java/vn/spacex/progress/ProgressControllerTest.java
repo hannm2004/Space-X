@@ -1,5 +1,6 @@
 package vn.spacex.progress;
 
+import vn.spacex.access.Reader;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -39,6 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ProgressControllerTest {
 
     private static final long USER_ID = 7L;
+    private static final Reader NGUOI_DOC = new Reader(USER_ID, false);
 
     @Autowired
     private MockMvc mockMvc;
@@ -80,7 +82,7 @@ class ProgressControllerTest {
 
     @Test
     void xemTienDoTraVeMangTungKhoaVoiDayDuBayTruongVaHocTiep() throws Exception {
-        when(progressService.overview(USER_ID)).thenReturn(List.of(
+        when(progressService.overview(NGUOI_DOC)).thenReturn(List.of(
                 new CourseProgressResponse(3L, "tin-hoc-10", "Tin học 10", 1, 3, 33,
                         new ContinueLessonResponse(12L, "mang-may-tinh", "Mạng máy tính")),
                 new CourseProgressResponse(4L, "tin-hoc-11", "Tin học 11", 0, 0, 0, null)));
@@ -103,20 +105,20 @@ class ProgressControllerTest {
     // Người dùng hiện tại luôn lấy từ session (CLAUDE.md): tham số userId gửi lên bị bỏ qua.
     @Test
     void xemTienDoChiDungIdTuSessionKhongTinUserIdGuiLen() throws Exception {
-        when(progressService.overview(USER_ID)).thenReturn(List.of());
+        when(progressService.overview(NGUOI_DOC)).thenReturn(List.of());
 
         mockMvc.perform(get("/api/me/progress").param("userId", "999").with(user(nguoiDung())))
                 .andExpect(status().isOk());
 
-        verify(progressService).overview(USER_ID);
-        verify(progressService, never()).overview(999L);
+        verify(progressService).overview(NGUOI_DOC);
+        verify(progressService, never()).overview(new Reader(999L, false));
     }
 
     // ---- PUT /api/me/progress/lessons/{lessonId} ----
 
     @Test
     void ghiHoanThanhTraVeDungHaiTruongVaDungIdTuSession() throws Exception {
-        when(progressService.record(USER_ID, 11L, ProgressStatus.COMPLETED))
+        when(progressService.record(NGUOI_DOC, 11L, ProgressStatus.COMPLETED))
                 .thenReturn(new LessonProgressResponse(11L, ProgressStatus.COMPLETED));
 
         mockMvc.perform(put("/api/me/progress/lessons/11").with(user(nguoiDung())).with(csrf())
@@ -126,12 +128,12 @@ class ProgressControllerTest {
                 .andExpect(jsonPath("$.status").value("COMPLETED"))
                 .andExpect(jsonPath("$.length()").value(2));
 
-        verify(progressService).record(USER_ID, 11L, ProgressStatus.COMPLETED);
+        verify(progressService).record(NGUOI_DOC, 11L, ProgressStatus.COMPLETED);
     }
 
     @Test
     void ghiTienDoBoQuaUserIdVaCacTruongLaTrongThan() throws Exception {
-        when(progressService.record(USER_ID, 11L, ProgressStatus.IN_PROGRESS))
+        when(progressService.record(NGUOI_DOC, 11L, ProgressStatus.IN_PROGRESS))
                 .thenReturn(new LessonProgressResponse(11L, ProgressStatus.IN_PROGRESS));
 
         mockMvc.perform(put("/api/me/progress/lessons/11").with(user(nguoiDung())).with(csrf())
@@ -139,8 +141,8 @@ class ProgressControllerTest {
                         .content("{\"status\":\"IN_PROGRESS\",\"userId\":999,\"completedAt\":\"2020-01-01T00:00:00\"}"))
                 .andExpect(status().isOk());
 
-        verify(progressService).record(USER_ID, 11L, ProgressStatus.IN_PROGRESS);
-        verify(progressService, never()).record(eq(999L), anyLong(), any());
+        verify(progressService).record(NGUOI_DOC, 11L, ProgressStatus.IN_PROGRESS);
+        verify(progressService, never()).record(eq(new Reader(999L, false)), anyLong(), any());
     }
 
     @Test
@@ -166,7 +168,7 @@ class ProgressControllerTest {
 
     @Test
     void baiKhongTonTaiHoacChuaDangThi404() throws Exception {
-        when(progressService.record(USER_ID, 99L, ProgressStatus.COMPLETED)).thenThrow(new LessonNotFoundException());
+        when(progressService.record(NGUOI_DOC, 99L, ProgressStatus.COMPLETED)).thenThrow(new LessonNotFoundException());
 
         mockMvc.perform(put("/api/me/progress/lessons/99").with(user(nguoiDung())).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"COMPLETED\"}"))
@@ -181,12 +183,12 @@ class ProgressControllerTest {
                 .andExpect(status().isNoContent())
                 .andExpect(content().string(""));
 
-        verify(progressService).restartCourse(USER_ID, 3L);
+        verify(progressService).restartCourse(NGUOI_DOC, 3L);
     }
 
     @Test
     void hocLaiKhoaKhongTonTaiThi404() throws Exception {
-        doThrow(new CourseNotFoundException()).when(progressService).restartCourse(USER_ID, 99L);
+        doThrow(new CourseNotFoundException()).when(progressService).restartCourse(NGUOI_DOC, 99L);
 
         mockMvc.perform(delete("/api/me/progress/courses/99").with(user(nguoiDung())).with(csrf()))
                 .andExpect(status().isNotFound());
