@@ -1,6 +1,6 @@
 # Danh sách API Space-X
 
-Trạng thái (cập nhật 2026-11-27): đã có mã nguồn và test (`Tested`) cho `GET /api/health`; nhóm **Tài khoản** (đăng ký, đăng nhập, đăng xuất, đăng nhập Google, `/api/me`, đổi mật khẩu); **Khóa học và bài học** (`/api/categories`, `/api/courses` có bộ lọc, `/api/courses/{slug}/lessons`, ảnh bìa khóa: công khai; `/api/lessons/{slug}`, tìm bài `/api/lessons?q=` và ảnh bài cần đăng nhập); **Tiến độ học tập** (`/api/me/progress`, ba endpoint); **Admin**: tổng quan (`/api/admin/dashboard`), khóa học (`GET/POST/PUT/DELETE /api/admin/courses`) và ảnh bìa khóa, bài học (`/api/admin/lessons`), ảnh bài học, người dùng (`/api/admin/users`). Còn `Planned`, chưa có mã: dựng lại chỉ mục tri thức, chatbot (`/api/chat`), Agent (`/api/agent/ask`), các endpoint ở mục "Bản nháp 2.0", và API ghi danh, đơn hàng, thanh toán của mô hình tự học trực tuyến (chưa thiết kế). Quyền đọc theo khóa miễn phí hoặc trả phí cũng **chưa cài**: hiện người đã đăng nhập đọc được mọi bài đã đăng. Kiểm trên production: các nhóm của Tuần 3–5 bằng script gọi API thật ngày 2026-11-13 (xem `docs/TESTING.md`, mục "Kiểm luồng trên production"); bộ lọc khóa học được gọi thử ngày 2026-11-27. Khi làm, mỗi endpoint chuyển nhãn `Planned` → `Implemented` → `Tested`.
+Trạng thái (cập nhật 2026-11-27): đã có mã nguồn và test (`Tested`) cho `GET /api/health`; nhóm **Tài khoản** (đăng ký, đăng nhập, đăng xuất, đăng nhập Google, `/api/me`, đổi mật khẩu); **Khóa học và bài học** (`/api/categories`, `/api/courses` có bộ lọc, `/api/courses/{slug}/lessons`, ảnh bìa khóa: công khai; `/api/lessons/{slug}`, tìm bài `/api/lessons?q=` và ảnh bài cần đăng nhập); **Tiến độ học tập** (`/api/me/progress`, ba endpoint); **Admin**: tổng quan (`/api/admin/dashboard`), khóa học (`GET/POST/PUT/DELETE /api/admin/courses`) và ảnh bìa khóa, bài học (`/api/admin/lessons`), ảnh bài học, người dùng (`/api/admin/users`). Còn `Planned`, chưa có mã: dựng lại chỉ mục tri thức, chatbot (`/api/chat`), Agent (`/api/agent/ask`), các endpoint ở mục "Bản nháp 2.0", và API ghi danh, đơn hàng, thanh toán của mô hình tự học trực tuyến (chưa thiết kế). Quyền đọc bài theo loại khóa và ghi danh (mục "Quyền đọc bài") và giới hạn đăng nhập đã `Tested` ngày 2026-11-27, chưa deploy; chưa có API tạo ghi danh. Kiểm trên production: các nhóm của Tuần 3–5 bằng script gọi API thật ngày 2026-11-13 (xem `docs/TESTING.md`, mục "Kiểm luồng trên production"); bộ lọc khóa học được gọi thử ngày 2026-11-27. Khi làm, mỗi endpoint chuyển nhãn `Planned` → `Implemented` → `Tested`.
 
 ## Quy ước chung
 
@@ -28,12 +28,12 @@ Chi tiết kỹ thuật của lỗi 500 (tên exception, stack trace) chỉ ghi 
 | 400 | Dữ liệu không hợp lệ (kèm danh sách trường lỗi) |
 | 401 | Chưa đăng nhập, hoặc đăng nhập thất bại (sai email/mật khẩu, tài khoản bị khóa: cùng một thông báo, D25) |
 | 403 | Không đủ quyền hoặc thiếu CSRF token |
-| 404 | Không tìm thấy (kể cả bài Nháp khi người gọi là Học sinh) |
-| 409 | Xung đột: email/slug đã tồn tại, xóa khóa còn bài, khóa Admin cuối cùng |
+| 404 | Không tìm thấy, hoặc người gọi không được đọc (xem "Quyền đọc bài") |
+| 409 | Xung đột: email/slug đã tồn tại, xóa khóa còn bài hoặc đã có học viên ghi danh, khóa Admin cuối cùng |
 | 405 | Sai method (ví dụ `POST /api/health`) |
 | 413 | Ảnh vượt quá 1 MB |
 | 415 | Loại file ảnh không được hỗ trợ |
-| 429 | Gọi chatbot/Agent quá nhiều |
+| 429 | Đăng nhập sai quá nhiều lần (kèm `Retry-After`); gọi chatbot/Agent quá nhiều (`Planned`) |
 | 500 | Lỗi không lường trước ở máy chủ (không lộ chi tiết) |
 | 502 / 504 | Nhà cung cấp AI lỗi / quá thời gian |
 
@@ -102,7 +102,9 @@ Chi tiết kỹ thuật của lỗi 500 (tên exception, stack trace) chỉ ghi 
 { "displayName": "Nguyễn Văn A", "email": "a@example.com", "role": "LEARNER" }
 ```
 
-- Kết quả: `200` thành công; `400` thiếu trường; `401` đăng nhập thất bại (các trường hợp trên); `403` thiếu CSRF token.
+- Kết quả: `200` thành công; `400` thiếu trường; `401` đăng nhập thất bại (các trường hợp trên); `403` thiếu CSRF token; `429` vượt giới hạn.
+- **Giới hạn đăng nhập sai (D40):** trong một cửa sổ trượt 15 phút, tối đa 5 lần sai cho mỗi email (đã chuẩn hóa) và 20 lần sai cho mỗi địa chỉ IP. Vượt → `429`, header `Retry-After` (giây), `detail` = "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau.", **kể cả khi lần đó gõ đúng mật khẩu**. Email có thật và email không tồn tại bị đối xử như nhau. Đăng nhập đúng thì xóa số lần sai của email đó; lỗi máy chủ không bị tính. Ba con số đổi được bằng `LOGIN_MAX_FAILURES_PER_EMAIL`, `LOGIN_MAX_FAILURES_PER_IP`, `LOGIN_FAILURE_WINDOW`.
+- **Giới hạn đã biết:** bộ đếm ở trong bộ nhớ nên khởi động lại thì đếm lại từ đầu; địa chỉ IP lấy từ header `X-Forwarded-For` sau proxy nên người gọi giả được (giới hạn theo email vẫn giữ); người khác có thể cố tình gõ sai để khóa tạm một email trong 15 phút; đăng nhập bằng Google không bị ảnh hưởng.
 
 ### Thông tin cá nhân — `/api/me` (việc 3.7)
 
@@ -123,15 +125,37 @@ Người dùng hiện tại luôn lấy từ session. `userId` gửi lên (đư�
 | GET | `/api/categories` | Công khai | Nhóm chương trình `[{id, slug, name}]`, sắp theo `sort_order` rồi `id` |
 | GET | `/api/courses/{slug}/cover` | Công khai | Ảnh bìa của khóa (D35): trả byte ảnh với `Content-Type` là loại do máy chủ nhận diện lúc tải lên (PNG, JPEG hoặc WebP), `Cache-Control: public, max-age=3600`, `X-Content-Type-Options: nosniff`. Công khai vì trang chủ cho khách thấy khóa học; khác ảnh trong bài (`/api/images/{id}`) vẫn cần đăng nhập. Khóa không tồn tại hoặc chưa có ảnh bìa → `404` |
 | GET | `/api/courses/{slug}/lessons` | Công khai | Danh sách bài Đã đăng của khóa, sắp theo `sort_order` rồi `id`. Mỗi bài: `id`, `slug`, `title`, `summary`, `coverImageUrl` (ảnh bìa do Admin chọn, `null` nếu chưa có); không có nội dung và không có trạng thái. Bài Nháp không bao giờ có mặt. Khóa chưa có bài đã đăng → `[]`; khóa không tồn tại hoặc chưa đăng (`DRAFT`, `ARCHIVED`) → `404` |
-| GET | `/api/lessons/{slug}` | Đăng nhập | Nội dung một bài Đã đăng: `id`, `slug`, `title`, `summary`, `contentMd` (Markdown), `coverImageUrl` (`null` nếu chưa có ảnh bìa), `course` (khóa chứa bài: `slug`, `title`), `previous` và `next` (bài Đã đăng liền trước/sau trong cùng khóa theo `sort_order` rồi `id`, mỗi bài chỉ có `slug` và `title`; `null` ở bài đầu/cuối khóa; bài Nháp bị bỏ qua nên không bao giờ là bài trước/sau). Không có trạng thái, mã khóa hay người tạo. Bài không tồn tại và bài Nháp trả **cùng một** `404` (`detail`: "Không tìm thấy bài học") nên không dò được bài nháp. Chưa đăng nhập → `401` |
-| GET | `/api/lessons?q=từ khóa&page=0&size=20` | Đăng nhập | Tìm bài Đã đăng bằng FULLTEXT (D29), phân trang. Xem "Tìm bài" bên dưới |
-| GET | `/api/images/{id}` | Đăng nhập | Ảnh thuộc bài mà người gọi được xem: học sinh chỉ xem ảnh của bài Đã đăng, Admin xem cả ảnh của bài Nháp. Trả chính ảnh (không phải JSON); không có ảnh hoặc ảnh của bài Nháp (với học sinh) → cùng một `404`. Xem "Ảnh bài học" bên dưới |
+| GET | `/api/lessons/{slug}` | Đăng nhập | Nội dung một bài người gọi được đọc (xem "Quyền đọc bài"): `id`, `slug`, `title`, `summary`, `contentMd` (Markdown), `coverImageUrl` (`null` nếu chưa có ảnh bìa), `course` (khóa chứa bài: `slug`, `title`), `previous` và `next` (bài Đã đăng liền trước/sau trong cùng khóa theo `sort_order` rồi `id`, mỗi bài chỉ có `slug` và `title`; `null` ở bài đầu/cuối khóa; bài Nháp bị bỏ qua nên không bao giờ là bài trước/sau). Không có trạng thái, mã khóa hay người tạo. Bài không tồn tại và bài không được đọc trả **cùng một** `404` (`detail`: "Không tìm thấy bài học") nên không dò được bài nháp hay bài của khóa trả phí. Admin đọc được cả bài Nháp (khi đó `previous` và `next` là `null`). Chưa đăng nhập → `401` |
+| GET | `/api/lessons?q=từ khóa&page=0&size=20` | Đăng nhập | Tìm trong các bài người gọi được đọc bằng FULLTEXT (D29), phân trang. Xem "Tìm bài" bên dưới |
+| GET | `/api/images/{id}` | Đăng nhập | Ảnh thuộc bài mà người gọi được đọc. Trả chính ảnh (không phải JSON); không có ảnh hoặc không được đọc → cùng một `404`. Xem "Ảnh bài học" bên dưới |
+
+### Quyền đọc bài (D40)
+
+Một quy tắc duy nhất, lọc ngay trong truy vấn database (`AccessRules`), dùng cho đọc bài, ảnh bài, tìm bài và tiến độ:
+
+```
+Admin
+HOẶC bài PUBLISHED VÀ (
+      (khóa PUBLISHED VÀ khóa FREE)
+   HOẶC (khóa PUBLISHED/ARCHIVED VÀ người gọi có ghi danh ACTIVE ở khóa đó)
+)
+```
+
+| Nội dung | Khách | Đã đăng nhập | Đã ghi danh | Admin |
+|---|---|---|---|---|
+| Danh sách khóa, đề cương khóa đã đăng | Xem được | Xem được | Xem được | Xem được |
+| Bài, ảnh, tiến độ của khóa miễn phí đã đăng | `401` | Xem được | Xem được | Xem được |
+| Bài, ảnh, tiến độ của khóa trả phí đã đăng | `401` | `404` | Xem được | Xem được |
+| Khóa đã lưu trữ (`ARCHIVED`) | `401` | `404` | Xem được | Xem được |
+| Khóa nháp (`DRAFT`) | `401` | `404` | `404` | Xem được |
+
+Loại khóa (`accessType`: `FREE` hoặc `PAID`) do Admin đặt, không suy ra từ học phí. Ghi danh nằm trong bảng `enrollments`; hiện mới có dòng do migration `V7` bù cho người đã có tiến độ, chưa có API tạo ghi danh.
 
 ### Tìm bài — `GET /api/lessons?q=` (D29, việc 5.4)
 
 - `q` bắt buộc, **1–200 ký tự** và không toàn khoảng trắng (thiếu, rỗng hoặc dài hơn → `400`); backend cắt khoảng trắng đầu/cuối. `page` ≥ 0 (mặc định 0), `size` 1–50 (mặc định 20); sai → `400`. Chưa đăng nhập → `401`.
 - Trả `{ items, page, size, totalItems }`; mỗi phần tử `id`, `slug`, `title`, `summary`, `coverImageUrl` (như danh sách bài của khóa, **không** có nội dung hay trạng thái). Không khớp bài nào → `200` với `items: []` và `totalItems: 0` (không phải lỗi). Trang vượt quá số trang → `items: []` nhưng `totalItems` vẫn đúng.
-- Chỉ bài **Đã đăng**; bài Nháp không bao giờ có mặt và không được đếm vào `totalItems`.
+- Chỉ trả bài người gọi được đọc, và `totalItems` cũng chỉ đếm các bài đó. Học viên không bao giờ thấy bài Nháp; Admin thấy cả bài Nháp.
 - Cách tìm: chỉ mục `FULLTEXT` (`V3`) trên `title`, `summary`, `content_md` của MySQL, chế độ `NATURAL LANGUAGE`. Kết quả xếp theo độ liên quan giảm dần, rồi `id`. Từ khóa được bind tham số, không ghép vào câu SQL.
 - Hành vi cần biết (đã kiểm bằng test trên MySQL thật):
   - **Nhiều từ nghĩa là "ít nhất một từ"**, không phải "đủ mọi từ"; bài chứa nhiều từ hơn xếp trước.
@@ -151,7 +175,7 @@ Ghi nhận tiến độ dùng `PUT` riêng, không ghi ngầm trong `GET /api/le
 
 Phản hồi (CP5.5, đã có test):
 
-`GET /api/me/progress` → `200`, mảng mỗi khóa một phần tử, theo `sort_order` của khóa:
+`GET /api/me/progress` → `200`, mảng mỗi khóa **người gọi được học** một phần tử, theo `sort_order` của khóa (Admin thấy mọi khóa):
 
 ```json
 [{ "courseId": 7, "courseSlug": "tin-hoc-10", "courseTitle": "Tin học 10",
@@ -163,11 +187,11 @@ Phản hồi (CP5.5, đã có test):
 - `continueLesson` là bài `IN_PROGRESS` xem gần nhất; không có thì bài đầu tiên (theo `sort_order`) chưa hoàn thành; là `null` khi khóa chưa có bài đã đăng hoặc đã học xong hết.
 
 `PUT /api/me/progress/lessons/{lessonId}` với thân `{ "status": "IN_PROGRESS" | "COMPLETED" }` → `200` `{ "lessonId": 4, "status": "COMPLETED" }`. `status` trả về là trạng thái **thật sau khi ghi**: gửi `IN_PROGRESS` cho bài đã `COMPLETED` vẫn nhận lại `COMPLETED`, nên giao diện dựa vào kết quả này. `completedAt` giữ nguyên từ lần hoàn thành đầu.
-- `404` khi bài không tồn tại **hoặc chưa đăng** (cùng một thông báo, không dò được bài nháp); `400` khi `status` thiếu, sai hoặc viết thường, hoặc `lessonId` không phải số; `401` chưa đăng nhập; `403` thiếu CSRF.
+- `404` khi bài không tồn tại **hoặc người gọi không được đọc** (cùng một thông báo, không dò được bài bị khóa); `400` khi `status` thiếu, sai hoặc viết thường, hoặc `lessonId` không phải số; `401` chưa đăng nhập; `403` thiếu CSRF.
 - Các trường khác trong thân (`userId`, `completedAt`...) bị bỏ qua: người dùng lấy từ session, thời điểm do máy chủ quyết định.
 - Hai yêu cầu đầu tiên đến cùng lúc (bấm đúp, hai tab) đều trả `200` và chỉ có một dòng (ràng buộc `UNIQUE(user_id, lesson_id)`).
 
-`DELETE /api/me/progress/courses/{courseId}` → `204` không có thân; `404` khi khóa không tồn tại. Chỉ xóa dòng của người gọi thuộc các bài trong khóa đó (kể cả bài nháp), không đụng tiến độ của người khác hay của khóa khác; gọi khi chưa học gì vẫn `204`.
+`DELETE /api/me/progress/courses/{courseId}` → `204` không có thân; `404` khi khóa không tồn tại hoặc người gọi không được học khóa đó (nháp, trả phí chưa ghi danh, ghi danh đã bị thu hồi), nên tiến độ cũ được giữ. Chỉ xóa dòng của người gọi thuộc các bài trong khóa đó (kể cả bài nháp), không đụng tiến độ của người khác hay của khóa khác; gọi khi chưa học gì vẫn `204`.
 
 ## Trợ lý AI
 
@@ -213,10 +237,10 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
 | GET | `/api/admin/dashboard` | Số người dùng (tổng, mới trong 7 ngày), số bài theo trạng thái và theo khóa, số học sinh đang học, số lượt hoàn thành bài |
-| GET | `/api/admin/courses` | Danh sách khóa cho trang quản trị, sắp theo `sortOrder` rồi `id`. Mỗi khóa: `id`, `slug`, `title`, `description` (`null` nếu để trống), `sortOrder`, `status`, `tuitionVnd`, `categoryId`, `level`, `totalHours`, `coverImageUrl` (`null` nếu chưa có ảnh bìa). Khác `GET /api/courses` (công khai: chỉ khóa đã đăng, không có `sortOrder`). Chưa có khóa nào → `[]`. Xem "Khóa học (Admin)" bên dưới |
+| GET | `/api/admin/courses` | Danh sách khóa cho trang quản trị, sắp theo `sortOrder` rồi `id`. Mỗi khóa: `id`, `slug`, `title`, `description` (`null` nếu để trống), `sortOrder`, `status`, `tuitionVnd`, `categoryId`, `level`, `totalHours`, `accessType`, `coverImageUrl` (`null` nếu chưa có ảnh bìa). Khác `GET /api/courses` (công khai: chỉ khóa đã đăng, không có `sortOrder`). Chưa có khóa nào → `[]`. Xem "Khóa học (Admin)" bên dưới |
 | POST | `/api/admin/courses` | Tạo khóa. `201` kèm khóa vừa tạo; `400` dữ liệu sai (kèm `errors`); `409` slug trùng. Xem "Khóa học (Admin)" bên dưới |
 | PUT | `/api/admin/courses/{id}` | Sửa khóa. `200`; `400`; `404` không có khóa; `409` slug trùng với khóa khác |
-| DELETE | `/api/admin/courses/{id}` | Xóa khóa. `204`; `404`; `409` khóa còn bài (kể cả bài Nháp). Ảnh bìa của khóa bị xóa theo (`CASCADE`) |
+| DELETE | `/api/admin/courses/{id}` | Xóa khóa. `204`; `404`; `409` khóa còn bài (kể cả bài Nháp) hoặc đã có học viên ghi danh. Ảnh bìa của khóa bị xóa theo (`CASCADE`) |
 | POST | `/api/admin/courses/{id}/cover` | Đặt ảnh bìa khóa (D35). `multipart/form-data`, phần tên `file`. Mỗi khóa một ảnh: đặt ảnh mới thì thay ảnh cũ. `200` kèm `{ "coverImageUrl": "/api/courses/{slug}/cover?v=..." }`; `404` không có khóa; `413` ảnh lớn hơn 1 MB; `415` không phải PNG, JPEG hoặc WebP (nhận diện bằng nội dung tệp, không tin đuôi tệp hay `Content-Type` do trình duyệt khai báo). Khách → `401`, học sinh → `403`, thiếu CSRF → `403` |
 | DELETE | `/api/admin/courses/{id}/cover` | Bỏ ảnh bìa khóa. `204` (cũng `204` khi khóa chưa có ảnh); `404` không có khóa |
 | GET | `/api/admin/lessons` | Mọi bài kể cả Nháp; lọc `?courseId=&status=`, phân trang. Xem "Bài học (Admin)" bên dưới |
@@ -253,7 +277,7 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 
 ### Khóa học (Admin) — `GET`, `POST`, `PUT`, `DELETE /api/admin/courses`
 
-`GET /api/admin/courses` trả mảng khóa (`id`, `slug`, `title`, `description`, `sortOrder`, `status`, `tuitionVnd`, `categoryId`, `level`, `totalHours`, `coverImageUrl`) sắp theo `sortOrder` rồi `id`. Có endpoint riêng vì `GET /api/courses` (công khai) không có `sortOrder` mà form sửa khóa cần giá trị hiện tại. Khách → `401`, học sinh → `403`. Mục dưới mô tả thân của `POST` và `PUT`:
+`GET /api/admin/courses` trả mảng khóa (`id`, `slug`, `title`, `description`, `sortOrder`, `status`, `tuitionVnd`, `categoryId`, `level`, `totalHours`, `coverImageUrl`, `accessType`) sắp theo `sortOrder` rồi `id`. Có endpoint riêng vì `GET /api/courses` (công khai) không có `sortOrder` mà form sửa khóa cần giá trị hiện tại. Khách → `401`, học sinh → `403`. Mục dưới mô tả thân của `POST` và `PUT`:
 
 ```json
 { "slug": "tin-hoc-10", "title": "Tin học 10", "description": "Chương trình lớp 10", "sortOrder": 1,
@@ -261,15 +285,16 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 ```
 
 - `status`: tùy chọn, `DRAFT`, `PUBLISHED` hoặc `ARCHIVED` (gửi bằng tên; gửi số → `400`). `tuitionVnd`: tùy chọn, số nguyên đồng từ 0 đến 1000000000 (có phần lẻ → `400`); 0 là chưa có học phí. **Bỏ trống một trong hai khi sửa thì giữ giá trị cũ**; khi tạo thì là `DRAFT` và 0.
-- Chỉ khóa `PUBLISHED` hiện ở `GET /api/courses` và `GET /api/courses/{slug}/lessons`. `status` **chưa ảnh hưởng** tới ảnh bìa khóa (trang quản trị dùng chung đường dẫn đó) và tới bài học của người đã đăng nhập (`/api/lessons/**`).
+- Chỉ khóa `PUBLISHED` hiện ở `GET /api/courses` và `GET /api/courses/{slug}/lessons`. `status` cũng quyết định ai đọc được bài (xem "Quyền đọc bài"), nhưng **chưa ảnh hưởng** tới ảnh bìa khóa (trang quản trị dùng chung đường dẫn đó).
+- `accessType`: tùy chọn, `FREE` hoặc `PAID` (gửi bằng tên; gửi số → `400`). Bỏ trống khi sửa thì giữ giá trị cũ; khi tạo thì là `PAID`.
 - `categoryId`, `level` (`BASIC`, `ADVANCED`, `EXPERT`), `totalHours` (0–10000): tùy chọn, cùng quy tắc bỏ trống. Khi tạo mà bỏ trống thì vào nhóm "Khóa cho thiếu niên", `BASIC`, 0 giờ. `categoryId` không tồn tại → `404` "Không tìm thấy nhóm khóa học", khóa không đổi.
 
 - `slug`: bắt buộc, tối đa 100 ký tự, chỉ chữ thường không dấu, số và dấu gạch ngang giữa các từ (`tin-hoc-10`; không nhận `Tin-Hoc`, `tin_hoc`, `-tin`, `tin--hoc`).
 - `title`: bắt buộc, tối đa 200 ký tự. `description`: tùy chọn, tối đa 500 ký tự; chỉ có khoảng trắng thì lưu `null`. `sortOrder`: bắt buộc, số nguyên không âm.
 - `slug` và `title` được cắt khoảng trắng hai đầu trước khi kiểm tra.
-- Trả về (`201` khi tạo, `200` khi sửa): `id`, `slug`, `title`, `description`, `sortOrder`, `status`, `tuitionVnd`, `categoryId`, `level`, `totalHours`, `coverImageUrl`.
+- Trả về (`201` khi tạo, `200` khi sửa): `id`, `slug`, `title`, `description`, `sortOrder`, `status`, `tuitionVnd`, `categoryId`, `level`, `totalHours`, `coverImageUrl`, `accessType`.
 - `PUT` được đổi `slug`; giữ nguyên slug của chính khóa đó không bị tính là trùng. Đổi slug làm đường dẫn cũ `/api/courses/{slug}/lessons` ngừng hoạt động.
-- Lỗi `409` có hai câu khác nhau, đều không lặp lại dữ liệu người gửi: "Slug khóa học đã tồn tại" và "Không xóa được khóa học còn bài học". Slug trùng được chặn hai lần: kiểm tra trước ở service, và ràng buộc `UNIQUE` của database cho trường hợp hai Admin cùng gửi một lúc. Khóa còn bài được chặn bằng kiểm tra trước và khóa ngoại `RESTRICT`.
+- Lỗi `409` có ba câu khác nhau, đều không lặp lại dữ liệu người gửi: "Slug khóa học đã tồn tại", "Không xóa được khóa học còn bài học" và "Không xóa được khóa học đã có học viên ghi danh". Slug trùng được chặn hai lần: kiểm tra trước ở service, và ràng buộc `UNIQUE` của database cho trường hợp hai Admin cùng gửi một lúc. Khóa còn bài được chặn bằng kiểm tra trước và khóa ngoại `RESTRICT`.
 - `401` khi chưa đăng nhập, `403` với học sinh hoặc khi thiếu CSRF token. `id` trong đường dẫn không phải số → `400` với `detail` cố định "Tham số trong đường dẫn không hợp lệ" (áp dụng cho mọi endpoint có tham số số trong đường dẫn).
 
 ### Bài học (Admin) — `/api/admin/lessons`
@@ -287,7 +312,7 @@ Tạo và sửa dùng cùng một body:
 - Không có `status` và `createdBy` trong body: bài mới luôn là `DRAFT`, người tạo lấy từ session. Nếu trình duyệt gửi hai trường này thì bị bỏ qua.
 - Trả về một bài: `id`, `courseId`, `slug`, `title`, `summary`, `contentMd`, `status`, `sortOrder` (không có người tạo).
 - `GET /api/admin/lessons?courseId=&status=&page=0&size=20`: `status` là `DRAFT` hoặc `PUBLISHED`; bỏ trống bộ lọc nghĩa là không lọc. Trả `{ items, page, size, totalItems }`, mỗi phần tử gồm `id`, `courseId`, `slug`, `title`, `summary`, `status`, `sortOrder` (không có `contentMd`). Sắp theo `courseId`, `sortOrder`, `id`. `page` ≥ 0, `size` từ 1 đến 50; ngoài khoảng đó hoặc `courseId`/`status` sai kiểu → `400`. Trang vượt quá cuối trả `items` rỗng, không phải lỗi.
-- Đăng bài (`PATCH .../status` sang `PUBLISHED`) là cách duy nhất để học sinh thấy bài; ẩn bài (`DRAFT`) làm bài biến mất khỏi danh sách công khai và `GET /api/lessons/{slug}` trả `404`. Giá trị `status` ngoài hai trị trên hoặc thiếu → `400`.
+- Đăng bài (`PATCH .../status` sang `PUBLISHED`) là điều kiện cần để học viên thấy bài (còn phụ thuộc khóa, xem "Quyền đọc bài"); ẩn bài (`DRAFT`) làm bài biến mất khỏi danh sách công khai và `GET /api/lessons/{slug}` trả `404`. Giá trị `status` ngoài hai trị trên hoặc thiếu → `400`.
 - Xóa bài kéo theo ảnh, tiến độ học và đoạn tri thức của bài (`ON DELETE CASCADE`); người dùng và khóa học không bị ảnh hưởng. Khóa chỉ xóa được sau khi hết bài (xem mục khóa học).
 - Mọi endpoint, kể cả `GET`, chỉ `ADMIN` gọi được: khách → `401`, học sinh → `403` (bài nháp không lộ cho học sinh); ghi mà thiếu CSRF token → `403`.
 
@@ -306,7 +331,7 @@ Tạo và sửa dùng cùng một body:
 - **Kiểm tra nội dung thật, không tin trình duyệt:** loại ảnh được nhận diện từ **chữ ký byte và phần đầu tệp**, không dựa vào đuôi tệp hay `Content-Type` khai báo. Chỉ nhận PNG, JPEG, WebP. Từ chối (`415` "Chỉ nhận ảnh PNG, JPEG hoặc WebP hợp lệ"): HTML, SVG (có thể chứa script), GIF, tệp thực thi, tệp rỗng, tệp có chữ ký đúng nhưng phần còn lại là rác hoặc bị cụt, WebP sai cấu trúc RIFF, và ảnh có cạnh nào **lớn hơn 4096 điểm ảnh** (chặn "bom giải nén": ảnh nén vài KB nhưng rộng hàng chục nghìn điểm ảnh). Loại lưu và trả về (`Content-Type` khi xem) là loại do ứng dụng nhận diện.
 - **Kích thước:** tối đa 1 MB (1.048.576 byte) mỗi tệp. Vượt → `413` "Ảnh vượt quá 1 MB", được chặn ở hai tầng: cấu hình `spring.servlet.multipart.max-file-size=1MB` (request tổng tối đa 2 MB) và kiểm tra lại trong `ImageService`.
 - **Tên tệp** chỉ để hiển thị: bỏ phần đường dẫn (`../../etc/passwd.png` → `passwd.png`, cả `/` lẫn `\`), bỏ ký tự điều khiển, tối đa 255 ký tự; thiếu hoặc rỗng thì đặt `image.png`/`image.jpg`/`image.webp` theo loại thật. Tên này không bao giờ được dùng làm đường dẫn tệp (ảnh nằm trong MySQL).
-- **Xem ảnh:** `GET /api/images/{id}` yêu cầu đăng nhập (khách → `401`). Học sinh chỉ xem được ảnh của bài **Đã đăng**; ảnh của bài Nháp và ảnh không tồn tại trả **cùng một** `404` "Không tìm thấy ảnh" (không dò được id nào thuộc bài nháp). Admin xem được mọi ảnh. Khi bài chuyển `DRAFT` ↔ `PUBLISHED`, quyền xem ảnh đổi theo ngay. Phản hồi có `X-Content-Type-Options: nosniff` và `Cache-Control: private, max-age=3600`.
+- **Xem ảnh:** `GET /api/images/{id}` yêu cầu đăng nhập (khách → `401`). Ảnh theo đúng quyền đọc của bài chứa nó (xem "Quyền đọc bài"); ảnh không được xem và ảnh không tồn tại trả **cùng một** `404` "Không tìm thấy ảnh". Admin xem được mọi ảnh. Khi bài hoặc khóa đổi trạng thái, quyền xem ảnh đổi theo ngay. Phản hồi có `X-Content-Type-Options: nosniff` và `Cache-Control: private, max-age=3600`.
 - **Danh sách:** `GET /api/admin/lessons/{id}/images` → `[ { id, fileName, contentType, sizeBytes, url, cover } ]` sắp theo `id`, không có dữ liệu ảnh; `cover` cho biết ảnh có đang là ảnh bìa của bài không.
 - **Ảnh bìa (D33):** mỗi bài tối đa một ảnh bìa. `PUT /api/admin/images/{id}/cover` đặt (tự bỏ ảnh bìa cũ cùng bài), `DELETE /api/admin/images/{id}/cover` bỏ. Ảnh bìa được dùng ở: danh sách bài của khóa, kết quả tìm kiếm và đầu trang bài (qua `coverImageUrl`, dạng `/api/images/{id}`). Xóa ảnh bìa thì bài tự hết ảnh bìa. Ảnh vẫn chỉ xem được khi đã đăng nhập (khách thấy `coverImageUrl` nhưng tải ảnh nhận `401`, nên giao diện không vẽ ảnh bìa cho khách).
 - **Xóa:** xóa một ảnh bằng `DELETE /api/admin/images/{id}`; xóa bài kéo theo toàn bộ ảnh của bài (`ON DELETE CASCADE`). Chưa có giới hạn số ảnh mỗi bài.

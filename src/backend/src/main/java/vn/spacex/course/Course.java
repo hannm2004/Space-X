@@ -43,6 +43,11 @@ public class Course {
     @Column(nullable = false)
     private CourseStatus status = CourseStatus.DRAFT;
 
+    // Mặc định trả phí, giống DEFAULT của V7: quên đặt thì khóa bị đóng chứ không mở.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "access_type", nullable = false)
+    private CourseAccessType accessType = CourseAccessType.PAID;
+
     // Đồng Việt Nam, số nguyên; 0 là chưa có học phí.
     @Column(name = "tuition_vnd", nullable = false)
     private long tuitionVnd;
@@ -82,6 +87,14 @@ public class Course {
 
     public void changeStatus(CourseStatus status) {
         this.status = status;
+    }
+
+    public void changeAccessType(CourseAccessType accessType) {
+        this.accessType = accessType;
+    }
+
+    public CourseAccessType getAccessType() {
+        return accessType;
     }
 
     public void changeTuition(long tuitionVnd) {

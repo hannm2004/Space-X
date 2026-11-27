@@ -1,5 +1,7 @@
 package vn.spacex.lesson;
 
+import vn.spacex.user.Role;
+import vn.spacex.auth.AppUserDetails;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +53,10 @@ class LessonIntegrationTest {
     private long tacGiaId;
     private long khoaId;
 
+    private static AppUserDetails hocSinh() {
+        return new AppUserDetails(7L, "hs@example.com", null, "Học sinh", Role.LEARNER, true);
+    }
+
     @BeforeEach
     void donDuLieu() {
         jdbc.update("DELETE FROM lessons");
@@ -87,7 +93,7 @@ class LessonIntegrationTest {
         long khoaKhac = CourseRows.insert(jdbc, "tin-hoc-11", "Tin học 11", "x", 2);
         themBaiThuTu(khoaKhac, "bai-lop-11", "PUBLISHED", 3);
 
-        mockMvc.perform(get("/api/lessons/bai-2").with(user("hocsinh")))
+        mockMvc.perform(get("/api/lessons/bai-2").with(user(hocSinh())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.course.slug").value("tin-hoc-10"))
                 .andExpect(jsonPath("$.course.title").value("Tin học 10"))
@@ -102,10 +108,10 @@ class LessonIntegrationTest {
         themBaiThuTu(khoaId, "bai-1", "PUBLISHED", 1);
         themBaiThuTu(khoaId, "bai-2", "PUBLISHED", 2);
 
-        mockMvc.perform(get("/api/lessons/bai-1").with(user("hocsinh")))
+        mockMvc.perform(get("/api/lessons/bai-1").with(user(hocSinh())))
                 .andExpect(jsonPath("$.previous").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.next.slug").value("bai-2"));
-        mockMvc.perform(get("/api/lessons/bai-2").with(user("hocsinh")))
+        mockMvc.perform(get("/api/lessons/bai-2").with(user(hocSinh())))
                 .andExpect(jsonPath("$.previous.slug").value("bai-1"))
                 .andExpect(jsonPath("$.next").value(org.hamcrest.Matchers.nullValue()));
     }
@@ -115,7 +121,7 @@ class LessonIntegrationTest {
         themBaiThuTu(khoaId, "bai-a", "PUBLISHED", 1);
         themBaiThuTu(khoaId, "bai-b", "PUBLISHED", 1);
 
-        mockMvc.perform(get("/api/lessons/bai-a").with(user("hocsinh")))
+        mockMvc.perform(get("/api/lessons/bai-a").with(user(hocSinh())))
                 .andExpect(jsonPath("$.next.slug").value("bai-b"));
     }
 
@@ -124,7 +130,7 @@ class LessonIntegrationTest {
         String markdown = "# Máy tính là gì?\n\nMáy tính xử lý **thông tin** theo chương trình.\n\n- Phần cứng\n- Phần mềm";
         themBai("may-tinh-la-gi", "PUBLISHED", markdown);
 
-        mockMvc.perform(get("/api/lessons/may-tinh-la-gi").with(user("hocsinh")))
+        mockMvc.perform(get("/api/lessons/may-tinh-la-gi").with(user(hocSinh())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.slug").value("may-tinh-la-gi"))
                 .andExpect(jsonPath("$.title").value("Bài may-tinh-la-gi"))
@@ -136,7 +142,7 @@ class LessonIntegrationTest {
     void phanHoiChiCoNamTruongKhongLoTrangThaiMaKhoaHayNguoiTao() throws Exception {
         themBai("may-tinh-la-gi", "PUBLISHED", "x");
 
-        mockMvc.perform(get("/api/lessons/may-tinh-la-gi").with(user("hocsinh")))
+        mockMvc.perform(get("/api/lessons/may-tinh-la-gi").with(user(hocSinh())))
                 .andExpect(jsonPath("$.*", hasSize(9)))
                 .andExpect(jsonPath("$.status").doesNotExist())
                 .andExpect(jsonPath("$.courseId").doesNotExist())
@@ -147,7 +153,7 @@ class LessonIntegrationTest {
     void baiNhapBi404VaKhongLoNoiDungNhap() throws Exception {
         themBai("bai-nhap", "DRAFT", "BAN-NHAP-CHUA-DANG-BI-MAT");
 
-        MvcResult result = mockMvc.perform(get("/api/lessons/bai-nhap").with(user("hocsinh")))
+        MvcResult result = mockMvc.perform(get("/api/lessons/bai-nhap").with(user(hocSinh())))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.detail").value("Không tìm thấy bài học"))
@@ -161,10 +167,10 @@ class LessonIntegrationTest {
     void slugKhongTonTaiVaBaiNhapCungMotCau404NenKhongDoDuocBaiNhap() throws Exception {
         themBai("bai-nhap", "DRAFT", "x");
 
-        String chiTietBaiNhap = mockMvc.perform(get("/api/lessons/bai-nhap").with(user("hocsinh")))
+        String chiTietBaiNhap = mockMvc.perform(get("/api/lessons/bai-nhap").with(user(hocSinh())))
                 .andExpect(status().isNotFound())
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        String chiTietSlugLa = mockMvc.perform(get("/api/lessons/khong-ton-tai").with(user("hocsinh")))
+        String chiTietSlugLa = mockMvc.perform(get("/api/lessons/khong-ton-tai").with(user(hocSinh())))
                 .andExpect(status().isNotFound())
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
 

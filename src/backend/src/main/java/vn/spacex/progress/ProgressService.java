@@ -3,13 +3,13 @@ package vn.spacex.progress;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.spacex.access.Reader;
 import vn.spacex.course.Course;
 import vn.spacex.course.CourseNotFoundException;
 import vn.spacex.course.CourseRepository;
 import vn.spacex.lesson.Lesson;
 import vn.spacex.lesson.LessonNotFoundException;
 import vn.spacex.lesson.LessonRepository;
-import vn.spacex.lesson.LessonStatus;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-// Mọi phương thức nhận userId do controller lấy từ session, không bao giờ từ dữ liệu trình duyệt gửi lên.
+// Mọi phương thức nhận Reader do controller lấy từ session, không bao giờ từ dữ liệu trình duyệt gửi lên.
 @Service
 public class ProgressService {
 
@@ -38,15 +38,16 @@ public class ProgressService {
     // Cố ý không đặt @Transactional: mỗi lời gọi repository chạy trong transaction riêng, nên khi UNIQUE(user_id, lesson_id)
     // chặn một lần thêm trùng (hai yêu cầu đầu tiên đến cùng lúc), ngoại lệ bắt được ở đây và có thể đọc lại dòng vừa có.
     // Trong một transaction chung thì transaction đã bị đánh dấu hỏng, không thử lại được.
-    public LessonProgressResponse record(Long userId, Long lessonId, ProgressStatus status) {
-        // Bài nháp và bài không tồn tại cùng một lỗi: người gọi không dò được id nào là bài nháp.
-        lessonRepository.findByIdAndStatus(lessonId, LessonStatus.PUBLISHED)
-                .orElseThrow(LessonNotFoundException::new);
+    public LessonProgressResponse record(Reader reader, Long lessonId, ProgressStatus status) {
+        // Bài không được đọc và bài không tồn tại cùng một lỗi: người gọi không dò được id nào là bài bị khóa.
+        if (lessonRepository.countReadable(lessonId, reader.userId(), reader.admin()) == 0) {
+            throw new LessonNotFoundException();
+        }
         LocalDateTime now = LocalDateTime.now(clock);
         try {
-            return apply(userId, lessonId, status, now);
+            return apply(reader.userId(), lessonId, status, now);
         } catch (DataIntegrityViolationException racing) {
-            return apply(userId, lessonId, status, now);
+            return apply(reader.userId(), lessonId, status, now);
         }
     }
 
@@ -62,16 +63,17 @@ public class ProgressService {
         return new LessonProgressResponse(lessonId, progress.getStatus());
     }
 
-    // Chỉ tính bài Đã đăng: Admin ẩn một bài thì dòng tiến độ cũ của bài đó không còn được đếm.
+    // Chỉ liệt kê khóa người gọi được học, và chỉ tính bài Đã đăng: Admin ẩn một bài thì dòng tiến độ cũ của bài đó
+    // không còn được đếm.
     @Transactional(readOnly = true)
-    public List<CourseProgressResponse> overview(Long userId) {
+    public List<CourseProgressResponse> overview(Reader reader) {
         Map<Long, List<Lesson>> lessonsByCourse = lessonRepository
-                .findByStatusOrderBySortOrderAscIdAsc(LessonStatus.PUBLISHED).stream()
+                .findReadablePublished(reader.userId(), reader.admin()).stream()
                 .collect(Collectors.groupingBy(Lesson::getCourseId));
-        Map<Long, LessonProgress> progressByLesson = progressRepository.findByUserId(userId).stream()
+        Map<Long, LessonProgress> progressByLesson = progressRepository.findByUserId(reader.userId()).stream()
                 .collect(Collectors.toMap(LessonProgress::getLessonId, Function.identity()));
 
-        return courseRepository.findAllByOrderBySortOrderAscIdAsc().stream()
+        return courseRepository.findAccessible(reader.userId(), reader.admin()).stream()
                 .map(course -> summarize(course, lessonsByCourse.getOrDefault(course.getId(), List.of()),
                         progressByLesson))
                 .toList();
@@ -108,11 +110,12 @@ public class ProgressService {
                 completed, total, percent, continueLesson);
     }
 
+    // Khóa không được học (nháp, trả phí chưa ghi danh, đã bị thu hồi) cũng 404, nên tiến độ cũ được giữ nguyên.
     @Transactional
-    public void restartCourse(Long userId, Long courseId) {
-        if (!courseRepository.existsById(courseId)) {
+    public void restartCourse(Reader reader, Long courseId) {
+        if (courseRepository.countAccessible(courseId, reader.userId(), reader.admin()) == 0) {
             throw new CourseNotFoundException();
         }
-        progressRepository.deleteByUserIdAndCourseId(userId, courseId);
+        progressRepository.deleteByUserIdAndCourseId(reader.userId(), courseId);
     }
 }

@@ -1,5 +1,7 @@
 package vn.spacex.auth;
 
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -50,6 +52,9 @@ class AuthControllerTest {
 
     @MockitoBean
     private AuthenticationManager authenticationManager;
+
+    @MockitoBean
+    private LoginAttemptLimiter loginAttemptLimiter;
 
     @Test
     void dangKyHopLeTraVe201() throws Exception {
@@ -110,6 +115,8 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.email").value("a@example.com"))
                 .andExpect(jsonPath("$.role").value("LEARNER"))
                 .andExpect(jsonPath("$.length()").value(3));
+
+        verify(loginAttemptLimiter).succeeded("a@example.com", "127.0.0.1");
     }
 
     @Test
@@ -138,6 +145,46 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content(DANG_NHAP))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().string(not(containsString("database"))));
+    }
+
+    @Test
+    void thuQuaNhieuLanTra429KemRetryAfterVaKhongKiemMatKhau() throws Exception {
+        doThrow(new TooManyLoginAttemptsException(Duration.ofMillis(89_200)))
+                .when(loginAttemptLimiter).acquire("a@example.com", "127.0.0.1");
+
+        mockMvc.perform(post("/api/auth/login").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(DANG_NHAP))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().string("Retry-After", "90"))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value("Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau."));
+
+        verify(authenticationManager, never()).authenticate(any());
+    }
+
+    @Test
+    void saiMatKhauThiLanThuVanBiTinhKhongTraLaiVaKhongXoa() throws Exception {
+        doThrow(new BadCredentialsException("sai")).when(authenticationManager).authenticate(any());
+
+        mockMvc.perform(post("/api/auth/login").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(DANG_NHAP))
+                .andExpect(status().isUnauthorized());
+
+        verify(loginAttemptLimiter).acquire("a@example.com", "127.0.0.1");
+        verify(loginAttemptLimiter, never()).succeeded(any(), any());
+        verify(loginAttemptLimiter, never()).release(any(), any());
+    }
+
+    @Test
+    void loiHeThongThiTraLaiLanThuChoNguoiDung() throws Exception {
+        doThrow(new InternalAuthenticationServiceException("mat ket noi database"))
+                .when(authenticationManager).authenticate(any());
+
+        mockMvc.perform(post("/api/auth/login").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(DANG_NHAP))
+                .andExpect(status().isInternalServerError());
+
+        verify(loginAttemptLimiter).release("a@example.com", "127.0.0.1");
     }
 
     @Test

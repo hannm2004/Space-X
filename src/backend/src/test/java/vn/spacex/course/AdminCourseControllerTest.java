@@ -60,7 +60,7 @@ class AdminCourseControllerTest {
 
     private static AdminCourseResponse khoa() {
         return new AdminCourseResponse(5L, "tin-hoc-10", "Tin học 10", "Chương trình lớp 10", 1,
-                CourseStatus.PUBLISHED, 1_500_000L, 3L, CourseLevel.BASIC, 40, null);
+                CourseStatus.PUBLISHED, 1_500_000L, 3L, CourseLevel.BASIC, 40, null, CourseAccessType.PAID);
     }
 
     // Ghép thêm phần sai vào một thân yêu cầu hợp lệ rồi kiểm bị chặn trước khi tới service.
@@ -84,6 +84,12 @@ class AdminCourseControllerTest {
     @Test
     void trangThaiGuiBangSoBiTuChoi() throws Exception {
         biTuChoiTruocKhiToiService("\"status\":1");
+    }
+
+    @Test
+    void loaiKhoaLaHoacGuiBangSoBiTuChoi() throws Exception {
+        biTuChoiTruocKhiToiService("\"accessType\":\"GIFT\"");
+        biTuChoiTruocKhiToiService("\"accessType\":0");
     }
 
     // Tiền là số nguyên đồng: không được lặng lẽ cắt phần lẻ.
@@ -188,7 +194,8 @@ class AdminCourseControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content(BODY_HOP_LE))
                 .andExpect(status().isCreated())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.*", hasSize(11)))
+                .andExpect(jsonPath("$.*", hasSize(12)))
+                .andExpect(jsonPath("$.accessType").value("PAID"))
                 .andExpect(jsonPath("$.id").value(5))
                 .andExpect(jsonPath("$.slug").value("tin-hoc-10"))
                 .andExpect(jsonPath("$.title").value("Tin học 10"))
@@ -352,7 +359,7 @@ class AdminCourseControllerTest {
         when(service.findAll()).thenReturn(List.of(
                 khoa(),
                 new AdminCourseResponse(6L, "tin-hoc-11", "Tin học 11", null, 2, CourseStatus.DRAFT, 0L, 3L, CourseLevel.BASIC, 0,
-                        "/api/courses/tin-hoc-11/cover?v=2")));
+                        "/api/courses/tin-hoc-11/cover?v=2", CourseAccessType.FREE)));
 
         mockMvc.perform(get("/api/admin/courses").with(user(admin())))
                 .andExpect(status().isOk())

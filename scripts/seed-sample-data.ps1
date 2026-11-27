@@ -123,7 +123,7 @@ try {
         if ($DryRun) { Write-Host ("  khóa  {0,-12} SẼ TẠO" -f $course.slug); $courseIds[$course.slug] = 0; continue }
         $r = Send "POST" "/api/admin/courses" @{
             slug = $course.slug; title = $course.title; description = $course.description; sortOrder = [int]$course.sortOrder
-            status = $course.status
+            status = $course.status; accessType = $course.accessType
         }
         Require $r 201 "Tạo khóa $($course.slug)"
         $courseIds[$course.slug] = ($r.Text | ConvertFrom-Json).id

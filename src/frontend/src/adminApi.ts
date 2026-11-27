@@ -130,7 +130,10 @@ export async function resetUserPassword(id: number): Promise<TemporaryPassword> 
 
 // DRAFT: đang soạn; PUBLISHED: đang hiển thị; ARCHIVED: ngừng bán.
 export type CourseStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+// FREE: người đăng nhập đọc được; PAID: cần ghi danh. Không suy ra từ học phí (D40).
+export type CourseAccessType = 'FREE' | 'PAID'
 export type AdminCourse = {
+  accessType: CourseAccessType
   categoryId: number
   level: CourseLevel
   // 0 là chưa nhập số giờ.
@@ -157,6 +160,7 @@ export type CourseInput = {
   categoryId: number
   level: CourseLevel
   totalHours: number
+  accessType: CourseAccessType
 }
 
 export type LessonStatus = 'DRAFT' | 'PUBLISHED'
@@ -200,6 +204,11 @@ function asCourseStatus(value: unknown): CourseStatus {
   return value
 }
 
+function asCourseAccessType(value: unknown): CourseAccessType {
+  if (value !== 'FREE' && value !== 'PAID') throw new Error(BAD_SHAPE)
+  return value
+}
+
 function parseAdminCourse(value: unknown): AdminCourse {
   const record = asRecord(value)
   return {
@@ -213,6 +222,7 @@ function parseAdminCourse(value: unknown): AdminCourse {
     categoryId: asNumber(record.categoryId),
     level: asCourseLevel(record.level),
     totalHours: asNumber(record.totalHours),
+    accessType: asCourseAccessType(record.accessType),
     coverImageUrl: record.coverImageUrl === undefined ? null : asNullableString(record.coverImageUrl),
   }
 }

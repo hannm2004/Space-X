@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import vn.spacex.access.AccessRules;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,27 +14,38 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 
     List<Lesson> findByCourseIdAndStatusOrderBySortOrderAscIdAsc(Long courseId, LessonStatus status);
 
-    // Tiến độ học (CP5.5): kiểm tra bài đã đăng và tính tổng bài mỗi khóa. Entity Lesson không có content_md nên nhẹ.
-    Optional<Lesson> findByIdAndStatus(Long id, LessonStatus status);
+    // 1 nếu người gọi được đọc bài này (AccessRules), 0 nếu không được hoặc bài không tồn tại.
+    @Query(value = "select count(*) from lessons l where l.id = :id and" + AccessRules.LESSON_READABLE,
+            nativeQuery = true)
+    long countReadable(@Param("id") Long id, @Param("userId") long userId, @Param("admin") boolean admin);
 
-    List<Lesson> findByStatusOrderBySortOrderAscIdAsc(LessonStatus status);
-
-    // Tìm bài Đã đăng bằng FULLTEXT (D29, migration V3). Chế độ tự nhiên: toán tử như + - * " trong từ khóa không có nghĩa.
-    // Chỉ chọn các cột entity Lesson ánh xạ nên không tải content_md. Thứ tự (độ liên quan giảm dần, rồi id) nằm trong
-    // câu truy vấn, vì vậy Pageable truyền vào không được có Sort.
+    // Tiến độ học (CP5.5): các bài đã đăng mà người gọi được đọc. Entity Lesson không có content_md nên nhẹ.
     @Query(value = """
             select l.id, l.course_id, l.slug, l.title, l.summary, l.status, l.sort_order
             from lessons l
-            where l.status = 'PUBLISHED'
-              and match(l.title, l.summary, l.content_md) against (:q in natural language mode)
+            where l.status = 'PUBLISHED' and""" + AccessRules.LESSON_READABLE + """
+            order by l.sort_order, l.id""",
+            nativeQuery = true)
+    List<Lesson> findReadablePublished(@Param("userId") long userId, @Param("admin") boolean admin);
+
+    // Tìm trong các bài người gọi được đọc, bằng FULLTEXT (D29, migration V3). Chế độ tự nhiên: toán tử như + - * "
+    // trong từ khóa không có nghĩa. Chỉ chọn các cột entity Lesson ánh xạ nên không tải content_md. Thứ tự (độ liên
+    // quan giảm dần, rồi id) nằm trong câu truy vấn, vì vậy Pageable truyền vào không được có Sort. Câu đếm dùng cùng
+    // điều kiện để totalItems không lộ số bài người gọi không được xem.
+    @Query(value = """
+            select l.id, l.course_id, l.slug, l.title, l.summary, l.status, l.sort_order
+            from lessons l
+            where match(l.title, l.summary, l.content_md) against (:q in natural language mode)
+              and""" + AccessRules.LESSON_READABLE + """
             order by match(l.title, l.summary, l.content_md) against (:q in natural language mode) desc, l.id""",
             countQuery = """
             select count(*)
             from lessons l
-            where l.status = 'PUBLISHED'
-              and match(l.title, l.summary, l.content_md) against (:q in natural language mode)""",
+            where match(l.title, l.summary, l.content_md) against (:q in natural language mode)
+              and""" + AccessRules.LESSON_READABLE,
             nativeQuery = true)
-    Page<Lesson> searchPublished(@Param("q") String q, Pageable pageable);
+    Page<Lesson> searchReadable(@Param("q") String q, @Param("userId") long userId, @Param("admin") boolean admin,
+                                Pageable pageable);
 
     // Dashboard của Admin: đếm toàn bộ bài, kể cả bài nháp.
     long countByStatus(LessonStatus status);

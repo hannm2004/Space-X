@@ -168,9 +168,23 @@ Bảng lưu session (Spring Session JDBC, từ việc 3.6) và bảng lịch s�
 | Nội dung Markdown có chứa HTML không | Không cho HTML thô để tránh XSS; frontend chỉ render Markdown đã lọc | Chốt (CP5.2: `react-markdown` không bật HTML thô, chỉ cho ảnh `/api/images/{id}`; `MarkdownContent.test.tsx` 12 test) |
 | Dung lượng | Aiven free có 1 GB đĩa; ảnh giới hạn 1 MB mỗi ảnh, theo dõi tổng dung lượng | Tuần 4 |
 
+## 7b. Migration `V7`: tự học trực tuyến và quyền đọc (D40)
+
+File `V7__add_access_rules.sql` (`Tested` 2026-11-27, chưa deploy).
+
+| Thay đổi | Chi tiết |
+|---|---|
+| `courses.access_type` | `ENUM('FREE','PAID') NOT NULL DEFAULT 'PAID'`. Mặc định `PAID` để quên đặt thì khóa bị đóng. Khóa đang có bài lúc migrate được đổi sang `FREE` |
+| `lessons.module_id` | `BIGINT NULL`, khóa ngoại tới `course_modules` (`ON DELETE SET NULL`). Chưa có giao diện hay API; database chưa kiểm module và bài cùng một khóa |
+| Bảng `enrollments` | `user_id`, `course_id`, `status` (`ACTIVE`, `REVOKED`), `source` (`FREE`, `ORDER`, `ADMIN`, `MIGRATION`), `granted_by`, `created_at`, `updated_at` |
+| Ràng buộc | `UNIQUE(user_id, course_id)`; `CHECK`: `source = 'ADMIN'` thì phải có `granted_by`; ba khóa ngoại đều chặn xóa (người dùng, khóa, người cấp) |
+| Bù quyền | Mỗi cặp người dùng và khóa đã có `lesson_progress` được một dòng `ACTIVE`, `source = 'MIGRATION'` |
+
+Quy tắc quyền đọc dùng bảng này được mô tả ở `docs/API.md`, mục "Quyền đọc bài".
+
 ## 8. Bản nháp 2.0 (chưa áp dụng)
 
-**Trạng thái (2026-11-26): phần của `V6` đã được duyệt, cài đặt (`V6__create_course_catalog.sql`), gộp qua PR #56 và deploy; từ đây không sửa file đó nữa. `V7`–`V10` vẫn là bản nháp, chờ duyệt. Phần 1–7 ở trên mô tả schema `V1`–`V5`; những gì `V6` thêm nằm ở mục 8. Đây là thiết kế cho đề tài Trung tâm Tin học SPACE-X (D38): bán khóa học, lịch khai giảng, đăng ký và thanh toán học phí, tra cứu điểm và chứng nhận, chatbot tư vấn. Nguồn: `docs/SPACE-X-2.0.md` mục 5 và 6.
+**Trạng thái (2026-11-27): phần của `V6` đã được duyệt, cài đặt (`V6__create_course_catalog.sql`), gộp qua PR #56 và deploy; từ đây không sửa file đó nữa. Các bản nháp `V7`–`V10` trong mục này **đã bỏ** (D40); `V7` thật được mô tả ở mục 7b. Phần 1–7 ở trên mô tả schema `V1`–`V5`; những gì `V6` thêm nằm ở mục 8. Đây là thiết kế cho đề tài Trung tâm Tin học SPACE-X (D38): bán khóa học, lịch khai giảng, đăng ký và thanh toán học phí, tra cứu điểm và chứng nhận, chatbot tư vấn. Nguồn: `docs/SPACE-X-2.0.md` mục 5 và 6.
 
 Nguyên tắc: không sửa `V1`–`V5` (Flyway kiểm checksum, `V1` đã chạy trên Aiven); mọi thay đổi đi qua `V6` trở đi, mỗi migration một nhóm việc và chỉ viết khi tới tuần làm nhóm đó; tiền là `BIGINT` (đồng, không có phần lẻ); mọi bảng dùng `utf8mb4` + `utf8mb4_0900_ai_ci`, `DATETIME(6)`, `ENGINE = InnoDB` như `V1`. Các bảng, cột và ràng buộc đánh dấu **(đề xuất thêm)** không có trong đặc tả mục 5, do thiết kế này thêm vào vì một yêu cầu khác của đặc tả cần đến; cần được duyệt riêng.
 

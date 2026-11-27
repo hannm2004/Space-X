@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.spacex.access.Reader;
 import vn.spacex.common.api.PageResponse;
 import vn.spacex.course.Course;
 import vn.spacex.course.CourseRepository;
@@ -30,18 +31,19 @@ public class LessonService {
 
     // Truy vấn tự sắp theo độ liên quan nên PageRequest không có Sort. Danh sách dùng entity Lesson (không có content_md).
     @Transactional(readOnly = true)
-    public PageResponse<LessonSummaryResponse> search(String query, int page, int size) {
-        Page<Lesson> found = lessonRepository.searchPublished(query.strip(), PageRequest.of(page, size));
+    public PageResponse<LessonSummaryResponse> search(String query, Reader reader, int page, int size) {
+        Page<Lesson> found = lessonRepository.searchReadable(query.strip(), reader.userId(), reader.admin(),
+                PageRequest.of(page, size));
         Map<Long, String> covers = coverImageLookup.urlsByLessonId(found.getContent().stream().map(Lesson::getId).toList());
         return PageResponse.of(found, lesson -> LessonSummaryResponse.from(lesson, covers.get(lesson.getId())));
     }
 
-    // Trạng thái PUBLISHED nằm ngay trong truy vấn nên bài nháp không bao giờ được nạp lên.
+    // Quyền đọc nằm ngay trong truy vấn (AccessRules). Không được đọc và không tồn tại cùng một lỗi.
     // Bài trước/sau lấy từ các bài đã đăng cùng khóa theo đúng thứ tự trang khóa học (sort_order rồi id), nên bài nháp
     // nằm giữa hai bài đã đăng bị bỏ qua, và bài của khóa khác không lẫn vào.
     @Transactional(readOnly = true)
-    public LessonDetailResponse getPublishedLesson(String slug) {
-        LessonContent lesson = lessonContentRepository.findBySlugAndStatus(slug, LessonStatus.PUBLISHED)
+    public LessonDetailResponse getLesson(String slug, Reader reader) {
+        LessonContent lesson = lessonContentRepository.findReadableBySlug(slug, reader.userId(), reader.admin())
                 .orElseThrow(LessonNotFoundException::new);
         // Khóa luôn có vì lessons.course_id là khóa ngoại; thiếu nghĩa là dữ liệu hỏng, nên để lỗi 500 chứ không che đi.
         Course course = courseRepository.findById(lesson.getCourseId())

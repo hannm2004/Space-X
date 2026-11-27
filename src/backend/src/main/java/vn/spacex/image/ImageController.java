@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import vn.spacex.access.Reader;
 import vn.spacex.auth.AppUserDetails;
-import vn.spacex.user.Role;
 
 import java.util.concurrent.TimeUnit;
 
@@ -28,7 +28,7 @@ public class ImageController {
     // Cache "private": ảnh sau kiểm quyền không được lưu ở proxy dùng chung.
     @GetMapping("/{id}")
     ResponseEntity<byte[]> view(@AuthenticationPrincipal AppUserDetails me, @PathVariable Long id) {
-        StoredImage image = imageService.load(id, me.role() == Role.ADMIN);
+        StoredImage image = imageService.load(id, Reader.of(me));
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(image.contentType()))
                 .cacheControl(CacheControl.maxAge(1, TimeUnit.HOURS).cachePrivate())

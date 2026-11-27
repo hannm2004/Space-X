@@ -1,5 +1,6 @@
 package vn.spacex.image;
 
+import vn.spacex.access.Reader;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -19,7 +20,6 @@ import java.util.List;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -200,7 +200,7 @@ class ImageControllerTest {
 
     @Test
     void hocSinhXemAnhNhanDungLoaiAnhVaDuLieuVaServiceDuocHoiVoiQuyenHocSinh() throws Exception {
-        when(service.load(5L, false)).thenReturn(new StoredImage("image/png", PNG));
+        when(service.load(5L, new Reader(7L, false))).thenReturn(new StoredImage("image/png", PNG));
 
         mockMvc.perform(get("/api/images/5").with(user(hocSinh())))
                 .andExpect(status().isOk())
@@ -209,24 +209,24 @@ class ImageControllerTest {
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"))
                 .andExpect(header().string("Cache-Control", containsString("private")));
 
-        verify(service).load(5L, false);
+        verify(service).load(5L, new Reader(7L, false));
     }
 
     @Test
     void adminXemAnhDuocHoiVoiQuyenAdminDeThayCaAnhCuaBaiNhap() throws Exception {
-        when(service.load(5L, true)).thenReturn(new StoredImage("image/jpeg", PNG));
+        when(service.load(5L, new Reader(1L, true))).thenReturn(new StoredImage("image/jpeg", PNG));
 
         mockMvc.perform(get("/api/images/5").with(user(admin())))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("image/jpeg"));
 
-        verify(service).load(5L, true);
-        verify(service, never()).load(anyLong(), eq(false));
+        verify(service).load(5L, new Reader(1L, true));
+        verify(service, never()).load(5L, new Reader(1L, false));
     }
 
     @Test
     void anhKhongTonTaiHoacThuocBaiNhapBi404ThongBaoCoDinh() throws Exception {
-        when(service.load(eq(99L), anyBoolean())).thenThrow(new ImageNotFoundException());
+        when(service.load(eq(99L), any())).thenThrow(new ImageNotFoundException());
 
         mockMvc.perform(get("/api/images/99").with(user(hocSinh())))
                 .andExpect(status().isNotFound())

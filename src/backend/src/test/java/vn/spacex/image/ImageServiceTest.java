@@ -1,5 +1,6 @@
 package vn.spacex.image;
 
+import vn.spacex.access.Reader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -7,10 +8,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import vn.spacex.lesson.Lesson;
 import vn.spacex.lesson.LessonNotFoundException;
 import vn.spacex.lesson.LessonRepository;
-import vn.spacex.lesson.LessonStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +27,9 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ImageServiceTest {
+
+    private static final Reader HOC_SINH = new Reader(7L, false);
+    private static final Reader ADMIN = new Reader(1L, true);
 
     private static final long LESSON_ID = 11L;
 
@@ -210,12 +212,6 @@ class ImageServiceTest {
         return info;
     }
 
-    private Lesson bai(LessonStatus status) {
-        Lesson bai = mock(Lesson.class);
-        when(bai.getStatus()).thenReturn(status);
-        return bai;
-    }
-
     private void coAnh(long id, LessonImageInfo info) {
         when(imageRepository.findById(eq(id), eq(LessonImageInfo.class))).thenReturn(Optional.of(info));
     }
@@ -226,54 +222,44 @@ class ImageServiceTest {
     }
 
     @Test
-    void hocSinhDocAnhCuaBaiDaDangNhanDuocDuLieuVaLoai() {
+    void docAnhCuaBaiDuocXemNhanDuocDuLieuVaLoai() {
         coAnh(5L, thongTin(LESSON_ID));
-        Lesson daDang = bai(LessonStatus.PUBLISHED);
-        when(lessonRepository.findById(LESSON_ID)).thenReturn(Optional.of(daDang));
+        when(lessonRepository.countReadable(LESSON_ID, 7L, false)).thenReturn(1L);
         coDuLieu(5L);
 
-        StoredImage image = service.load(5L, false);
+        StoredImage image = service.load(5L, HOC_SINH);
 
         assertThat(image.contentType()).isEqualTo("image/png");
         assertThat(image.data()).containsExactly(1, 2, 3);
     }
 
     @Test
-    void hocSinhDocAnhCuaBaiNhapNemImageNotFoundVaKhongTaiDuLieuAnh() {
+    void docAnhCuaBaiKhongDuocXemNemImageNotFoundVaKhongTaiDuLieuAnh() {
         coAnh(5L, thongTin(LESSON_ID));
-        Lesson nhap = bai(LessonStatus.DRAFT);
-        when(lessonRepository.findById(LESSON_ID)).thenReturn(Optional.of(nhap));
+        when(lessonRepository.countReadable(LESSON_ID, 7L, false)).thenReturn(0L);
 
-        assertThatThrownBy(() -> service.load(5L, false)).isInstanceOf(ImageNotFoundException.class);
+        assertThatThrownBy(() -> service.load(5L, HOC_SINH)).isInstanceOf(ImageNotFoundException.class);
 
         verify(imageRepository, never()).findById(5L);
     }
 
     @Test
-    void hocSinhDocAnhCuaBaiKhongConTonTaiNemImageNotFound() {
+    void adminDocAnhDuocHoiQuyenVoiCoAdmin() {
         coAnh(5L, thongTin(LESSON_ID));
-        when(lessonRepository.findById(LESSON_ID)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.load(5L, false)).isInstanceOf(ImageNotFoundException.class);
-    }
-
-    @Test
-    void adminDocDuocAnhCuaBaiNhapVaKhongCanTraCuuBai() {
-        coAnh(5L, thongTin(LESSON_ID));
+        when(lessonRepository.countReadable(LESSON_ID, 1L, true)).thenReturn(1L);
         coDuLieu(5L);
 
-        StoredImage image = service.load(5L, true);
+        StoredImage image = service.load(5L, ADMIN);
 
         assertThat(image.data()).containsExactly(1, 2, 3);
-        verify(lessonRepository, never()).findById(any());
     }
 
     @Test
     void anhKhongTonTaiNemImageNotFound() {
         when(imageRepository.findById(eq(99L), eq(LessonImageInfo.class))).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.load(99L, true)).isInstanceOf(ImageNotFoundException.class);
-        assertThatThrownBy(() -> service.load(99L, false)).isInstanceOf(ImageNotFoundException.class);
+        assertThatThrownBy(() -> service.load(99L, ADMIN)).isInstanceOf(ImageNotFoundException.class);
+        assertThatThrownBy(() -> service.load(99L, HOC_SINH)).isInstanceOf(ImageNotFoundException.class);
     }
 
     // ---- Ảnh bìa ----

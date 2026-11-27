@@ -10,6 +10,7 @@ import {
   uploadCourseCover,
   type AdminCourse,
   type Category,
+  type CourseAccessType,
   type CourseInput,
   type CourseLevel,
   type CourseStatus,
@@ -36,9 +37,11 @@ type FormValues = {
   categoryId: string
   level: CourseLevel
   totalHours: string
+  accessType: CourseAccessType
 }
 
-// Khóa mới mặc định là bản nháp, cơ bản, chưa có học phí và số giờ; nhóm là nhóm đứng đầu danh sách.
+// Khóa mới mặc định là bản nháp, cơ bản, trả phí (giống máy chủ), chưa có học phí và số giờ; nhóm là nhóm đứng đầu
+// danh sách.
 function emptyValues(categories: Category[]): FormValues {
   return {
     slug: '',
@@ -50,7 +53,13 @@ function emptyValues(categories: Category[]): FormValues {
     categoryId: String(categories[0]?.id ?? ''),
     level: 'BASIC',
     totalHours: '0',
+    accessType: 'PAID',
   }
+}
+
+const ACCESS_LABELS: Record<CourseAccessType, string> = {
+  PAID: 'Trả phí',
+  FREE: 'Miễn phí',
 }
 
 // Cùng mức trần với backend.
@@ -76,6 +85,7 @@ function toValues(course: AdminCourse): FormValues {
     categoryId: String(course.categoryId),
     level: course.level,
     totalHours: String(course.totalHours),
+    accessType: course.accessType,
   }
 }
 
@@ -107,6 +117,7 @@ function parseValues(values: FormValues): { input: CourseInput } | { errors: str
       categoryId: Number(values.categoryId),
       level: values.level,
       totalHours: Number(hoursText),
+      accessType: values.accessType,
     },
   }
 }
@@ -235,6 +246,13 @@ function CourseForm({
         options={Object.entries(STATUS_LABELS)}
         onChange={set('status')}
       />
+      <SelectField
+        id={`${idPrefix}-access`}
+        label="Loại khóa"
+        value={values.accessType}
+        options={Object.entries(ACCESS_LABELS)}
+        onChange={set('accessType')}
+      />
       <TextField
         id={`${idPrefix}-tuition`}
         label="Học phí (đồng)"
@@ -342,6 +360,7 @@ function CourseRow({ course, categories, onChanged }: CourseRowProps) {
             <code className="text-sm text-muted">{course.slug}</code>
             <span className="text-sm text-muted">{`Thứ tự ${course.sortOrder}`}</span>
             <span className="text-sm font-medium">{STATUS_LABELS[course.status]}</span>
+            <span className="text-sm font-medium">{ACCESS_LABELS[course.accessType]}</span>
             <span className="text-sm text-muted tabular-nums">
               {course.tuitionVnd > 0 ? formatVnd(course.tuitionVnd) : 'Chưa có học phí'}
             </span>

@@ -1,5 +1,7 @@
 package vn.spacex.lesson;
 
+import vn.spacex.user.Role;
+import vn.spacex.auth.AppUserDetails;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +52,10 @@ class LessonSearchIntegrationTest {
     private long tacGiaId;
     private long khoaId;
 
+    private static AppUserDetails hocSinh() {
+        return new AppUserDetails(7L, "hs@example.com", null, "Học sinh", Role.LEARNER, true);
+    }
+
     @BeforeEach
     void donDuLieu() {
         jdbc.update("DELETE FROM lessons");
@@ -70,7 +76,7 @@ class LessonSearchIntegrationTest {
     }
 
     private ResultActions tim(String tuKhoa) throws Exception {
-        return mockMvc.perform(get("/api/lessons").param("q", tuKhoa).with(user("hocsinh")));
+        return mockMvc.perform(get("/api/lessons").param("q", tuKhoa).with(user(hocSinh())));
     }
 
     @Test
@@ -187,14 +193,14 @@ class LessonSearchIntegrationTest {
         themBai("m2", "Mạng hai", "Tóm tắt", "mạng", "PUBLISHED");
         themBai("m3", "Mạng ba", "Tóm tắt", "mạng", "PUBLISHED");
 
-        String trang0 = mockMvc.perform(get("/api/lessons").param("q", "mạng").param("size", "2").with(user("hocsinh")))
+        String trang0 = mockMvc.perform(get("/api/lessons").param("q", "mạng").param("size", "2").with(user(hocSinh())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items", hasSize(2)))
                 .andExpect(jsonPath("$.totalItems").value(3))
                 .andExpect(jsonPath("$.size").value(2))
                 .andReturn().getResponse().getContentAsString();
         String trang1 = mockMvc.perform(get("/api/lessons").param("q", "mạng").param("size", "2").param("page", "1")
-                        .with(user("hocsinh")))
+                        .with(user(hocSinh())))
                 .andExpect(jsonPath("$.items", hasSize(1)))
                 .andExpect(jsonPath("$.page").value(1))
                 .andExpect(jsonPath("$.totalItems").value(3))
@@ -207,7 +213,7 @@ class LessonSearchIntegrationTest {
         assertThat(gapDuoc).isEqualTo(3);
 
         mockMvc.perform(get("/api/lessons").param("q", "mạng").param("size", "2").param("page", "9")
-                        .with(user("hocsinh")))
+                        .with(user(hocSinh())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items", hasSize(0)))
                 .andExpect(jsonPath("$.totalItems").value(3));
