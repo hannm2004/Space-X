@@ -9,6 +9,7 @@ import AdminLessonEditPage from './pages/AdminLessonEditPage'
 import AdminLessonsPage from './pages/AdminLessonsPage'
 import AdminUsersPage from './pages/AdminUsersPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
+import CourseListPage from './pages/CourseListPage'
 import CoursePage from './pages/CoursePage'
 import HomePage from './pages/HomePage'
 import LessonPage from './pages/LessonPage'
@@ -25,6 +26,7 @@ function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<HomePage />} />
+          <Route path="danh-sach-khoa-hoc" element={<CourseListPage />} />
           <Route path="khoa-hoc/:courseSlug" element={<CoursePage />} />
           <Route path="bai/:lessonSlug" element={<LessonPage />} />
           <Route path="tim-kiem" element={<SearchPage />} />

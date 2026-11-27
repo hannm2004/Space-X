@@ -2,7 +2,7 @@ import { apiRequest } from './client'
 import { asList, asNullableString, asNumber, asRecord, asString, BAD_SHAPE } from './parse'
 
 // coverImageUrl: ảnh bìa khóa do Admin tải lên (công khai, khách cũng xem được); null khi chưa có, giao diện khi đó vẽ
-// hình mặc định theo lớp.
+// hình mặc định.
 // lessonCount: số bài đã đăng của khóa (không tính bài nháp).
 export type Course = {
   id: number
@@ -55,7 +55,7 @@ function asProgressStatus(value: unknown): ProgressStatus {
   return value
 }
 
-function parseCourse(value: unknown): Course {
+export function parseCourse(value: unknown): Course {
   const record = asRecord(value)
   return {
     id: asNumber(record.id),

@@ -18,6 +18,7 @@ import AdminGate from '../AdminGate'
 import { CARD, DANGER, NO_PERMISSION, SECONDARY, SUCCESS_BOX } from '../adminUi'
 import { ApiError } from '../client'
 import CourseCover from '../CourseCover'
+import { formatVnd, LEVEL_LABELS } from '../courseLabels'
 import FilePickButton from '../FilePickButton'
 import { errorMessages } from '../formErrors'
 import { ErrorAlert, SubmitButton, TextField } from '../FormParts'
@@ -50,12 +51,6 @@ function emptyValues(categories: Category[]): FormValues {
     level: 'BASIC',
     totalHours: '0',
   }
-}
-
-const LEVEL_LABELS: Record<CourseLevel, string> = {
-  BASIC: 'Cơ bản',
-  ADVANCED: 'Nâng cao',
-  EXPERT: 'Chuyên sâu',
 }
 
 // Cùng mức trần với backend.
@@ -335,7 +330,7 @@ function CourseRow({ course, categories, onChanged }: CourseRowProps) {
         />
       ) : (
         <div className="flex flex-col gap-4 sm:flex-row">
-          {/* Ảnh bìa hiện cho mọi khóa: ảnh đã tải lên, hoặc hình mặc định theo lớp khi chưa có. */}
+          {/* Ảnh bìa hiện cho mọi khóa: ảnh đã tải lên, hoặc hình mặc định khi chưa có. */}
           <CourseCover
             slug={course.slug}
             coverImageUrl={course.coverImageUrl}
@@ -348,7 +343,7 @@ function CourseRow({ course, categories, onChanged }: CourseRowProps) {
             <span className="text-sm text-muted">{`Thứ tự ${course.sortOrder}`}</span>
             <span className="text-sm font-medium">{STATUS_LABELS[course.status]}</span>
             <span className="text-sm text-muted tabular-nums">
-              {course.tuitionVnd > 0 ? `${course.tuitionVnd.toLocaleString('vi-VN')} đ` : 'Chưa có học phí'}
+              {course.tuitionVnd > 0 ? formatVnd(course.tuitionVnd) : 'Chưa có học phí'}
             </span>
           </div>
           <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm text-muted">
@@ -399,7 +394,7 @@ function CourseRow({ course, categories, onChanged }: CourseRowProps) {
           {/* Bỏ ảnh bìa là xóa ảnh đã tải lên (không hoàn tác được), nên cũng phải xác nhận như xóa khóa. */}
           {mode === 'removeCover' && (
             <div className="mt-3 rounded-lg border border-line bg-paper p-3">
-              <p>{`Bỏ ảnh bìa của khóa "${course.title}"? Ảnh đã tải lên sẽ bị xóa và khóa quay về hình mặc định theo lớp. Việc này không hoàn tác được.`}</p>
+              <p>{`Bỏ ảnh bìa của khóa "${course.title}"? Ảnh đã tải lên sẽ bị xóa và khóa quay về hình mặc định. Việc này không hoàn tác được.`}</p>
               <div className="mt-3 flex gap-3">
                 <button type="button" disabled={busy} onClick={handleRemoveCover} className={DANGER}>
                   Xác nhận bỏ ảnh bìa

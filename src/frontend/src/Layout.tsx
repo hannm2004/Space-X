@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router'
 import { SECONDARY } from './buttons'
+import { fetchCategories } from './catalogApi'
+import { useLoad } from './useLoad'
 import HealthStatus from './HealthStatus'
 import HeaderSearch from './HeaderSearch'
 import ThemeToggle from './ThemeToggle'
@@ -27,13 +29,14 @@ function BrandLogo() {
 
 function PrimaryNav({ isAdmin }: { isAdmin: boolean }) {
   const { pathname } = useLocation()
-  // Trang khóa và trang bài đều thuộc mục "Khóa học".
-  const inCourses = pathname === '/' || pathname.startsWith('/khoa-hoc') || pathname.startsWith('/bai/')
+  // Danh sách, trang khóa và trang bài đều thuộc mục "Khóa học".
+  const inCourses =
+    pathname === '/danh-sach-khoa-hoc' || pathname.startsWith('/khoa-hoc') || pathname.startsWith('/bai/')
   const inAdmin = pathname.startsWith('/quan-tri')
 
   return (
     <nav aria-label="Chính" className="flex items-center gap-1">
-      <Link to="/" className={NAV_LINK} aria-current={inCourses ? 'page' : undefined}>
+      <Link to="/danh-sach-khoa-hoc" className={NAV_LINK} aria-current={inCourses ? 'page' : undefined}>
         Khóa học
       </Link>
       <Link to="/#hoi-dap" className={NAV_LINK}>
@@ -115,6 +118,29 @@ function FooterColumn({ title, children }: { title: string; children: ReactNode 
 
 const FOOTER_LINK = 'text-muted hover:text-ink hover:underline'
 
+// Nhóm chương trình lấy từ máy chủ. Đang tải hoặc lỗi thì cột vẫn còn liên kết tới danh sách đầy đủ, không báo lỗi:
+// chân trang không được làm phiền trang đang xem.
+function CourseColumn() {
+  const { state } = useLoad(fetchCategories, 'footer-categories')
+  const categories = state.kind === 'ok' ? state.data : []
+  return (
+    <FooterColumn title="Khóa học">
+      <li>
+        <Link to="/danh-sach-khoa-hoc" className={FOOTER_LINK}>
+          Tất cả khóa học
+        </Link>
+      </li>
+      {categories.map((category) => (
+        <li key={category.id}>
+          <Link to={`/danh-sach-khoa-hoc?nhom=${encodeURIComponent(category.slug)}`} className={FOOTER_LINK}>
+            {category.name}
+          </Link>
+        </li>
+      ))}
+    </FooterColumn>
+  )
+}
+
 // Khung chung của mọi trang: thanh đầu trang, vùng nội dung của trang đang mở và chân trang.
 export default function Layout() {
   const { state } = useAuth()
@@ -157,34 +183,16 @@ export default function Layout() {
       </main>
 
       <footer className="border-t border-line bg-surface">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm sm:px-6 md:grid-cols-[1.5fr_1fr_1fr_1fr_1fr]">
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm sm:px-6 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
           <div>
             <p className="flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
               <BrandLogo />
               <span translate="no">SPACE-X</span>
             </p>
-            <p className="mt-3 max-w-xs text-muted">
-              Học liệu Tin học lớp 6 đến lớp 12 theo Chương trình GDPT 2018. Dự án học tập, miễn phí.
-            </p>
+            <p className="mt-3 max-w-xs text-muted">Trung tâm Tin học SPACE-X: khóa học và học liệu trực tuyến.</p>
+            <p className="mt-2 max-w-xs text-muted">Đồ án sinh viên, môi trường thử nghiệm, không thu tiền thật.</p>
           </div>
-          <FooterColumn title="Trung học cơ sở">
-            {[6, 7, 8, 9].map((grade) => (
-              <li key={grade}>
-                <Link to={`/khoa-hoc/tin-hoc-${grade}`} className={FOOTER_LINK}>
-                  Lớp {grade}
-                </Link>
-              </li>
-            ))}
-          </FooterColumn>
-          <FooterColumn title="Trung học phổ thông">
-            {[10, 11, 12].map((grade) => (
-              <li key={grade}>
-                <Link to={`/khoa-hoc/tin-hoc-${grade}`} className={FOOTER_LINK}>
-                  Lớp {grade}
-                </Link>
-              </li>
-            ))}
-          </FooterColumn>
+          <CourseColumn />
           <FooterColumn title="Hỗ trợ">
             <li>
               <Link to="/gioi-thieu" className={FOOTER_LINK}>

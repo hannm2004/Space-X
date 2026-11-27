@@ -35,29 +35,31 @@ describe('CourseCover', () => {
     expect(img.getAttribute('fetchpriority')).toBe('high')
   })
 
-  it('chưa có ảnh bìa thì hiện hình mặc định theo lớp, để khóa nào cũng có ảnh bìa', () => {
+  it('chưa có ảnh bìa thì hiện hình mặc định mang tên trung tâm và chữ tắt của khóa', () => {
     const { container } = render(<CourseCover slug="tin-hoc-10" coverImageUrl={null} />)
 
     expect(container.querySelector('img')).toBeNull()
     expect(cover(container).dataset.kind).toBe('generated')
-    expect(cover(container).textContent).toContain('10')
-    expect(cover(container).textContent).toContain('TIN HỌC')
+    expect(cover(container).textContent).toContain('SPACE-X')
+    expect(cover(container).textContent).toContain('TH10')
   })
 
   it('thiếu coverImageUrl (máy chủ cũ) cũng dùng hình mặc định', () => {
-    const { container } = render(<CourseCover slug="tin-hoc-6" />)
+    const { container } = render(<CourseCover slug="excel" />)
 
     expect(cover(container).dataset.kind).toBe('generated')
-    expect(cover(container).textContent).toContain('6')
+    expect(cover(container).textContent).toContain('E')
   })
 
-  it('slug không có số lớp thì lấy chữ cái đầu viết hoa thay cho số', () => {
-    const { container } = render(<CourseCover slug="lap-trinh-python" />)
+  it('chữ tắt lấy chữ đầu mỗi từ, giữ nguyên số và dài tối đa bốn ký tự', () => {
+    const chu = (slug: string) => render(<CourseCover slug={slug} />).container.querySelectorAll('text')[1].textContent
 
-    expect(cover(container).textContent).toContain('L')
+    expect(chu('lap-trinh-python')).toBe('LTP')
+    expect(chu('thiet-ke-web-voi-react')).toBe('TKWV')
+    expect(chu('python-3')).toBe('P3')
   })
 
-  it('hình mặc định của cùng một khóa luôn giống nhau, của hai lớp thì khác nhau', () => {
+  it('hình mặc định của cùng một khóa luôn giống nhau, của hai khóa thì khác nhau', () => {
     const a = render(<CourseCover slug="tin-hoc-10" />)
     const b = render(<CourseCover slug="tin-hoc-10" />)
     const c = render(<CourseCover slug="tin-hoc-11" />)
