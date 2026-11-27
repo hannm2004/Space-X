@@ -3,9 +3,12 @@ package vn.spacex.auth;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -28,12 +31,15 @@ public class AuthController {
 
     private final AuthService authService;
     private final AuthenticationManager authenticationManager;
+    private final LoginAttemptLimiter loginAttemptLimiter;
     private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
     private final SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder.getContextHolderStrategy();
 
-    public AuthController(AuthService authService, AuthenticationManager authenticationManager) {
+    public AuthController(AuthService authService, AuthenticationManager authenticationManager,
+                          LoginAttemptLimiter loginAttemptLimiter) {
         this.authService = authService;
         this.authenticationManager = authenticationManager;
+        this.loginAttemptLimiter = loginAttemptLimiter;
     }
 
     // Đăng ký không tự đăng nhập (D24): học sinh phải gọi tiếp /login.
@@ -45,10 +51,19 @@ public class AuthController {
 
     @PostMapping("/login")
     UserResponse login(@Valid @RequestBody LoginRequest body, HttpServletRequest request, HttpServletResponse response) {
+        String ip = request.getRemoteAddr();
+        loginAttemptLimiter.acquire(body.email(), ip);
         // Lỗi hạ tầng (database sập...) là AuthenticationServiceException, không nằm trong handler 401 bên dưới
         // nên rơi xuống GlobalExceptionHandler thành 500: database sập không có nghĩa là người dùng gõ sai mật khẩu.
-        Authentication authentication = authenticationManager.authenticate(
-                UsernamePasswordAuthenticationToken.unauthenticated(body.email(), body.password()));
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    UsernamePasswordAuthenticationToken.unauthenticated(body.email(), body.password()));
+        } catch (AuthenticationServiceException e) {
+            loginAttemptLimiter.release(body.email(), ip);
+            throw e;
+        }
+        loginAttemptLimiter.succeeded(body.email(), ip);
         // Đổi session ID sau khi đăng nhập để chống session fixation.
         if (request.getSession(false) != null) {
             request.changeSessionId();
@@ -65,5 +80,15 @@ public class AuthController {
     @ExceptionHandler({BadCredentialsException.class, AccountStatusException.class})
     ProblemDetail dangNhapThatBai() {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Email hoặc mật khẩu không chính xác");
+    }
+
+    // Cùng một câu cho email có thật và email bịa. Retry-After tính bằng giây, làm tròn lên.
+    @ExceptionHandler(TooManyLoginAttemptsException.class)
+    ResponseEntity<ProblemDetail> thuQuaNhieuLan(TooManyLoginAttemptsException ex) {
+        long seconds = Math.max(1, ex.retryAfter().plusMillis(999).toSeconds());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, Long.toString(seconds))
+                .body(ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS,
+                        "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau."));
     }
 }
