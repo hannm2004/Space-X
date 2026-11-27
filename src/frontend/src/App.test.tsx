@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { fetchHealth } from './api'
 import { fetchCurrentUser, fetchProfile, logout } from './authApi'
+import { fetchCatalog, fetchCategories } from './catalogApi'
 import { ApiError } from './client'
 import { fetchCourses, fetchLesson, fetchLessons, fetchProgress, recordProgress, searchLessons } from './learningApi'
 
@@ -17,6 +18,7 @@ vi.mock('./authApi', () => ({
   fetchProfile: vi.fn(),
   updateDisplayName: vi.fn(),
 }))
+vi.mock('./catalogApi', () => ({ fetchCatalog: vi.fn(), fetchCategories: vi.fn() }))
 vi.mock('./learningApi', () => ({
   fetchCourses: vi.fn(),
   fetchLessons: vi.fn(),
@@ -32,6 +34,8 @@ beforeEach(() => {
   vi.mocked(logout).mockReset()
   vi.mocked(logout).mockResolvedValue(undefined)
   vi.mocked(fetchHealth).mockResolvedValue('UP')
+  vi.mocked(fetchCatalog).mockResolvedValue([])
+  vi.mocked(fetchCategories).mockResolvedValue([{ id: 4, slug: 'van-phong', name: 'Tin học văn phòng' }])
   vi.mocked(fetchCourses).mockResolvedValue([
     { id: 1, slug: 'tin-hoc-10', title: 'Tin học 10', description: null, lessonCount: 1 },
   ])
@@ -68,7 +72,7 @@ describe('App — định tuyến', () => {
   it('đường dẫn / hiện trang chủ', async () => {
     renderAt('/')
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Học Tin học từ lớp 6 đến lớp 12' })).not.toBeNull()
+    expect(screen.getByRole('heading', { level: 1, name: 'Khóa học Tin học tại SPACE-X' })).not.toBeNull()
     expect(await screen.findByText('Hệ thống hoạt động bình thường')).not.toBeNull()
   })
 
@@ -89,6 +93,19 @@ describe('App — định tuyến', () => {
   })
 
   it('từ trang chủ vào khóa, vào bài, rồi quay lại đúng khóa đó', async () => {
+    vi.mocked(fetchCatalog).mockResolvedValue([
+      {
+        id: 1,
+        slug: 'tin-hoc-10',
+        title: 'Tin học 10',
+        description: null,
+        lessonCount: 1,
+        category: { id: 1, slug: 'thieu-nien', name: 'Khóa cho thiếu niên' },
+        level: 'BASIC',
+        totalHours: 0,
+        tuitionVnd: 0,
+      },
+    ])
     renderAt('/')
 
     fireEvent.click(await screen.findByRole('link', { name: /Tin học 10/ }))
@@ -320,11 +337,19 @@ describe('App — thanh điều hướng theo trạng thái đăng nhập', () =
     expect(within(guestHeader).queryByRole('link', { name: 'Quản trị' })).toBeNull()
   })
 
-  it('thanh đầu trang có điều hướng chính với liên kết "Khóa học" về trang chủ', async () => {
+  it('thanh đầu trang có điều hướng chính với liên kết "Khóa học" tới danh sách khóa', async () => {
     renderAt('/khong-co-trang-nay')
 
     const nav = within(await screen.findByRole('banner')).getByRole('navigation', { name: 'Chính' })
-    expect(within(nav).getByRole('link', { name: 'Khóa học' }).getAttribute('href')).toBe('/')
+    expect(within(nav).getByRole('link', { name: 'Khóa học' }).getAttribute('href')).toBe('/danh-sach-khoa-hoc')
+  })
+
+  it('/danh-sach-khoa-hoc hiện trang danh sách và đánh dấu mục "Khóa học" đang mở', async () => {
+    renderAt('/danh-sach-khoa-hoc')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Danh sách khóa học' })).not.toBeNull()
+    const nav = within(screen.getByRole('banner')).getByRole('navigation', { name: 'Chính' })
+    expect(within(nav).getByRole('link', { name: 'Khóa học' }).getAttribute('aria-current')).toBe('page')
   })
 
   it('trạng thái hệ thống nằm ở chân trang của mọi trang, không nằm trong nội dung trang chủ', async () => {
@@ -349,7 +374,7 @@ describe('App — thanh điều hướng theo trạng thái đăng nhập', () =
     expect(await screen.findByRole('link', { name: 'Đăng nhập' })).not.toBeNull()
     expect(logout).toHaveBeenCalledTimes(1)
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Học Tin học từ lớp 6 đến lớp 12' }),
+      await screen.findByRole('heading', { level: 1, name: 'Khóa học Tin học tại SPACE-X' }),
     ).not.toBeNull()
     expect(screen.queryByRole('heading', { level: 1, name: 'Đăng nhập' })).toBeNull()
   })
@@ -493,12 +518,27 @@ describe('App — chân trang và trang chính sách', () => {
     expect(link.getAttribute('rel')).toContain('noopener')
   })
 
-  it('chân trang liệt kê các khóa theo cấp học', async () => {
+  it('chân trang liệt kê nhóm chương trình, ghi rõ đồ án không thu tiền thật, không còn cột theo lớp', async () => {
     renderAt('/khong-co-trang-nay')
 
     const footer = await screen.findByRole('contentinfo')
-    expect(within(footer).getByText('Trung học cơ sở')).not.toBeNull()
-    expect(within(footer).getByText('Trung học phổ thông')).not.toBeNull()
+    const nhom = await within(footer).findByRole('link', { name: 'Tin học văn phòng' })
+    expect(nhom.getAttribute('href')).toBe('/danh-sach-khoa-hoc?nhom=van-phong')
+    expect(within(footer).getByRole('link', { name: 'Tất cả khóa học' }).getAttribute('href')).toBe(
+      '/danh-sach-khoa-hoc',
+    )
+    expect(footer.textContent).toContain('Đồ án sinh viên, môi trường thử nghiệm, không thu tiền thật')
+    expect(footer.textContent).not.toMatch(/Trung học|Lớp \d|GDPT|miễn phí/i)
+  })
+
+  it('không tải được nhóm chương trình thì chân trang vẫn còn liên kết tới danh sách khóa', async () => {
+    vi.mocked(fetchCategories).mockRejectedValue(new Error('mạng'))
+
+    renderAt('/khong-co-trang-nay')
+
+    const footer = await screen.findByRole('contentinfo')
+    expect(within(footer).getByRole('link', { name: 'Tất cả khóa học' })).not.toBeNull()
+    expect(within(footer).queryByRole('alert')).toBeNull()
   })
 
   it('thanh điều hướng chính có liên kết Hỏi đáp tới phần câu hỏi thường gặp', async () => {

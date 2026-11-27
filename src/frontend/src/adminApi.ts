@@ -1,6 +1,10 @@
 import type { Role } from './authApi'
+import { asCourseLevel, type CourseLevel } from './catalogApi'
 import { apiRequest } from './client'
 import { asBoolean, asList, asNullableString, asNumber, asRecord, asString, BAD_SHAPE } from './parse'
+
+// Trang quản trị dùng chung danh sách nhóm với trang công khai.
+export { fetchCategories, type Category, type CourseLevel } from './catalogApi'
 
 export type AuthProvider = 'LOCAL' | 'GOOGLE'
 
@@ -126,9 +130,6 @@ export async function resetUserPassword(id: number): Promise<TemporaryPassword> 
 
 // DRAFT: đang soạn; PUBLISHED: đang hiển thị; ARCHIVED: ngừng bán.
 export type CourseStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
-export type CourseLevel = 'BASIC' | 'ADVANCED' | 'EXPERT'
-// Nhóm chương trình (GET /api/categories, công khai).
-export type Category = { id: number; slug: string; name: string }
 export type AdminCourse = {
   categoryId: number
   level: CourseLevel
@@ -197,20 +198,6 @@ const LESSON_PAGE_SIZE = 20
 function asCourseStatus(value: unknown): CourseStatus {
   if (value !== 'DRAFT' && value !== 'PUBLISHED' && value !== 'ARCHIVED') throw new Error(BAD_SHAPE)
   return value
-}
-
-function asCourseLevel(value: unknown): CourseLevel {
-  if (value !== 'BASIC' && value !== 'ADVANCED' && value !== 'EXPERT') throw new Error(BAD_SHAPE)
-  return value
-}
-
-function parseCategory(value: unknown): Category {
-  const record = asRecord(value)
-  return { id: asNumber(record.id), slug: asString(record.slug), name: asString(record.name) }
-}
-
-export async function fetchCategories(): Promise<Category[]> {
-  return asList(await apiRequest('GET', '/api/categories'), parseCategory)
 }
 
 function parseAdminCourse(value: unknown): AdminCourse {

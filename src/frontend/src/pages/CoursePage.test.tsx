@@ -64,7 +64,7 @@ describe('CoursePage — ảnh bìa khóa học', () => {
     expect(cover.querySelector('img')?.getAttribute('loading')).toBe('eager')
   })
 
-  it('khóa chưa có ảnh bìa thì đầu trang hiện hình mặc định theo lớp', async () => {
+  it('khóa chưa có ảnh bìa thì đầu trang hiện hình mặc định', async () => {
     fetchLessonsMock.mockResolvedValue([])
 
     renderCourse()
