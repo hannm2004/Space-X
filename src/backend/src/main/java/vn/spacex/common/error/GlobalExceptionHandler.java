@@ -17,6 +17,8 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import vn.spacex.auth.EmailAlreadyExistsException;
 import vn.spacex.common.security.SecurityConfig;
+import vn.spacex.course.CategoryNotFoundException;
+import vn.spacex.course.InvalidCourseFilterException;
 import vn.spacex.course.CourseHasLessonsException;
 import vn.spacex.course.CourseNotFoundException;
 import vn.spacex.course.CourseSlugAlreadyExistsException;
@@ -55,6 +57,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(CourseSlugAlreadyExistsException.class)
     ProblemDetail xuLySlugKhoaHocTrung() {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "Slug khóa học đã tồn tại");
+    }
+
+    @ExceptionHandler(CategoryNotFoundException.class)
+    ProblemDetail xuLyKhongTimThayNhomKhoaHoc() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Không tìm thấy nhóm khóa học");
+    }
+
+    // Câu cố định, không lặp lại tham số người dùng gửi lên.
+    @ExceptionHandler(InvalidCourseFilterException.class)
+    ProblemDetail xuLyBoLocKhongHopLe() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Bộ lọc không hợp lệ");
     }
 
     @ExceptionHandler(CourseHasLessonsException.class)

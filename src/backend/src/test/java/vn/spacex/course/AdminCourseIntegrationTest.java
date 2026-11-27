@@ -155,7 +155,7 @@ class AdminCourseIntegrationTest {
     // ---- Tạo ----
 
     @Test
-    void adminTaoKhoaGhiDungVaoMySqlVaDanhSachCongKhaiThayNgay() throws Exception {
+    void adminTaoKhoaGhiDungVaoMySqlVaChiHienCongKhaiSauKhiDang() throws Exception {
         Cookie session = dangNhapAdmin();
 
         mockMvc.perform(post("/api/admin/courses").cookie(session).with(csrf())
@@ -170,6 +170,18 @@ class AdminCourseIntegrationTest {
         assertThat(row.get("title")).isEqualTo("Tin học 10");
         assertThat(row.get("description")).isEqualTo("Chương trình lớp 10");
         assertThat(row.get("sort_order")).isEqualTo(2);
+
+        // Khóa mới là bản nháp nên chưa hiện công khai.
+        mockMvc.perform(get("/api/courses"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        long id = jdbc.queryForObject("SELECT id FROM courses WHERE slug = 'tin-hoc-10'", Long.class);
+        mockMvc.perform(put("/api/admin/courses/" + id).cookie(session).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"slug":"tin-hoc-10","title":"Tin học 10","sortOrder":2,"status":"PUBLISHED"}"""))
+                .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/courses"))
                 .andExpect(status().isOk())
@@ -213,6 +225,33 @@ class AdminCourseIntegrationTest {
         assertThat(jdbc.queryForObject(
                 "SELECT CONCAT_WS('|', title, status, tuition_vnd) FROM courses WHERE id = ?", String.class, id))
                 .isEqualTo("Tên mới|PUBLISHED|1500000");
+    }
+
+    @Test
+    void adminDoiTrinhDoSoGioVaNhomKhongTonTaiThiKhongDoiGi() throws Exception {
+        Cookie session = dangNhapAdmin();
+        long id = themKhoa("tin-hoc-10", 1);
+        long nhom = jdbc.queryForObject("SELECT id FROM categories WHERE slug = 'khoa-cho-thieu-nien'", Long.class);
+
+        mockMvc.perform(put("/api/admin/courses/" + id).cookie(session).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"slug":"tin-hoc-10","title":"Tin học 10","sortOrder":1,
+                                 "categoryId":%d,"level":"EXPERT","totalHours":60}""".formatted(nhom)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.categoryId").value(nhom))
+                .andExpect(jsonPath("$.level").value("EXPERT"))
+                .andExpect(jsonPath("$.totalHours").value(60));
+        mockMvc.perform(put("/api/admin/courses/" + id).cookie(session).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"slug":"tin-hoc-10","title":"Đổi tên","sortOrder":1,"categoryId":999999}"""))
+                .andExpect(status().isNotFound());
+
+        assertThat(jdbc.queryForObject(
+                "SELECT CONCAT_WS('|', title, category_id, level, total_hours) FROM courses WHERE id = ?",
+                String.class, id))
+                .isEqualTo("Tin học 10|" + nhom + "|EXPERT|60");
     }
 
     @Test

@@ -5,10 +5,13 @@ import {
   deleteCourse,
   deleteCourseCover,
   fetchAdminCourses,
+  fetchCategories,
   updateCourse,
   uploadCourseCover,
   type AdminCourse,
+  type Category,
   type CourseInput,
+  type CourseLevel,
   type CourseStatus,
 } from '../adminApi'
 import AdminGate from '../AdminGate'
@@ -29,10 +32,34 @@ type FormValues = {
   sortOrder: string
   status: CourseStatus
   tuition: string
+  categoryId: string
+  level: CourseLevel
+  totalHours: string
 }
 
-// Khóa mới mặc định là bản nháp chưa có học phí, giống mặc định của máy chủ.
-const EMPTY_VALUES: FormValues = { slug: '', title: '', description: '', sortOrder: '', status: 'DRAFT', tuition: '0' }
+// Khóa mới mặc định là bản nháp, cơ bản, chưa có học phí và số giờ; nhóm là nhóm đứng đầu danh sách.
+function emptyValues(categories: Category[]): FormValues {
+  return {
+    slug: '',
+    title: '',
+    description: '',
+    sortOrder: '',
+    status: 'DRAFT',
+    tuition: '0',
+    categoryId: String(categories[0]?.id ?? ''),
+    level: 'BASIC',
+    totalHours: '0',
+  }
+}
+
+const LEVEL_LABELS: Record<CourseLevel, string> = {
+  BASIC: 'Cơ bản',
+  ADVANCED: 'Nâng cao',
+  EXPERT: 'Chuyên sâu',
+}
+
+// Cùng mức trần với backend.
+const MAX_HOURS = 10_000
 
 const STATUS_LABELS: Record<CourseStatus, string> = {
   DRAFT: 'Bản nháp',
@@ -51,6 +78,9 @@ function toValues(course: AdminCourse): FormValues {
     sortOrder: String(course.sortOrder),
     status: course.status,
     tuition: String(course.tuitionVnd),
+    categoryId: String(course.categoryId),
+    level: course.level,
+    totalHours: String(course.totalHours),
   }
 }
 
@@ -66,6 +96,10 @@ function parseValues(values: FormValues): { input: CourseInput } | { errors: str
   if (!/^\d{1,10}$/.test(tuitionText) || Number(tuitionText) > MAX_TUITION) {
     errors.push('Học phí phải là số nguyên từ 0 đến 1.000.000.000 đồng, không có dấu chấm.')
   }
+  const hoursText = values.totalHours.trim()
+  if (!/^\d{1,5}$/.test(hoursText) || Number(hoursText) > MAX_HOURS) {
+    errors.push('Số giờ học phải là số nguyên từ 0 đến 10000.')
+  }
   if (errors.length > 0) return { errors }
   return {
     input: {
@@ -75,11 +109,40 @@ function parseValues(values: FormValues): { input: CourseInput } | { errors: str
       sortOrder: Number(sortText),
       status: values.status,
       tuitionVnd: Number(tuitionText),
+      categoryId: Number(values.categoryId),
+      level: values.level,
+      totalHours: Number(hoursText),
     },
   }
 }
 
+type SelectFieldProps = {
+  id: string
+  label: string
+  value: string
+  options: [value: string, label: string][]
+  onChange: (value: string) => void
+}
+
+function SelectField({ id, label, value, options, onChange }: SelectFieldProps) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium">
+        {label}
+      </label>
+      <select id={id} value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 field">
+        {options.map(([optionValue, optionLabel]) => (
+          <option key={optionValue} value={optionValue}>
+            {optionLabel}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
 type CourseFormProps = {
+  categories: Category[]
   idPrefix: string
   initial: FormValues
   submitLabel: string
@@ -89,12 +152,21 @@ type CourseFormProps = {
   onCancel?: () => void
 }
 
-function CourseForm({ idPrefix, initial, submitLabel, pendingLabel, clearOnSuccess, onSubmit, onCancel }: CourseFormProps) {
+function CourseForm({
+  categories,
+  idPrefix,
+  initial,
+  submitLabel,
+  pendingLabel,
+  clearOnSuccess,
+  onSubmit,
+  onCancel,
+}: CourseFormProps) {
   const [values, setValues] = useState(initial)
   const [busy, setBusy] = useState(false)
   const [messages, setMessages] = useState<string[]>([])
 
-  function set(field: Exclude<keyof FormValues, 'status'>) {
+  function set(field: keyof FormValues) {
     return (value: string) => setValues((current) => ({ ...current, [field]: value }))
   }
 
@@ -110,7 +182,7 @@ function CourseForm({ idPrefix, initial, submitLabel, pendingLabel, clearOnSucce
     setMessages([])
     try {
       await onSubmit(parsed.input)
-      if (clearOnSuccess) setValues(EMPTY_VALUES)
+      if (clearOnSuccess) setValues(initial)
     } catch (error) {
       setMessages(errorMessages(error, 'Không lưu được khóa học. Hãy thử lại.'))
     }
@@ -140,23 +212,34 @@ function CourseForm({ idPrefix, initial, submitLabel, pendingLabel, clearOnSucce
         onChange={set('sortOrder')}
         hint="Số nhỏ hiện trước."
       />
-      <div>
-        <label htmlFor={`${idPrefix}-status`} className="block text-sm font-medium">
-          Trạng thái
-        </label>
-        <select
-          id={`${idPrefix}-status`}
-          value={values.status}
-          onChange={(event) => setValues((current) => ({ ...current, status: event.target.value as CourseStatus }))}
-          className="mt-1 field"
-        >
-          {Object.entries(STATUS_LABELS).map(([status, label]) => (
-            <option key={status} value={status}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelectField
+        id={`${idPrefix}-category`}
+        label="Nhóm chương trình"
+        value={values.categoryId}
+        options={categories.map((category) => [String(category.id), category.name])}
+        onChange={set('categoryId')}
+      />
+      <SelectField
+        id={`${idPrefix}-level`}
+        label="Trình độ"
+        value={values.level}
+        options={Object.entries(LEVEL_LABELS)}
+        onChange={set('level')}
+      />
+      <TextField
+        id={`${idPrefix}-hours`}
+        label="Số giờ học"
+        value={values.totalHours}
+        onChange={set('totalHours')}
+        hint="Tổng số giờ của khóa. Để 0 nếu chưa chốt."
+      />
+      <SelectField
+        id={`${idPrefix}-status`}
+        label="Trạng thái"
+        value={values.status}
+        options={Object.entries(STATUS_LABELS)}
+        onChange={set('status')}
+      />
       <TextField
         id={`${idPrefix}-tuition`}
         label="Học phí (đồng)"
@@ -179,7 +262,9 @@ function CourseForm({ idPrefix, initial, submitLabel, pendingLabel, clearOnSucce
 
 type Mode = 'view' | 'edit' | 'delete' | 'removeCover'
 
-function CourseRow({ course, onChanged }: { course: AdminCourse; onChanged: (message: string) => void }) {
+type CourseRowProps = { course: AdminCourse; categories: Category[]; onChanged: (message: string) => void }
+
+function CourseRow({ course, categories, onChanged }: CourseRowProps) {
   const [mode, setMode] = useState<Mode>('view')
   const [busy, setBusy] = useState(false)
   const [messages, setMessages] = useState<string[]>([])
@@ -237,6 +322,7 @@ function CourseRow({ course, onChanged }: { course: AdminCourse; onChanged: (mes
     <li className={CARD}>
       {mode === 'edit' ? (
         <CourseForm
+          categories={categories}
           idPrefix={`course-${course.id}`}
           initial={toValues(course)}
           submitLabel="Lưu thay đổi"
@@ -264,6 +350,11 @@ function CourseRow({ course, onChanged }: { course: AdminCourse; onChanged: (mes
             <span className="text-sm text-muted tabular-nums">
               {course.tuitionVnd > 0 ? `${course.tuitionVnd.toLocaleString('vi-VN')} đ` : 'Chưa có học phí'}
             </span>
+          </div>
+          <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm text-muted">
+            <span>{categories.find((category) => category.id === course.categoryId)?.name}</span>
+            <span>{LEVEL_LABELS[course.level]}</span>
+            <span>{course.totalHours > 0 ? `${course.totalHours} giờ` : 'Chưa có số giờ'}</span>
           </div>
           {course.description && <p className="mt-1 text-ink">{course.description}</p>}
           {mode === 'view' && (
@@ -354,6 +445,8 @@ function CourseRow({ course, onChanged }: { course: AdminCourse; onChanged: (mes
 
 function CourseManager() {
   const { state, reload } = useLoad(fetchAdminCourses, 'courses')
+  // Tải riêng: reload() sau mỗi thay đổi không làm form thêm khóa bị tháo ra rồi dựng lại.
+  const { state: categories, reload: reloadCategories } = useLoad(fetchCategories, 'categories')
   const [status, setStatus] = useState<string | null>(null)
 
   function changed(message: string) {
@@ -362,7 +455,9 @@ function CourseManager() {
   }
 
   let list
-  if (state.kind === 'loading') {
+  if (categories.kind === 'error') {
+    list = <LoadError message="Không tải được danh sách nhóm chương trình." onRetry={reloadCategories} />
+  } else if (state.kind === 'loading' || categories.kind === 'loading') {
     list = <p className="mt-6 text-muted">Đang tải...</p>
   } else if (state.kind === 'error') {
     list =
@@ -379,7 +474,7 @@ function CourseManager() {
     list = (
       <ul className="mt-6 space-y-3">
         {state.data.map((course) => (
-          <CourseRow key={course.id} course={course} onChanged={changed} />
+          <CourseRow key={course.id} course={course} categories={categories.data} onChanged={changed} />
         ))}
       </ul>
     )
@@ -405,17 +500,20 @@ function CourseManager() {
           Thêm khóa học
         </h2>
         <div className="mt-3">
-          <CourseForm
-            idPrefix="new-course"
-            initial={EMPTY_VALUES}
-            submitLabel="Thêm khóa học"
-            pendingLabel="Đang thêm..."
-            clearOnSuccess
-            onSubmit={async (input) => {
-              await createCourse(input)
-              changed('Đã thêm khóa học.')
-            }}
-          />
+          {categories.kind === 'ok' && (
+            <CourseForm
+              categories={categories.data}
+              idPrefix="new-course"
+              initial={emptyValues(categories.data)}
+              submitLabel="Thêm khóa học"
+              pendingLabel="Đang thêm..."
+              clearOnSuccess
+              onSubmit={async (input) => {
+                await createCourse(input)
+                changed('Đã thêm khóa học.')
+              }}
+            />
+          )}
         </div>
       </section>
 

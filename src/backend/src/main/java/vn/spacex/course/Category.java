@@ -7,7 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-// Nhóm chương trình. Hiện mới cần id để gắn khóa vào nhóm; tên và thứ tự sẽ ánh xạ khi có API danh sách theo nhóm.
+// Nhóm chương trình (menu theo nhóm). Chưa có API tạo hay sửa nhóm: nhóm do migration tạo.
 @Entity
 @Table(name = "categories")
 public class Category {
@@ -19,7 +19,21 @@ public class Category {
     @Column(nullable = false)
     private String slug;
 
+    @Column(nullable = false)
+    private String name;
+
+    @Column(name = "sort_order", nullable = false)
+    private int sortOrder;
+
     protected Category() {
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getSortOrder() {
+        return sortOrder;
     }
 
     public Long getId() {

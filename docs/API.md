@@ -119,9 +119,10 @@ Người dùng hiện tại luôn lấy từ session. `userId` gửi lên (đư�
 
 | Method | Đường dẫn | Quyền | Mô tả |
 |---|---|---|---|
-| GET | `/api/courses` | Công khai | Danh sách khóa học, sắp theo `sort_order` rồi `id`. Mỗi khóa: `id`, `slug`, `title`, `description` (`null` nếu để trống), `coverImageUrl` (ảnh bìa khóa do Admin tải lên, dạng `/api/courses/{slug}/cover?v=<mốc thời gian>`; `null` nếu chưa có, khi đó giao diện vẽ hình mặc định theo lớp), `lessonCount` (số bài **Đã đăng** của khóa, không tính bài Nháp; `0` nếu chưa có bài). Chưa có khóa nào → `[]` |
+| GET | `/api/courses` | Công khai | Danh sách khóa **đã đăng** (`PUBLISHED`), mặc định sắp theo `sort_order` rồi `id`. Mỗi khóa: `id`, `slug`, `title`, `description` (`null` nếu để trống), `coverImageUrl` (ảnh bìa khóa do Admin tải lên, dạng `/api/courses/{slug}/cover?v=<mốc thời gian>`; `null` nếu chưa có, khi đó giao diện vẽ hình mặc định theo lớp), `lessonCount` (số bài **Đã đăng** của khóa, không tính bài Nháp; `0` nếu chưa có bài), `category` (`{id, slug, name}`), `level`, `totalHours` (`0` nếu chưa nhập), `tuitionVnd` (`0` nếu chưa có học phí). Không có khóa nào khớp → `[]`. Tham số lọc, đều tùy chọn và kết hợp được: `category` (slug nhóm; slug lạ → `[]`), `level` (`BASIC`, `ADVANCED`, `EXPERT`), `duration` (số giờ) và `price` (đồng) viết dạng khoảng `min-max` được bỏ một đầu (`20-40`, `-40`, `20-`; tối đa 10 chữ số, tính cả hai đầu), `sort` (`price_asc`, `price_desc`). Giá trị sai (`level` lạ, khoảng sai dạng hoặc đầu trên nhỏ hơn đầu dưới, `sort` khác) → `400`; tham số để trống coi như không gửi |
+| GET | `/api/categories` | Công khai | Nhóm chương trình `[{id, slug, name}]`, sắp theo `sort_order` rồi `id` |
 | GET | `/api/courses/{slug}/cover` | Công khai | Ảnh bìa của khóa (D35): trả byte ảnh với `Content-Type` là loại do máy chủ nhận diện lúc tải lên (PNG, JPEG hoặc WebP), `Cache-Control: public, max-age=3600`, `X-Content-Type-Options: nosniff`. Công khai vì trang chủ cho khách thấy khóa học; khác ảnh trong bài (`/api/images/{id}`) vẫn cần đăng nhập. Khóa không tồn tại hoặc chưa có ảnh bìa → `404` |
-| GET | `/api/courses/{slug}/lessons` | Công khai | Danh sách bài Đã đăng của khóa, sắp theo `sort_order` rồi `id`. Mỗi bài: `id`, `slug`, `title`, `summary`, `coverImageUrl` (ảnh bìa do Admin chọn, `null` nếu chưa có); không có nội dung và không có trạng thái. Bài Nháp không bao giờ có mặt. Khóa chưa có bài đã đăng → `[]`; khóa không tồn tại → `404` |
+| GET | `/api/courses/{slug}/lessons` | Công khai | Danh sách bài Đã đăng của khóa, sắp theo `sort_order` rồi `id`. Mỗi bài: `id`, `slug`, `title`, `summary`, `coverImageUrl` (ảnh bìa do Admin chọn, `null` nếu chưa có); không có nội dung và không có trạng thái. Bài Nháp không bao giờ có mặt. Khóa chưa có bài đã đăng → `[]`; khóa không tồn tại hoặc chưa đăng (`DRAFT`, `ARCHIVED`) → `404` |
 | GET | `/api/lessons/{slug}` | Đăng nhập | Nội dung một bài Đã đăng: `id`, `slug`, `title`, `summary`, `contentMd` (Markdown), `coverImageUrl` (`null` nếu chưa có ảnh bìa), `course` (khóa chứa bài: `slug`, `title`), `previous` và `next` (bài Đã đăng liền trước/sau trong cùng khóa theo `sort_order` rồi `id`, mỗi bài chỉ có `slug` và `title`; `null` ở bài đầu/cuối khóa; bài Nháp bị bỏ qua nên không bao giờ là bài trước/sau). Không có trạng thái, mã khóa hay người tạo. Bài không tồn tại và bài Nháp trả **cùng một** `404` (`detail`: "Không tìm thấy bài học") nên không dò được bài nháp. Chưa đăng nhập → `401` |
 | GET | `/api/lessons?q=từ khóa&page=0&size=20` | Đăng nhập | Tìm bài Đã đăng bằng FULLTEXT (D29), phân trang. Xem "Tìm bài" bên dưới |
 | GET | `/api/images/{id}` | Đăng nhập | Ảnh thuộc bài mà người gọi được xem: học sinh chỉ xem ảnh của bài Đã đăng, Admin xem cả ảnh của bài Nháp. Trả chính ảnh (không phải JSON); không có ảnh hoặc ảnh của bài Nháp (với học sinh) → cùng một `404`. Xem "Ảnh bài học" bên dưới |
@@ -212,7 +213,7 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
 | GET | `/api/admin/dashboard` | Số người dùng (tổng, mới trong 7 ngày), số bài theo trạng thái và theo khóa, số học sinh đang học, số lượt hoàn thành bài |
-| GET | `/api/admin/courses` | Danh sách khóa cho trang quản trị, sắp theo `sortOrder` rồi `id`. Mỗi khóa: `id`, `slug`, `title`, `description` (`null` nếu để trống), `sortOrder`, `status`, `tuitionVnd`, `coverImageUrl` (`null` nếu chưa có ảnh bìa). Khác `GET /api/courses` (công khai, không có `sortOrder`). Chưa có khóa nào → `[]`. Xem "Khóa học (Admin)" bên dưới |
+| GET | `/api/admin/courses` | Danh sách khóa cho trang quản trị, sắp theo `sortOrder` rồi `id`. Mỗi khóa: `id`, `slug`, `title`, `description` (`null` nếu để trống), `sortOrder`, `status`, `tuitionVnd`, `categoryId`, `level`, `totalHours`, `coverImageUrl` (`null` nếu chưa có ảnh bìa). Khác `GET /api/courses` (công khai: chỉ khóa đã đăng, không có `sortOrder`). Chưa có khóa nào → `[]`. Xem "Khóa học (Admin)" bên dưới |
 | POST | `/api/admin/courses` | Tạo khóa. `201` kèm khóa vừa tạo; `400` dữ liệu sai (kèm `errors`); `409` slug trùng. Xem "Khóa học (Admin)" bên dưới |
 | PUT | `/api/admin/courses/{id}` | Sửa khóa. `200`; `400`; `404` không có khóa; `409` slug trùng với khóa khác |
 | DELETE | `/api/admin/courses/{id}` | Xóa khóa. `204`; `404`; `409` khóa còn bài (kể cả bài Nháp). Ảnh bìa của khóa bị xóa theo (`CASCADE`) |
@@ -252,7 +253,7 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 
 ### Khóa học (Admin) — `GET`, `POST`, `PUT`, `DELETE /api/admin/courses`
 
-`GET /api/admin/courses` trả mảng khóa (`id`, `slug`, `title`, `description`, `sortOrder`, `status`, `tuitionVnd`, `coverImageUrl`) sắp theo `sortOrder` rồi `id`. Có endpoint riêng vì `GET /api/courses` (công khai) không có `sortOrder` mà form sửa khóa cần giá trị hiện tại. Khách → `401`, học sinh → `403`. Mục dưới mô tả thân của `POST` và `PUT`:
+`GET /api/admin/courses` trả mảng khóa (`id`, `slug`, `title`, `description`, `sortOrder`, `status`, `tuitionVnd`, `categoryId`, `level`, `totalHours`, `coverImageUrl`) sắp theo `sortOrder` rồi `id`. Có endpoint riêng vì `GET /api/courses` (công khai) không có `sortOrder` mà form sửa khóa cần giá trị hiện tại. Khách → `401`, học sinh → `403`. Mục dưới mô tả thân của `POST` và `PUT`:
 
 ```json
 { "slug": "tin-hoc-10", "title": "Tin học 10", "description": "Chương trình lớp 10", "sortOrder": 1,
@@ -260,12 +261,13 @@ An toàn: không có công cụ ghi/xóa; không để LLM sinh SQL; công cụ 
 ```
 
 - `status`: tùy chọn, `DRAFT`, `PUBLISHED` hoặc `ARCHIVED` (gửi bằng tên; gửi số → `400`). `tuitionVnd`: tùy chọn, số nguyên đồng từ 0 đến 1000000000 (có phần lẻ → `400`); 0 là chưa có học phí. **Bỏ trống một trong hai khi sửa thì giữ giá trị cũ**; khi tạo thì là `DRAFT` và 0.
-- Hiện tại `status` **chưa ảnh hưởng tới API công khai** (`GET /api/courses` vẫn trả mọi khóa); việc chỉ trả khóa `PUBLISHED` làm cùng bộ lọc.
+- Chỉ khóa `PUBLISHED` hiện ở `GET /api/courses` và `GET /api/courses/{slug}/lessons`. `status` **chưa ảnh hưởng** tới ảnh bìa khóa (trang quản trị dùng chung đường dẫn đó) và tới bài học của người đã đăng nhập (`/api/lessons/**`).
+- `categoryId`, `level` (`BASIC`, `ADVANCED`, `EXPERT`), `totalHours` (0–10000): tùy chọn, cùng quy tắc bỏ trống. Khi tạo mà bỏ trống thì vào nhóm "Khóa cho thiếu niên", `BASIC`, 0 giờ. `categoryId` không tồn tại → `404` "Không tìm thấy nhóm khóa học", khóa không đổi.
 
 - `slug`: bắt buộc, tối đa 100 ký tự, chỉ chữ thường không dấu, số và dấu gạch ngang giữa các từ (`tin-hoc-10`; không nhận `Tin-Hoc`, `tin_hoc`, `-tin`, `tin--hoc`).
 - `title`: bắt buộc, tối đa 200 ký tự. `description`: tùy chọn, tối đa 500 ký tự; chỉ có khoảng trắng thì lưu `null`. `sortOrder`: bắt buộc, số nguyên không âm.
 - `slug` và `title` được cắt khoảng trắng hai đầu trước khi kiểm tra.
-- Trả về (`201` khi tạo, `200` khi sửa): `id`, `slug`, `title`, `description`, `sortOrder`, `status`, `tuitionVnd`, `coverImageUrl`.
+- Trả về (`201` khi tạo, `200` khi sửa): `id`, `slug`, `title`, `description`, `sortOrder`, `status`, `tuitionVnd`, `categoryId`, `level`, `totalHours`, `coverImageUrl`.
 - `PUT` được đổi `slug`; giữ nguyên slug của chính khóa đó không bị tính là trùng. Đổi slug làm đường dẫn cũ `/api/courses/{slug}/lessons` ngừng hoạt động.
 - Lỗi `409` có hai câu khác nhau, đều không lặp lại dữ liệu người gửi: "Slug khóa học đã tồn tại" và "Không xóa được khóa học còn bài học". Slug trùng được chặn hai lần: kiểm tra trước ở service, và ràng buộc `UNIQUE` của database cho trường hợp hai Admin cùng gửi một lúc. Khóa còn bài được chặn bằng kiểm tra trước và khóa ngoại `RESTRICT`.
 - `401` khi chưa đăng nhập, `403` với học sinh hoặc khi thiếu CSRF token. `id` trong đường dẫn không phải số → `400` với `detail` cố định "Tham số trong đường dẫn không hợp lệ" (áp dụng cho mọi endpoint có tham số số trong đường dẫn).

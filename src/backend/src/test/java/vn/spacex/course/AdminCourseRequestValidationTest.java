@@ -20,11 +20,15 @@ class AdminCourseRequestValidationTest {
     }
 
     private static AdminCourseRequest request(String slug, String title, String description, Integer sortOrder) {
-        return new AdminCourseRequest(slug, title, description, sortOrder, null, null);
+        return new AdminCourseRequest(slug, title, description, sortOrder, null, null, null, null, null);
     }
 
     private static AdminCourseRequest coHocPhi(Long tuitionVnd) {
-        return new AdminCourseRequest("a", "x", null, 0, CourseStatus.PUBLISHED, tuitionVnd);
+        return new AdminCourseRequest("a", "x", null, 0, CourseStatus.PUBLISHED, tuitionVnd, null, null, null);
+    }
+
+    private static AdminCourseRequest coSoGio(Integer totalHours) {
+        return new AdminCourseRequest("a", "x", null, 0, null, null, 1L, CourseLevel.EXPERT, totalHours);
     }
 
     @Test
@@ -38,6 +42,14 @@ class AdminCourseRequestValidationTest {
         assertThat(truongLoi(coHocPhi(1_000_000_000L))).isEmpty();
         assertThat(truongLoi(coHocPhi(-1L))).containsExactly("tuitionVnd");
         assertThat(truongLoi(coHocPhi(1_000_000_001L))).containsExactly("tuitionVnd");
+    }
+
+    @Test
+    void soGioHocTuKhongDenMuoiNghin() {
+        assertThat(truongLoi(coSoGio(0))).isEmpty();
+        assertThat(truongLoi(coSoGio(10_000))).isEmpty();
+        assertThat(truongLoi(coSoGio(-1))).containsExactly("totalHours");
+        assertThat(truongLoi(coSoGio(10_001))).containsExactly("totalHours");
     }
 
     @Test

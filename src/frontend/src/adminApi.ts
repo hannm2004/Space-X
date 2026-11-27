@@ -126,7 +126,14 @@ export async function resetUserPassword(id: number): Promise<TemporaryPassword> 
 
 // DRAFT: đang soạn; PUBLISHED: đang hiển thị; ARCHIVED: ngừng bán.
 export type CourseStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+export type CourseLevel = 'BASIC' | 'ADVANCED' | 'EXPERT'
+// Nhóm chương trình (GET /api/categories, công khai).
+export type Category = { id: number; slug: string; name: string }
 export type AdminCourse = {
+  categoryId: number
+  level: CourseLevel
+  // 0 là chưa nhập số giờ.
+  totalHours: number
   id: number
   slug: string
   title: string
@@ -146,6 +153,9 @@ export type CourseInput = {
   sortOrder: number
   status: CourseStatus
   tuitionVnd: number
+  categoryId: number
+  level: CourseLevel
+  totalHours: number
 }
 
 export type LessonStatus = 'DRAFT' | 'PUBLISHED'
@@ -189,6 +199,20 @@ function asCourseStatus(value: unknown): CourseStatus {
   return value
 }
 
+function asCourseLevel(value: unknown): CourseLevel {
+  if (value !== 'BASIC' && value !== 'ADVANCED' && value !== 'EXPERT') throw new Error(BAD_SHAPE)
+  return value
+}
+
+function parseCategory(value: unknown): Category {
+  const record = asRecord(value)
+  return { id: asNumber(record.id), slug: asString(record.slug), name: asString(record.name) }
+}
+
+export async function fetchCategories(): Promise<Category[]> {
+  return asList(await apiRequest('GET', '/api/categories'), parseCategory)
+}
+
 function parseAdminCourse(value: unknown): AdminCourse {
   const record = asRecord(value)
   return {
@@ -199,6 +223,9 @@ function parseAdminCourse(value: unknown): AdminCourse {
     sortOrder: asNumber(record.sortOrder),
     status: asCourseStatus(record.status),
     tuitionVnd: asNumber(record.tuitionVnd),
+    categoryId: asNumber(record.categoryId),
+    level: asCourseLevel(record.level),
+    totalHours: asNumber(record.totalHours),
     coverImageUrl: record.coverImageUrl === undefined ? null : asNullableString(record.coverImageUrl),
   }
 }

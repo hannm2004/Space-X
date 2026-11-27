@@ -22,19 +22,35 @@ public class CourseService {
     private final LessonRepository lessonRepository;
     private final CoverImageLookup coverImageLookup;
     private final CourseCoverService courseCoverService;
+    private final CategoryRepository categoryRepository;
 
     public CourseService(CourseRepository courseRepository, LessonRepository lessonRepository,
-                         CoverImageLookup coverImageLookup, CourseCoverService courseCoverService) {
+                         CoverImageLookup coverImageLookup, CourseCoverService courseCoverService,
+                         CategoryRepository categoryRepository) {
         this.courseRepository = courseRepository;
         this.lessonRepository = lessonRepository;
         this.coverImageLookup = coverImageLookup;
         this.courseCoverService = courseCoverService;
+        this.categoryRepository = categoryRepository;
     }
 
-    // Mỗi khóa kèm đường dẫn ảnh bìa (null nếu chưa có) và số bài đã đăng, mỗi thứ lấy bằng một truy vấn cho cả danh sách.
     @Transactional(readOnly = true)
-    public List<CourseResponse> listCourses() {
-        List<Course> courses = courseRepository.findAllByOrderBySortOrderAscIdAsc();
+    public List<CategoryResponse> listCategories() {
+        return categoryRepository.findAllByOrderBySortOrderAscIdAsc().stream().map(CategoryResponse::from).toList();
+    }
+
+    // Mỗi khóa kèm nhóm, đường dẫn ảnh bìa (null nếu chưa có) và số bài đã đăng, mỗi thứ lấy bằng một truy vấn cho
+    // cả danh sách.
+    @Transactional(readOnly = true)
+    public List<CourseResponse> listCourses(CourseFilter filter) {
+        // Cột số giờ là SMALLINT nên chặn tham số ở giới hạn của kiểu đó.
+        List<Course> courses = courseRepository.searchPublished(filter.categorySlug(), filter.level(),
+                (int) Math.min(filter.hours().min(), Short.MAX_VALUE),
+                (int) Math.min(filter.hours().max(), Short.MAX_VALUE),
+                filter.tuition().min(), filter.tuition().max(), filter.sort());
+        Map<Long, CategoryResponse> categories = new HashMap<>();
+        categoryRepository.findAll()
+                .forEach(category -> categories.put(category.getId(), CategoryResponse.from(category)));
         Map<Long, String> slugsById = new LinkedHashMap<>();
         courses.forEach(course -> slugsById.put(course.getId(), course.getSlug()));
         Map<Long, String> covers = courseCoverService.urlsByCourseId(slugsById);
@@ -47,15 +63,18 @@ public class CourseService {
         }
         return courses.stream()
                 .map(course -> CourseResponse.from(course, covers.get(course.getId()),
-                        publishedCounts.getOrDefault(course.getId(), 0L).intValue()))
+                        publishedCounts.getOrDefault(course.getId(), 0L).intValue(),
+                        categories.get(course.getCategoryId())))
                 .toList();
     }
 
-    // Khóa không tồn tại thì 404; khóa có nhưng chưa có bài đã đăng thì trả danh sách rỗng, không phải lỗi.
+    // Khóa không tồn tại hoặc chưa đăng thì 404 như nhau; khóa đã đăng nhưng chưa có bài thì trả danh sách rỗng.
     // Bài DRAFT bị loại ngay ở truy vấn, nên bài nháp không bao giờ tới được người gọi công khai.
     @Transactional(readOnly = true)
     public List<LessonSummaryResponse> listPublishedLessons(String courseSlug) {
-        Course course = courseRepository.findBySlug(courseSlug).orElseThrow(CourseNotFoundException::new);
+        Course course = courseRepository.findBySlug(courseSlug)
+                .filter(found -> found.getStatus() == CourseStatus.PUBLISHED)
+                .orElseThrow(CourseNotFoundException::new);
         List<Lesson> lessons = lessonRepository
                 .findByCourseIdAndStatusOrderBySortOrderAscIdAsc(course.getId(), LessonStatus.PUBLISHED);
         Map<Long, String> covers = coverImageLookup.urlsByLessonId(lessons.stream().map(Lesson::getId).toList());

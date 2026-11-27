@@ -38,10 +38,11 @@ class CourseControllerTest {
 
     @Test
     void chuaDangNhapVanXemDuocDanhSachKhoaHoc() throws Exception {
-        when(courseService.listCourses()).thenReturn(List.of(
+        CategoryResponse nhom = new CategoryResponse(3L, "thieu-nien", "Thiếu niên");
+        when(courseService.listCourses(any())).thenReturn(List.of(
                 new CourseResponse(1L, "tin-hoc-10", "Tin học 10", "Chương trình lớp 10",
-                        "/api/courses/tin-hoc-10/cover?v=1", 4),
-                new CourseResponse(2L, "tin-hoc-11", "Tin học 11", null, null, 0)));
+                        "/api/courses/tin-hoc-10/cover?v=1", 4, nhom, CourseLevel.BASIC, 40, 1_500_000L),
+                new CourseResponse(2L, "tin-hoc-11", "Tin học 11", null, null, 0, nhom, CourseLevel.EXPERT, 0, 0L)));
 
         mockMvc.perform(get("/api/courses"))
                 .andExpect(status().isOk())
@@ -57,12 +58,40 @@ class CourseControllerTest {
                 // Số bài đã đăng của khóa; khóa chưa có bài vẫn trả 0 chứ không bỏ trường.
                 .andExpect(jsonPath("$[0].lessonCount").value(4))
                 .andExpect(jsonPath("$[1].lessonCount").value(0))
-                .andExpect(jsonPath("$[0].*", hasSize(6)));
+                .andExpect(jsonPath("$[0].category.slug").value("thieu-nien"))
+                .andExpect(jsonPath("$[0].category.name").value("Thiếu niên"))
+                .andExpect(jsonPath("$[0].level").value("BASIC"))
+                .andExpect(jsonPath("$[0].totalHours").value(40))
+                .andExpect(jsonPath("$[0].tuitionVnd").value(1500000))
+                .andExpect(jsonPath("$[0].*", hasSize(10)));
+    }
+
+    @Test
+    void thamSoBoLocDuocChuyenThanhBoLocChoService() throws Exception {
+        when(courseService.listCourses(any())).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/courses?category=thieu-nien&level=ADVANCED&duration=20-40&price=-2000000"
+                        + "&sort=price_desc"))
+                .andExpect(status().isOk());
+
+        verify(courseService).listCourses(CourseFilter.of("thieu-nien", CourseLevel.ADVANCED, "20-40", "-2000000",
+                "price_desc"));
+    }
+
+    @Test
+    void boLocSaiBi400VaServiceKhongDuocGoi() throws Exception {
+        for (String query : new String[] {"level=KHAC", "duration=abc", "price=5-1", "sort=title"}) {
+            mockMvc.perform(get("/api/courses?" + query))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
+        }
+
+        verify(courseService, never()).listCourses(any());
     }
 
     @Test
     void khongCoKhoaHocNaoTraVeMangRongChuKhongPhaiLoi() throws Exception {
-        when(courseService.listCourses()).thenReturn(List.of());
+        when(courseService.listCourses(any())).thenReturn(List.of());
 
         mockMvc.perform(get("/api/courses"))
                 .andExpect(status().isOk())

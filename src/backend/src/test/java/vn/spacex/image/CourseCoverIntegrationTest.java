@@ -149,8 +149,8 @@ class CourseCoverIntegrationTest {
                 .andExpect(jsonPath("$[0].coverImageUrl", containsString("/api/courses/tin-hoc-10/cover?v=")))
                 .andExpect(jsonPath("$[1].slug").value("tin-hoc-11"))
                 .andExpect(jsonPath("$[1].coverImageUrl").value(nullValue()))
-                // id, slug, title, description, coverImageUrl, lessonCount.
-                .andExpect(jsonPath("$[0].length()").value(6));
+                // id, slug, title, description, coverImageUrl, lessonCount, category, level, totalHours, tuitionVnd.
+                .andExpect(jsonPath("$[0].length()").value(10));
     }
 
     @Test

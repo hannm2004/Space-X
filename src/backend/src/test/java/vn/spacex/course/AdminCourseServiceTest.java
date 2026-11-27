@@ -19,6 +19,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -71,11 +72,83 @@ class AdminCourseServiceTest {
     }
 
     private static AdminCourseRequest request(String slug) {
-        return new AdminCourseRequest(slug, "Tin học 10", "Chương trình lớp 10", 1, null, null);
+        return new AdminCourseRequest(slug, "Tin học 10", "Chương trình lớp 10", 1, null, null, null, null, null);
     }
 
     private static AdminCourseRequest banKhoa(CourseStatus status, Long tuitionVnd) {
-        return new AdminCourseRequest("tin-hoc-10", "Tin học 10", null, 1, status, tuitionVnd);
+        return new AdminCourseRequest("tin-hoc-10", "Tin học 10", null, 1, status, tuitionVnd, null, null, null);
+    }
+
+    private static AdminCourseRequest phanLoai(Long categoryId, CourseLevel level, Integer totalHours) {
+        return new AdminCourseRequest("tin-hoc-10", "Tin học 10", null, 1, null, null, categoryId, level, totalHours);
+    }
+
+    @Test
+    void taoKhoaVaoDungNhomDaChonKemTrinhDoVaSoGio() {
+        when(categoryRepository.existsById(7L)).thenReturn(true);
+        when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        AdminCourseResponse response = service.create(phanLoai(7L, CourseLevel.EXPERT, 60));
+
+        assertThat(response.categoryId()).isEqualTo(7L);
+        assertThat(response.level()).isEqualTo(CourseLevel.EXPERT);
+        assertThat(response.totalHours()).isEqualTo(60);
+        verify(categoryRepository, never()).findBySlug(any());
+    }
+
+    @Test
+    void khoaMoiKhongGuiTrinhDoVaSoGioThiLaCoBanKhongGio() {
+        coNhomMacDinh();
+        when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        AdminCourseResponse response = service.create(phanLoai(null, null, null));
+
+        assertThat(response.categoryId()).isEqualTo(3L);
+        assertThat(response.level()).isEqualTo(CourseLevel.BASIC);
+        assertThat(response.totalHours()).isZero();
+    }
+
+    @Test
+    void chonNhomKhongTonTaiThiBaoKhongTimThayVaKhongGhiGi() {
+        when(categoryRepository.existsById(99L)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.create(phanLoai(99L, null, null)))
+                .isInstanceOf(CategoryNotFoundException.class);
+
+        verify(courseRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void suaKhoaChuyenNhomDoiTrinhDoVaSoGioNhungGiuMa() {
+        Course khoa = Course.create("tin-hoc-10", "Tin học 10", null, 1);
+        khoa.placeIn(3L, "TINHOC10");
+        when(courseRepository.findById(5L)).thenReturn(Optional.of(khoa));
+        when(categoryRepository.existsById(7L)).thenReturn(true);
+        when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.update(5L, phanLoai(7L, CourseLevel.ADVANCED, 45));
+
+        assertThat(khoa.getCategoryId()).isEqualTo(7L);
+        assertThat(khoa.getCode()).isEqualTo("TINHOC10");
+        assertThat(khoa.getLevel()).isEqualTo(CourseLevel.ADVANCED);
+        assertThat(khoa.getTotalHours()).isEqualTo(45);
+    }
+
+    @Test
+    void suaKhoaKhongGuiPhanLoaiThiGiuNguyen() {
+        Course khoa = Course.create("tin-hoc-10", "Tin học 10", null, 1);
+        khoa.placeIn(7L, "TINHOC10");
+        khoa.changeLevel(CourseLevel.EXPERT);
+        khoa.changeTotalHours(60);
+        when(courseRepository.findById(5L)).thenReturn(Optional.of(khoa));
+        when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.update(5L, phanLoai(null, null, null));
+
+        assertThat(khoa.getCategoryId()).isEqualTo(7L);
+        assertThat(khoa.getLevel()).isEqualTo(CourseLevel.EXPERT);
+        assertThat(khoa.getTotalHours()).isEqualTo(60);
+        verifyNoInteractions(categoryRepository);
     }
 
     @Test
@@ -207,7 +280,7 @@ class AdminCourseServiceTest {
         when(courseRepository.saveAndFlush(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AdminCourseResponse response = service.update(5L,
-                new AdminCourseRequest("tin-hoc-10-moi", "Tin học 10 mới", "Mô tả mới", 3, null, null));
+                new AdminCourseRequest("tin-hoc-10-moi", "Tin học 10 mới", "Mô tả mới", 3, null, null, null, null, null));
 
         assertThat(khoa.getSlug()).isEqualTo("tin-hoc-10-moi");
         assertThat(khoa.getTitle()).isEqualTo("Tin học 10 mới");

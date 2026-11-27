@@ -47,10 +47,9 @@ public class AdminCourseService {
             throw new CourseSlugAlreadyExistsException();
         }
         Course course = Course.create(request.slug(), request.title(), request.description(), request.sortOrder());
-        Category category = categoryRepository.findBySlug(DEFAULT_CATEGORY_SLUG)
-                .orElseThrow(() -> new IllegalStateException("Thiếu nhóm khóa mặc định"));
-        course.placeIn(category.getId(), CourseCodes.fromSlug(request.slug(), courseRepository::existsByCode));
-        applySale(course, request);
+        Long categoryId = request.categoryId() == null ? defaultCategoryId() : existing(request.categoryId());
+        course.placeIn(categoryId, CourseCodes.fromSlug(request.slug(), courseRepository::existsByCode));
+        applyDetails(course, request);
         // Khóa mới chưa có ảnh bìa.
         return AdminCourseResponse.from(persist(course), null);
     }
@@ -61,8 +60,12 @@ public class AdminCourseService {
         if (courseRepository.existsBySlugAndIdNot(request.slug(), id)) {
             throw new CourseSlugAlreadyExistsException();
         }
+        // Kiểm nhóm trước khi đổi bất cứ trường nào của khóa.
+        if (request.categoryId() != null) {
+            course.moveTo(existing(request.categoryId()));
+        }
         course.update(request.slug(), request.title(), request.description(), request.sortOrder());
-        applySale(course, request);
+        applyDetails(course, request);
         Course saved = persist(course);
         // Sửa khóa không đụng tới ảnh bìa; trả đường dẫn hiện có để trang Admin không mất ảnh vừa hiện.
         return AdminCourseResponse.from(saved, courseCoverService.urlOfCourse(id, saved.getSlug()));
@@ -84,8 +87,27 @@ public class AdminCourseService {
         }
     }
 
+    private Long defaultCategoryId() {
+        return categoryRepository.findBySlug(DEFAULT_CATEGORY_SLUG)
+                .orElseThrow(() -> new IllegalStateException("Thiếu nhóm khóa mặc định"))
+                .getId();
+    }
+
+    private Long existing(Long categoryId) {
+        if (!categoryRepository.existsById(categoryId)) {
+            throw new CategoryNotFoundException();
+        }
+        return categoryId;
+    }
+
     // Trường bỏ trống (null) nghĩa là không đổi.
-    private static void applySale(Course course, AdminCourseRequest request) {
+    private static void applyDetails(Course course, AdminCourseRequest request) {
+        if (request.level() != null) {
+            course.changeLevel(request.level());
+        }
+        if (request.totalHours() != null) {
+            course.changeTotalHours(request.totalHours());
+        }
         if (request.status() != null) {
             course.changeStatus(request.status());
         }

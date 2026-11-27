@@ -8,6 +8,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "courses")
@@ -45,7 +47,37 @@ public class Course {
     @Column(name = "tuition_vnd", nullable = false)
     private long tuitionVnd;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CourseLevel level = CourseLevel.BASIC;
+
+    // Cột là SMALLINT; khai báo kiểu để Hibernate (ddl-auto=validate) không đòi INTEGER.
+    @JdbcTypeCode(SqlTypes.SMALLINT)
+    @Column(name = "total_hours", nullable = false)
+    private int totalHours;
+
     protected Course() {
+    }
+
+    public void changeLevel(CourseLevel level) {
+        this.level = level;
+    }
+
+    public void changeTotalHours(int totalHours) {
+        this.totalHours = totalHours;
+    }
+
+    // Chuyển nhóm không đổi mã khóa.
+    public void moveTo(Long categoryId) {
+        this.categoryId = categoryId;
+    }
+
+    public CourseLevel getLevel() {
+        return level;
+    }
+
+    public int getTotalHours() {
+        return totalHours;
     }
 
     public void changeStatus(CourseStatus status) {

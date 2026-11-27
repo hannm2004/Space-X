@@ -6,6 +6,7 @@ import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.json.JsonParserFactory;
 import vn.spacex.course.AdminCourseRequest;
+import vn.spacex.course.CourseStatus;
 import vn.spacex.lesson.AdminLessonRequest;
 
 import java.io.IOException;
@@ -56,9 +57,10 @@ class SeedDataTest {
     }
 
     private static AdminCourseRequest toCourse(Map<String, Object> m) {
-        // courses.json chưa có trạng thái và học phí: bỏ trống như script đang gửi.
+        // Script chỉ gửi thêm trạng thái; học phí, nhóm, trình độ và số giờ để máy chủ đặt mặc định.
+        String status = str(m, "status");
         return new AdminCourseRequest(str(m, "slug"), str(m, "title"), str(m, "description"), num(m, "sortOrder"),
-                null, null);
+                status == null ? null : CourseStatus.valueOf(status), null, null, null, null);
     }
 
     private static String content(Map<String, Object> lesson) throws IOException {
@@ -69,6 +71,12 @@ class SeedDataTest {
         // courseId giả: chỉ để kiểm các luật còn lại; script thay bằng id thật của khóa lúc nạp.
         return new AdminLessonRequest(1L, str(m, "slug"), str(m, "title"), str(m, "summary"), content(m),
                 num(m, "sortOrder"));
+    }
+
+    // Khóa nạp mới mặc định là bản nháp, không hiện ra trang công khai.
+    @Test
+    void moiKhoaMauDeuDuocDang() throws IOException {
+        assertThat(readList("courses.json")).allSatisfy(c -> assertThat(str(c, "status")).isEqualTo("PUBLISHED"));
     }
 
     @Test

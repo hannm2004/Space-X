@@ -6,6 +6,7 @@ import {
   deleteCourse,
   deleteCourseCover,
   fetchAdminCourses,
+  fetchCategories,
   updateCourse,
   uploadCourseCover,
   type AdminCourse,
@@ -17,6 +18,7 @@ import AdminCoursesPage from './AdminCoursesPage'
 
 vi.mock('../adminApi', () => ({
   fetchAdminCourses: vi.fn(),
+  fetchCategories: vi.fn(),
   createCourse: vi.fn(),
   updateCourse: vi.fn(),
   deleteCourse: vi.fn(),
@@ -50,6 +52,9 @@ const KHOA_10: AdminCourse = {
   sortOrder: 1,
   status: 'PUBLISHED',
   tuitionVnd: 1500000,
+  categoryId: 3,
+  level: 'ADVANCED',
+  totalHours: 40,
 }
 const KHOA_11: AdminCourse = {
   id: 6,
@@ -59,7 +64,14 @@ const KHOA_11: AdminCourse = {
   sortOrder: 2,
   status: 'DRAFT',
   tuitionVnd: 0,
+  categoryId: 4,
+  level: 'BASIC',
+  totalHours: 0,
 }
+const NHOM = [
+  { id: 3, slug: 'khoa-cho-thieu-nien', name: 'Khóa cho thiếu niên' },
+  { id: 4, slug: 'tin-hoc-van-phong', name: 'Tin học văn phòng' },
+]
 
 function LoginStub() {
   const state = useLocation().state as { from?: string } | null
@@ -111,6 +123,8 @@ beforeEach(() => {
   fetchCurrentUserMock.mockReset()
   fetchCurrentUserMock.mockResolvedValue(ADMIN_ME)
   fetchAdminCoursesMock.mockResolvedValue([KHOA_10, KHOA_11])
+  vi.mocked(fetchCategories).mockReset()
+  vi.mocked(fetchCategories).mockResolvedValue(NHOM)
 })
 
 const KHOA_10_BIA: AdminCourse = { ...KHOA_10, coverImageUrl: '/api/courses/tin-hoc-10/cover?v=1' }
@@ -320,6 +334,9 @@ describe('AdminCoursesPage — thêm khóa', () => {
         sortOrder: 3,
         status: 'DRAFT',
         tuitionVnd: 0,
+        categoryId: 3,
+        level: 'BASIC',
+        totalHours: 0,
       }),
     )
     expect((await screen.findByRole('status')).textContent).toContain('Đã thêm khóa học')
@@ -412,6 +429,9 @@ describe('AdminCoursesPage — sửa khóa', () => {
         sortOrder: 1,
         status: 'PUBLISHED',
         tuitionVnd: 1500000,
+        categoryId: 3,
+        level: 'ADVANCED',
+        totalHours: 40,
       }),
     )
     expect((await screen.findByRole('status')).textContent).toContain('Đã lưu khóa học')
@@ -522,6 +542,85 @@ describe('AdminCoursesPage — trạng thái và học phí', () => {
       expect((await screen.findByRole('alert')).textContent).toContain('Học phí')
     }
     expect(createCourseMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('AdminCoursesPage — nhóm, trình độ và số giờ', () => {
+  const value = (scope: ReturnType<typeof within>, label: string) =>
+    (scope.getByLabelText(label) as HTMLInputElement | HTMLSelectElement).value
+
+  it('danh sách ghi tên nhóm, trình độ tiếng Việt và số giờ; 0 giờ thì ghi chưa có số giờ', async () => {
+    renderPage()
+
+    // Tên nhóm và trình độ cũng nằm trong ô chọn của form thêm, nên chỉ tìm trong dòng của khóa.
+    const khoa10 = await rowOf('Tin học 10')
+    expect(khoa10.getByText('Khóa cho thiếu niên')).not.toBeNull()
+    expect(khoa10.getByText('Nâng cao')).not.toBeNull()
+    expect(khoa10.getByText('40 giờ')).not.toBeNull()
+    const khoa11 = await rowOf('Tin học 11')
+    expect(khoa11.getByText('Tin học văn phòng')).not.toBeNull()
+    expect(khoa11.getByText('Cơ bản')).not.toBeNull()
+    expect(khoa11.getByText('Chưa có số giờ')).not.toBeNull()
+  })
+
+  it('form thêm mặc định là nhóm đầu tiên, cơ bản, 0 giờ', async () => {
+    renderPage()
+    await screen.findByText('Tin học 10')
+
+    expect(value(addForm(), 'Nhóm chương trình')).toBe('3')
+    expect(value(addForm(), 'Trình độ')).toBe('BASIC')
+    expect(value(addForm(), 'Số giờ học')).toBe('0')
+  })
+
+  it('chọn nhóm, trình độ và nhập số giờ thì gửi đúng kiểu số', async () => {
+    createCourseMock.mockResolvedValue({ ...KHOA_10, id: 7 })
+    renderPage()
+    await screen.findByText('Tin học 10')
+
+    const form = fillAddForm('excel', 'Excel', '', '3')
+    type(form, 'Nhóm chương trình', '4')
+    type(form, 'Trình độ', 'EXPERT')
+    type(form, 'Số giờ học', ' 60 ')
+    fireEvent.click(form.getByRole('button', { name: 'Thêm khóa học' }))
+
+    await waitFor(() =>
+      expect(createCourseMock).toHaveBeenCalledWith(
+        expect.objectContaining({ categoryId: 4, level: 'EXPERT', totalHours: 60 }),
+      ),
+    )
+  })
+
+  it('form sửa có sẵn nhóm, trình độ và số giờ hiện tại', async () => {
+    renderPage()
+
+    const row = await rowOf('Tin học 11')
+    fireEvent.click(row.getByRole('button', { name: 'Sửa Tin học 11' }))
+
+    expect(value(row, 'Nhóm chương trình')).toBe('4')
+    expect(value(row, 'Trình độ')).toBe('BASIC')
+    expect(value(row, 'Số giờ học')).toBe('0')
+  })
+
+  it('số giờ không phải số nguyên từ 0 đến 10000 thì báo lỗi và không gọi API', async () => {
+    renderPage()
+    await screen.findByText('Tin học 10')
+
+    for (const bad of ['', 'abc', '-1', '1.5', '10001']) {
+      const form = fillAddForm('excel', 'Excel', '', '1')
+      type(form, 'Số giờ học', bad)
+      fireEvent.click(form.getByRole('button', { name: 'Thêm khóa học' }))
+      expect((await screen.findByRole('alert')).textContent).toContain('Số giờ')
+    }
+    expect(createCourseMock).not.toHaveBeenCalled()
+  })
+
+  it('không tải được danh sách nhóm thì báo lỗi kèm nút Thử lại', async () => {
+    vi.mocked(fetchCategories).mockRejectedValueOnce(new Error('mạng'))
+
+    renderPage()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Thử lại' }))
+    expect(await screen.findByText('Tin học 10')).not.toBeNull()
   })
 })
 

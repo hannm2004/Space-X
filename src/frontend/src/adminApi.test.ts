@@ -8,6 +8,7 @@ import {
   clearImageCover,
   deleteLesson,
   fetchAdminCourses,
+  fetchCategories,
   fetchAdminDashboard,
   fetchAdminLesson,
   fetchAdminLessons,
@@ -240,6 +241,9 @@ const COURSE_JSON = {
   sortOrder: 1,
   status: 'PUBLISHED',
   tuitionVnd: 1500000,
+  categoryId: 3,
+  level: 'ADVANCED',
+  totalHours: 40,
   coverImageUrl: null,
 }
 const COURSE_INPUT = {
@@ -249,6 +253,9 @@ const COURSE_INPUT = {
   sortOrder: 1,
   status: 'PUBLISHED' as const,
   tuitionVnd: 1500000,
+  categoryId: 3,
+  level: 'ADVANCED' as const,
+  totalHours: 40,
 }
 const LESSON_SUMMARY_JSON = {
   id: 3,
@@ -302,6 +309,28 @@ describe('khóa học (Admin)', () => {
 
       await expect(fetchAdminCourses()).rejects.toThrow()
     }
+  })
+
+  it('fetchAdminCourses từ chối trình độ lạ, thiếu nhóm hoặc số giờ không phải số', async () => {
+    const thieuNhom: Record<string, unknown> = { ...COURSE_JSON }
+    delete thieuNhom.categoryId
+
+    for (const bad of [{ ...COURSE_JSON, level: 'MASTER' }, thieuNhom, { ...COURSE_JSON, totalHours: '40' }]) {
+      apiRequestMock.mockResolvedValue([bad])
+
+      await expect(fetchAdminCourses()).rejects.toThrow()
+    }
+  })
+
+  it('fetchCategories gọi GET /api/categories và từ chối phản hồi sai dạng', async () => {
+    const nhom = [{ id: 3, slug: 'thieu-nien', name: 'Thiếu niên' }]
+    apiRequestMock.mockResolvedValue(nhom)
+
+    await expect(fetchCategories()).resolves.toEqual(nhom)
+    expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/categories')
+
+    apiRequestMock.mockResolvedValue([{ id: 3, slug: 'thieu-nien' }])
+    await expect(fetchCategories()).rejects.toThrow()
   })
 
   it('fetchAdminCourses từ chối phản hồi không phải mảng', async () => {
@@ -463,7 +492,18 @@ describe('ảnh bìa khóa học (Admin)', () => {
   it('fetchAdminCourses giữ đường dẫn ảnh bìa; thiếu trường thì là null', async () => {
     apiRequestMock.mockResolvedValue([
       { ...COURSE_JSON, coverImageUrl: '/api/courses/tin-hoc-10/cover?v=9' },
-      { id: 6, slug: 'a', title: 'A', description: null, sortOrder: 2, status: 'DRAFT', tuitionVnd: 0 },
+      {
+        id: 6,
+        slug: 'a',
+        title: 'A',
+        description: null,
+        sortOrder: 2,
+        status: 'DRAFT',
+        tuitionVnd: 0,
+        categoryId: 3,
+        level: 'BASIC',
+        totalHours: 0,
+      },
     ])
 
     const result = await fetchAdminCourses()

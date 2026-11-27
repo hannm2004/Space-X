@@ -40,8 +40,8 @@ const ADMIN_ME = { displayName: 'Quản trị viên', email: 'admin@example.com'
 const LEARNER_ME = { displayName: 'Học sinh', email: 'hs@example.com', role: 'LEARNER' as const }
 
 const KHOA: AdminCourse[] = [
-  { id: 5, slug: 'tin-hoc-10', title: 'Tin học 10', description: null, sortOrder: 1, status: 'PUBLISHED', tuitionVnd: 0 },
-  { id: 6, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, sortOrder: 2, status: 'PUBLISHED', tuitionVnd: 0 },
+  { id: 5, slug: 'tin-hoc-10', title: 'Tin học 10', description: null, sortOrder: 1, status: 'PUBLISHED', tuitionVnd: 0, categoryId: 3, level: 'BASIC', totalHours: 0 },
+  { id: 6, slug: 'tin-hoc-11', title: 'Tin học 11', description: null, sortOrder: 2, status: 'PUBLISHED', tuitionVnd: 0, categoryId: 3, level: 'BASIC', totalHours: 0 },
 ]
 const BAI_NHAP: AdminLessonSummary = {
   id: 3,
@@ -138,7 +138,8 @@ describe('AdminLessonsPage — danh sách và bộ lọc', () => {
     renderPage()
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Quản lý bài học' })).not.toBeNull()
-    expect(fetchAdminLessonsMock).toHaveBeenCalledWith({ courseId: null, status: null, page: 0 })
+    // Danh sách được tải trong useEffect, chạy sau khi tiêu đề đã hiện một nhịp: phải chờ chứ không kiểm ngay.
+    await waitFor(() => expect(fetchAdminLessonsMock).toHaveBeenCalledWith({ courseId: null, status: null, page: 0 }))
     const nhap = await rowOf('Máy tính là gì')
     expect(nhap.getByText('Tin học 10')).not.toBeNull()
     expect(nhap.getByText('Nháp')).not.toBeNull()
@@ -153,14 +154,16 @@ describe('AdminLessonsPage — danh sách và bộ lọc', () => {
     renderPage('/quan-tri/bai-hoc?khoa=5&trang-thai=PUBLISHED&trang=1')
 
     await screen.findByRole('heading', { level: 1, name: 'Quản lý bài học' })
-    expect(fetchAdminLessonsMock).toHaveBeenCalledWith({ courseId: 5, status: 'PUBLISHED', page: 1 })
+    await waitFor(() =>
+      expect(fetchAdminLessonsMock).toHaveBeenCalledWith({ courseId: 5, status: 'PUBLISHED', page: 1 }),
+    )
   })
 
   it('tham số lạ trong địa chỉ bị bỏ qua thay vì gửi lên máy chủ', async () => {
     renderPage('/quan-tri/bai-hoc?khoa=abc&trang-thai=ARCHIVED&trang=-3')
 
     await screen.findByRole('heading', { level: 1, name: 'Quản lý bài học' })
-    expect(fetchAdminLessonsMock).toHaveBeenCalledWith({ courseId: null, status: null, page: 0 })
+    await waitFor(() => expect(fetchAdminLessonsMock).toHaveBeenCalledWith({ courseId: null, status: null, page: 0 }))
   })
 
   it('đổi bộ lọc khóa thì tải lại theo khóa đó, về trang đầu', async () => {
