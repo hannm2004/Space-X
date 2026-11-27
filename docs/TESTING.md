@@ -7,10 +7,10 @@ Cập nhật: 2026-11-17 (đếm lại bằng lệnh ở mục "Cách đếm l�
 | | Số test | Số lớp/file | Cần Docker? |
 |---|---|---|---|
 | Backend (JUnit 5 + Spring Test) | 474 | 43 lớp | Không |
-| Frontend (Vitest + Testing Library, môi trường jsdom) | 603 | 41 file | Không |
+| Frontend (Vitest + Testing Library, môi trường jsdom) | 607 | 41 file | Không |
 | Test tích hợp với MySQL thật (Testcontainers) | 206 | 19 lớp | Có |
 
-Đếm lại ngày 2026-11-27 trên nhánh `feat/course-list-page` (trang danh sách khóa; backend không đổi).
+Đếm lại ngày 2026-11-27 trên nhánh `docs/d40` (trang Giới thiệu và Điều khoản theo mô hình tự học trực tuyến, +4 test frontend; backend không đổi).
 
 CI chạy toàn bộ test trên mỗi Pull Request. **Không test nào gọi API AI thật**: dùng nhà cung cấp giả.
 

@@ -51,6 +51,35 @@ describe('TermsPage', () => {
     }
     expect(screen.getByText(/dự án học tập/i)).not.toBeNull()
   })
+
+  it('mô tả đúng dịch vụ tự học trực tuyến của Trung tâm Tin học SPACE-X, không còn lớp 6 đến lớp 12', () => {
+    const { container } = renderPage(<TermsPage />)
+
+    expect(container.textContent).toContain('Trung tâm Tin học SPACE-X')
+    expect(container.textContent).toMatch(/tự học trực tuyến/i)
+    expect(container.textContent).not.toMatch(/lớp 6|lớp 12|THCS|THPT|GDPT/i)
+    expect(screen.getByText(/Cập nhật lần cuối: 27\/11\/2026/)).not.toBeNull()
+  })
+
+  it('có mục Thanh toán thử nghiệm: chưa mở mua khóa, không thu tiền thật, không chuyển tiền thật', () => {
+    renderPage(<TermsPage />)
+
+    const section = screen.getByRole('heading', { level: 2, name: 'Thanh toán thử nghiệm' }).closest('section')!
+    expect(section.textContent).toMatch(/chưa mở/i)
+    expect(section.textContent).toMatch(/môi trường thử nghiệm/i)
+    expect(section.textContent).toMatch(/không thu tiền thật/i)
+    expect(section.textContent).toMatch(/đừng chuyển tiền thật/i)
+  })
+
+  it('có mục Hoàn tiền: quản trị viên xử lý thủ công, thu hồi quyền học và giữ tiến độ', () => {
+    renderPage(<TermsPage />)
+
+    const section = screen.getByRole('heading', { level: 2, name: 'Hoàn tiền' }).closest('section')!
+    expect(section.textContent).toMatch(/quản trị viên xử lý thủ công/i)
+    expect(section.textContent).toMatch(/thu hồi/i)
+    expect(section.textContent).toMatch(/tiến độ học vẫn được giữ/i)
+    expect(within(section).getByRole('link', { name: 'gửi yêu cầu' }).getAttribute('rel')).toContain('noopener')
+  })
 })
 
 describe('CopyrightPage', () => {
