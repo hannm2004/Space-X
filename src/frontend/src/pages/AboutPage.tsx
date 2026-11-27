@@ -27,8 +27,8 @@ export default function AboutPage() {
       <p className="eyebrow">Về dự án</p>
       <h1 className="mt-3 text-4xl font-bold leading-tight tracking-tight">Giới thiệu Space-X</h1>
       <p className="mt-6 text-lg">
-        Space-X là website học Tin học từ lớp 6 đến lớp 12 bằng tiếng Việt, theo Chương trình GDPT 2018. Tên Space-X
-        chỉ là tên dự án, không liên quan đến vũ trụ.
+        Trung tâm Tin học SPACE-X là nền tảng tự học Tin học trực tuyến bằng tiếng Việt. Đây là một trung tâm hư cấu;
+        Space-X chỉ là tên dự án, không liên quan đến vũ trụ.
       </p>
       <p className="mt-4">
         <Link to="/#khoa-hoc" className="btn btn-primary">
@@ -38,27 +38,28 @@ export default function AboutPage() {
 
       <Section title="Space-X dành cho ai">
         <p>
-          Học sinh trung học cơ sở và trung học phổ thông muốn ôn và học Tin học theo từng lớp, ở nhà hoặc trên điện
-          thoại. Giáo viên cũng có thể dùng để tham khảo cách chia bài.
+          Người muốn tự học Tin học theo tốc độ của mình, trên máy tính hoặc điện thoại. Bạn chọn khóa rồi học lúc nào
+          thuận tiện, không phải theo lịch cố định.
         </p>
         <p>
-          Đây là một đồ án chuyên ngành về công nghệ thông tin, được làm để học và thực hành xây dựng một sản phẩm web
-          hoàn chỉnh. Vì vậy trang còn đang được bổ sung dần.
+          Đây là một đồ án chuyên ngành về công nghệ thông tin, chạy ở môi trường thử nghiệm và không thu tiền thật. Vì
+          vậy trang còn đang được bổ sung dần.
         </p>
       </Section>
 
       <Section title="Nội dung học">
         <p>
-          Nội dung chia hai tầng: mỗi lớp là một khóa học, mỗi khóa gồm nhiều bài học. Bài học được tự biên soạn theo
-          chương trình, không sao chép sách giáo khoa hay trang web khác.
+          Khóa học được xếp theo nhóm chương trình, mỗi khóa gồm nhiều bài học. Bài học được soạn bằng lời mới, không sao
+          chép sách giáo khoa hay trang web khác.
         </p>
       </Section>
 
       <Section title="Bạn làm được gì">
         <Bullets
           items={[
-            'Đăng ký miễn phí bằng email hoặc đăng nhập bằng tài khoản Google.',
-            'Đọc bài học có bảng, ảnh minh họa; tìm bài theo từ khóa.',
+            'Xem danh sách khóa học và lọc theo chương trình, trình độ, thời lượng, học phí.',
+            'Tạo tài khoản bằng email hoặc đăng nhập bằng tài khoản Google.',
+            'Đọc bài học có bảng, ảnh minh họa và tìm bài theo từ khóa sau khi đăng nhập.',
             'Đánh dấu bài đã hoàn thành và xem phần trăm hoàn thành của từng khóa; tiến độ chỉ của riêng bạn.',
             'Đổi giao diện sáng hoặc tối.',
           ]}
@@ -66,11 +67,12 @@ export default function AboutPage() {
       </Section>
 
       <Section title="Đang phát triển">
-        <p>Hai tính năng sau chưa có trên bản hiện tại:</p>
+        <p>Các tính năng sau chưa có trên bản hiện tại:</p>
         <Bullets
           items={[
-            'Chatbot hỏi đáp: trả lời dựa trên nội dung bài học và ghi rõ trích dẫn từ bài nào.',
-            'Trợ lý AI gợi ý bài nên học tiếp, chỉ đọc dữ liệu bài học chứ không sửa gì.',
+            'Mua khóa trả phí (chỉ thanh toán thử nghiệm) và mục "Khóa học của tôi".',
+            'Chatbot hỏi đáp: trả lời dựa trên thông tin khóa học và bài học bạn được xem, ghi rõ trích dẫn.',
+            'Trợ lý AI gợi ý khóa và bài phù hợp, chỉ đọc dữ liệu chứ không sửa gì.',
           ]}
         />
       </Section>

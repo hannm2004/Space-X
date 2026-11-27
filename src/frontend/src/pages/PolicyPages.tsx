@@ -12,12 +12,22 @@ function Feedback({ children }: { children: ReactNode }) {
   )
 }
 
-function PolicyPage({ title, intro, children }: { title: string; intro: ReactNode; children: ReactNode }) {
+function PolicyPage({
+  title,
+  intro,
+  updated = UPDATED,
+  children,
+}: {
+  title: string
+  intro: ReactNode
+  updated?: string
+  children: ReactNode
+}) {
   return (
     <article className="mx-auto max-w-2xl">
       <p className="eyebrow">Thông tin pháp lý</p>
       <h1 className="mt-3 text-4xl font-bold leading-tight tracking-tight">{title}</h1>
-      <p className="mt-3 text-sm text-muted">Cập nhật lần cuối: {UPDATED}</p>
+      <p className="mt-3 text-sm text-muted">Cập nhật lần cuối: {updated}</p>
       <p className="mt-6 text-lg">{intro}</p>
       {children}
     </article>
@@ -135,11 +145,37 @@ export function PrivacyPage() {
 
 export function TermsPage() {
   return (
-    <PolicyPage title="Điều khoản sử dụng" intro="Khi dùng Space-X, bạn đồng ý với các điều khoản ngắn gọn dưới đây.">
+    <PolicyPage
+      title="Điều khoản sử dụng"
+      intro="Khi dùng Space-X, bạn đồng ý với các điều khoản ngắn gọn dưới đây."
+      updated="27/11/2026"
+    >
       <Section title="Phạm vi dịch vụ">
         <p>
-          Space-X là dự án học tập cung cấp bài học Tin học lớp 6 đến lớp 12 để tự học và tham khảo, hiện miễn phí. Dịch vụ
-          có thể thay đổi, gián đoạn hoặc ngừng mà không báo trước.
+          Trung tâm Tin học SPACE-X là một trung tâm hư cấu, cung cấp khóa học và bài học Tin học để tự học trực tuyến. Đây
+          là dự án học tập, nội dung để học và tham khảo; hiện bạn không phải trả khoản phí nào. Dịch vụ có thể thay đổi,
+          gián đoạn hoặc ngừng mà không báo trước.
+        </p>
+      </Section>
+
+      <Section title="Thanh toán thử nghiệm">
+        <p>Chức năng mua khóa trả phí đang được xây dựng và chưa mở.</p>
+        <p>
+          Thanh toán trên Space-X chỉ chạy trong môi trường thử nghiệm và không thu tiền thật; cổng thanh toán nếu dùng là
+          bản thử (sandbox). Đừng chuyển tiền thật theo bất kỳ mã QR hay số tài khoản nào trên trang. Space-X không có ô
+          nhập số thẻ.
+        </p>
+      </Section>
+
+      <Section title="Hoàn tiền">
+        <p>
+          Khi chức năng mua khóa mở, việc hoàn tiền do quản trị viên xử lý thủ công; website không tự gọi chức năng hoàn
+          tiền của cổng thanh toán. Đơn được hoàn thì quyền học khóa đó bị thu hồi, còn tiến độ học vẫn được giữ. Vì không
+          thu tiền thật nên cũng không có tiền thật được chuyển trả.
+        </p>
+        <p>
+          Cần hoàn tiền, hãy <Feedback>gửi yêu cầu</Feedback>. Đó là trang công khai, đừng ghi thông tin cá nhân vào yêu
+          cầu.
         </p>
       </Section>
 
